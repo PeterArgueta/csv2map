@@ -81,33 +81,35 @@ export function UploadForm({ onUpload }) {
   };
 
   const handleProcesar = async () => {
-  if (!fileData) return;
-  setIsProcessing(true);
-
-  const formData = new FormData();
-  formData.append("file", fileData);
-
-  try {
-    const response = await axios.post("/procesar_csv/", formData, {
-      responseType: 'blob',
-    });
-
-    const blob = new Blob([response.data], { type: 'application/zip' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "departamentos_resultado.zip";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-  } catch (error) {
-    console.error("❌ Error al procesar CSV:", error);
-    alert("Hubo un error al procesar el archivo.");
-  } finally {
-    setIsProcessing(false);
-  }
-};
+    if (!fileData) return;
+    setIsProcessing(true);
+  
+    const API_URL = import.meta.env.VITE_API_URL;
+    const formData = new FormData();
+    formData.append("file", fileData);
+  
+    try {
+      const response = await axios.post(`${API_URL}/procesar_csv/`, formData, {
+        responseType: 'blob',
+      });
+  
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "departamentos_resultado.zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+  
+    } catch (error) {
+      console.error("❌ Error al procesar CSV:", error);
+      alert("Hubo un error al procesar el archivo.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  
 
   return (
     <div className="p-6">
