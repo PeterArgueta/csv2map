@@ -1,0 +1,10 @@
+{
+  "name": "Departamentos de Guatemala",
+  "coverage": "22 departamentos de Guatemala",
+  "source_institution": "IDEG – SEGEPLAN",
+  "source_portal": "Geoportal de la Infraestructura de Datos Espaciales de Guatemala",
+  "source_url": "https://ideg.segeplan.gob.gt/geoportal/",
+  "base_format": "GeoJSON",
+  "processed_by": "ConvertToMap",
+  "notes": "La capa utilizada por ConvertToMap se documenta con referencia al Geoportal IDEG de SEGEPLAN. Verificar metadata, fecha de actualización y condiciones de uso vigentes antes de emplearla en análisis oficiales."
+}
