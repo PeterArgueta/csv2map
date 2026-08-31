@@ -1,19 +1,87 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "default_country": "GTM",
   "countries": [
+    {
+      "code": "GTM",
+      "name": "Guatemala",
+      "source_label": "IDEG · SEGEPLAN",
+      "source_url": "https://ideg.segeplan.gob.gt/geoportal/",
+      "levels": [
+        {
+          "id": "departamentos",
+          "admin_level": "admin1",
+          "name": "Departamentos",
+          "singular": "departamento",
+          "count": 22,
+          "code_property": "admin_code",
+          "name_property": "name",
+          "code_width": 2,
+          "map_url": "/countries/GTM/admin1.optimized.geojson",
+          "api": {
+            "path": "Departamentos/departamentos.shp",
+            "code_field": "cod_dep",
+            "basename": "converttomap_gtm_departamentos"
+          },
+          "downloads": {
+            "geojson": "/downloads/departamentos_guatemala.geojson",
+            "shp": "/downloads/departamentos_guatemala_shapefile.zip",
+            "gpkg": "/downloads/departamentos_guatemala.gpkg",
+            "kml": "/downloads/departamentos_guatemala.kml"
+          },
+          "metadata_url": "/countries/GTM/metadata.json"
+        },
+        {
+          "id": "municipios",
+          "admin_level": "admin2",
+          "name": "Municipios",
+          "singular": "municipio",
+          "count": 340,
+          "code_property": "admin_code",
+          "name_property": "name",
+          "parent_name_property": "parent_name",
+          "code_width": 4,
+          "map_url": "/countries/GTM/admin2.optimized.geojson",
+          "api": {
+            "path": "geo_guate_frontend/public/Municipios/municipios.geojson",
+            "code_field": "cod_muni_1",
+            "basename": "converttomap_gtm_municipios"
+          },
+          "downloads": {
+            "geojson": "/downloads/municipios_guatemala.geojson",
+            "shp": "/downloads/municipios_guatemala_shapefile.zip",
+            "gpkg": "/downloads/municipios_guatemala.gpkg",
+            "kml": "/downloads/municipios_guatemala.kml"
+          },
+          "metadata_url": "/countries/GTM/metadata.json"
+        }
+      ]
+    },
     {
       "code": "SLV",
       "name": "El Salvador",
+      "source_label": "geoBoundaries · OpenStreetMap",
+      "source_url": "https://www.geoboundaries.org/",
       "levels": [
         {
-          "id": "admin1",
+          "id": "departamentos",
+          "admin_level": "admin1",
           "name": "Departamentos",
+          "singular": "departamento",
           "count": 14,
           "code_property": "admin_code",
           "name_property": "name",
           "code_width": 2,
           "map_url": "/countries/SLV/admin1.optimized.geojson",
           "data_url": "/countries/SLV/admin1.geojson",
+          "api": {
+            "path": "geo_guate_frontend/public/countries/SLV/admin1.geojson",
+            "code_field": "admin_code",
+            "basename": "converttomap_slv_departamentos"
+          },
+          "downloads": {
+            "geojson": "/countries/SLV/admin1.geojson"
+          },
           "metadata_url": "/countries/SLV/metadata.json"
         }
       ]

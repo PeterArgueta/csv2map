@@ -1,0 +1,25 @@
+{
+  "name": "Divisiones administrativas de Guatemala",
+  "country_code": "GTM",
+  "country_name": "Guatemala",
+  "crs": "EPSG:4326",
+  "source_institution": "IDEG – SEGEPLAN",
+  "source_portal": "Geoportal de la Infraestructura de Datos Espaciales de Guatemala",
+  "source_url": "https://ideg.segeplan.gob.gt/geoportal/",
+  "processed_by": "ConvertToMap",
+  "levels": {
+    "admin1": {
+      "admin_type": "departamento",
+      "feature_count": 22,
+      "source_file": "/Departamentos/departamentos.geojson",
+      "web_optimized": "admin1.optimized.geojson"
+    },
+    "admin2": {
+      "admin_type": "municipio",
+      "feature_count": 340,
+      "source_file": "/Municipios/municipios.geojson",
+      "web_optimized": "admin2.optimized.geojson"
+    }
+  },
+  "notes": "Las capas completas existentes se conservan como base de exportación. Las versiones optimizadas usan el esquema común de ConvertToMap y están destinadas a visualización web. Verificar metadata, fecha de actualización y condiciones de uso vigentes antes de emplearlas en análisis oficiales."
+}

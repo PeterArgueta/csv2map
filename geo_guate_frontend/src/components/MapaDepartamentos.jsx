@@ -36,7 +36,7 @@ export function MapaDepartamentos({ geojsonData, codigosSeleccionados, layerConf
   const [hoveredCode, setHoveredCode] = useState(null);
   const [basemap, setBasemap] = useState('gris');
 
-  const getCode = (feature) => String(feature.properties?.[layerConfig.codeProperty] ?? '').padStart(layerConfig.codeWidth, '0');
+  const getCode = (feature) => String(feature.properties?.[layerConfig.code_property] ?? '').padStart(layerConfig.code_width, '0');
   const selectedSet = new Set(codigosSeleccionados);
 
   const styleFeature = (feature) => {
@@ -53,8 +53,8 @@ export function MapaDepartamentos({ geojsonData, codigosSeleccionados, layerConf
 
   const onEachFeature = (feature, layer) => {
     const code = getCode(feature);
-    const name = feature.properties?.[layerConfig.nameProperty] || 'Sin nombre';
-    const department = nivel === 'municipios' ? feature.properties?.depto_1 : null;
+    const name = feature.properties?.[layerConfig.name_property] || 'Sin nombre';
+    const department = layerConfig.parent_name_property ? feature.properties?.[layerConfig.parent_name_property] : null;
     layer.bindTooltip(`<strong>${name}</strong>${department ? `<br>${department}` : ''}<br>Código: ${code}`, {
       direction: 'top',
       className: 'custom-tooltip',
@@ -81,7 +81,7 @@ export function MapaDepartamentos({ geojsonData, codigosSeleccionados, layerConf
           <FitLayer data={geojsonData} />
           {geojsonData && (
             <GeoJSON
-              key={`${nivel}-${codigosSeleccionados.join('-')}`}
+              key={`${layerConfig.map_url}-${nivel}-${codigosSeleccionados.join('-')}`}
               data={geojsonData}
               style={styleFeature}
               onEachFeature={onEachFeature}

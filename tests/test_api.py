@@ -16,8 +16,9 @@ def test_health():
 
 
 def test_base_layers_are_complete():
-    assert len(load_layer("departamentos")) == 22
-    assert len(load_layer("municipios")) == 340
+    assert len(load_layer("GTM", "departamentos")) == 22
+    assert len(load_layer("GTM", "municipios")) == 340
+    assert len(load_layer("SLV", "departamentos")) == 14
 
 
 def test_department_csv_exports_selected_formats():
@@ -31,6 +32,7 @@ def test_department_csv_exports_selected_formats():
         "/procesar_csv/",
         files={"file": ("datos.csv", csv, "text/csv")},
         data={
+            "pais": "GTM",
             "nivel": "departamentos",
             "columna_codigo": "codigo_departamento",
             "formatos": "shp,kml,geojson,gpkg",
@@ -51,6 +53,7 @@ def test_rejects_unknown_codes():
         "/procesar_csv/",
         files={"file": ("datos.csv", b"codigo_departamento\n99\n", "text/csv")},
         data={
+            "pais": "GTM",
             "nivel": "departamentos",
             "columna_codigo": "codigo_departamento",
             "formatos": "geojson",
@@ -58,3 +61,31 @@ def test_rejects_unknown_codes():
     )
     assert response.status_code == 422
     assert "Ningún código" in response.json()["detail"]
+
+
+def test_el_salvador_department_csv_exports_geojson():
+    csv = (
+        "codigo_departamento,valor,nombre\n"
+        "01,12,Ahuachapán\n"
+        "06,8,San Salvador\n"
+        "99,1,No existe\n"
+    ).encode("utf-8")
+    response = client.post(
+        "/procesar_csv/",
+        files={"file": ("datos.csv", csv, "text/csv")},
+        data={
+            "pais": "SLV",
+            "nivel": "departamentos",
+            "columna_codigo": "codigo_departamento",
+            "formatos": "geojson",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["x-matched-count"] == "2"
+    assert response.headers["x-unmatched-count"] == "1"
+
+    with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+        report_name = next(name for name in archive.namelist() if name.endswith(".json") and "reporte" in name)
+        report = archive.read(report_name).decode("utf-8")
+        assert '"pais_codigo": "SLV"' in report

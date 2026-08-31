@@ -10,38 +10,7 @@ const DOWNLOAD_FORMATS = {
   kml: { label: 'KML', note: 'Google Earth' },
 };
 
-const LAYERS = {
-  departamentos: {
-    label: 'Departamentos',
-    url: '/Departamentos/departamentos.geojson',
-    codeProperty: 'cod_dep',
-    nameProperty: 'departamen',
-    codeWidth: 2,
-    count: 22,
-    description: 'Límites departamentales de Guatemala listos para usar en SIG y aplicaciones web.',
-    downloads: {
-      geojson: '/downloads/departamentos_guatemala.geojson',
-      shp: '/downloads/departamentos_guatemala_shapefile.zip',
-      gpkg: '/downloads/departamentos_guatemala.gpkg',
-      kml: '/downloads/departamentos_guatemala.kml',
-    },
-  },
-  municipios: {
-    label: 'Municipios',
-    url: '/Municipios/municipios.geojson',
-    codeProperty: 'cod_muni_1',
-    nameProperty: 'nombre_1',
-    codeWidth: 4,
-    count: 340,
-    description: 'Límites municipales de Guatemala para análisis, cartografía y aplicaciones geográficas.',
-    downloads: {
-      geojson: '/downloads/municipios_guatemala.geojson',
-      shp: '/downloads/municipios_guatemala_shapefile.zip',
-      gpkg: '/downloads/municipios_guatemala.gpkg',
-      kml: '/downloads/municipios_guatemala.kml',
-    },
-  },
-};
+const CATALOG_URL = '/countries/catalog.json';
 
 const PROJECTS = [
   {
@@ -60,9 +29,10 @@ const PROJECTS = [
   },
 ];
 
-const EXAMPLES = {
-  departamentos: 'codigo_departamento,valor,nombre\n01,120,Guatemala\n03,85,Sacatepéquez\n09,64,Quetzaltenango\n17,98,Petén\n',
-  municipios: 'codigo_municipio,valor,nombre\n0101,120,Guatemala\n0301,85,Antigua Guatemala\n0901,64,Quetzaltenango\n',
+const exampleFor = (pais, nivel) => {
+  if (pais === 'SLV') return 'codigo_departamento,valor,nombre\n01,120,Ahuachapán\n06,85,San Salvador\n12,64,San Miguel\n';
+  if (nivel === 'municipios') return 'codigo_municipio,valor,nombre\n0101,120,Guatemala\n0301,85,Antigua Guatemala\n0901,64,Quetzaltenango\n';
+  return 'codigo_departamento,valor,nombre\n01,120,Guatemala\n03,85,Sacatepéquez\n09,64,Quetzaltenango\n17,98,Petén\n';
 };
 
 const pathToView = (pathname) => {
@@ -73,6 +43,8 @@ const pathToView = (pathname) => {
 
 function App() {
   const [view, setView] = useState(() => pathToView(window.location.pathname));
+  const [catalog, setCatalog] = useState(null);
+  const [pais, setPais] = useState('GTM');
   const [nivel, setNivel] = useState('departamentos');
   const [geojsonData, setGeojsonData] = useState(null);
   const [codigosCsv, setCodigosCsv] = useState([]);
@@ -81,7 +53,31 @@ function App() {
   const [csvPreview, setCsvPreview] = useState([]);
   const [csvHeaders, setCsvHeaders] = useState([]);
   const [fileName, setFileName] = useState('');
-  const [downloadFormats, setDownloadFormats] = useState({ departamentos: 'geojson', municipios: 'geojson' });
+  const [downloadFormats, setDownloadFormats] = useState({});
+
+  const selectedCountry = catalog?.countries.find((country) => country.code === pais) || null;
+  const layerConfig = selectedCountry?.levels.find((level) => level.id === nivel) || null;
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(CATALOG_URL, { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then((data) => {
+        setCatalog(data);
+        const initialCountry = data.countries.find((country) => country.code === data.default_country) || data.countries[0];
+        if (initialCountry) {
+          setPais(initialCountry.code);
+          setNivel(initialCountry.levels[0]?.id || 'departamentos');
+        }
+      })
+      .catch((error) => {
+        if (error.name !== 'AbortError') setMapError('No fue posible cargar el catálogo de países.');
+      });
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     const handlePopState = () => setView(pathToView(window.location.pathname));
@@ -90,12 +86,14 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!layerConfig) return undefined;
     const controller = new AbortController();
     const fetchGeojson = async () => {
       setIsLoadingMap(true);
+      setGeojsonData(null);
       setMapError('');
       try {
-        const response = await fetch(LAYERS[nivel].url, { signal: controller.signal });
+        const response = await fetch(layerConfig.map_url, { signal: controller.signal });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         setGeojsonData(await response.json());
       } catch (error) {
@@ -109,7 +107,7 @@ function App() {
     };
     fetchGeojson();
     return () => controller.abort();
-  }, [nivel]);
+  }, [pais, nivel, layerConfig?.map_url]);
 
   const navigate = (path) => {
     if (window.location.pathname !== path) window.history.pushState({}, '', path);
@@ -130,6 +128,16 @@ function App() {
     setFileName('');
   };
 
+  const handleCountryChange = (value) => {
+    const country = catalog?.countries.find((item) => item.code === value);
+    setPais(value);
+    setNivel(country?.levels[0]?.id || 'departamentos');
+    setCodigosCsv([]);
+    setCsvPreview([]);
+    setCsvHeaders([]);
+    setFileName('');
+  };
+
   const handleUpload = (codigos, preview, headers, name) => {
     setCodigosCsv(codigos);
     setCsvPreview(preview);
@@ -138,7 +146,7 @@ function App() {
   };
 
   const loadExample = () => {
-    const file = new File([EXAMPLES[nivel]], `ejemplo_${nivel}.csv`, { type: 'text/csv;charset=utf-8' });
+    const file = new File([exampleFor(pais, nivel)], `ejemplo_${pais.toLowerCase()}_${nivel}.csv`, { type: 'text/csv;charset=utf-8' });
     const dataTransfer = new DataTransfer();
     dataTransfer.items.add(file);
     const input = document.querySelector('input[type="file"][accept*=".csv"]');
@@ -147,8 +155,9 @@ function App() {
     input.dispatchEvent(new Event('change', { bubbles: true }));
   };
 
-  const useLayer = (key) => {
-    handleLevelChange(key);
+  const useLayer = (countryCode, levelId) => {
+    setPais(countryCode);
+    handleLevelChange(levelId);
     navigate('/');
   };
 
@@ -160,7 +169,7 @@ function App() {
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Convierte tus datos en capas GIS</h2>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
-            Carga un CSV con códigos de departamentos o municipios, comprueba tus datos en el mapa y descarga el resultado para QGIS, ArcGIS o Google Earth.
+            Selecciona un país, carga un CSV con códigos territoriales, comprueba tus datos en el mapa y descarga el resultado para QGIS, ArcGIS o Google Earth.
           </p>
           <div className="flex shrink-0 flex-wrap gap-2">
             <button type="button" onClick={loadExample} className="rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700">
@@ -179,7 +188,21 @@ function App() {
             <h3 className="font-bold">1. Configura la conversión</h3>
             <p className="mt-1 text-sm text-slate-500">Sube tu CSV, selecciona la columna territorial y los formatos de salida.</p>
           </div>
-          <UploadForm nivel={nivel} onLevelChange={handleLevelChange} onUpload={handleUpload} />
+          {catalog && selectedCountry && layerConfig ? (
+            <UploadForm
+              pais={pais}
+              countries={catalog.countries}
+              selectedCountry={selectedCountry}
+              nivel={nivel}
+              layerConfig={layerConfig}
+              geojsonData={geojsonData}
+              onCountryChange={handleCountryChange}
+              onLevelChange={handleLevelChange}
+              onUpload={handleUpload}
+            />
+          ) : (
+            <div className="grid min-h-72 place-items-center"><div className="loader" aria-label="Cargando países" /></div>
+          )}
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -196,7 +219,7 @@ function App() {
             ) : mapError ? (
               <div className="grid h-[560px] place-items-center text-sm text-red-600">{mapError}</div>
             ) : (
-              <MapaDepartamentos geojsonData={geojsonData} codigosSeleccionados={codigosCsv} layerConfig={LAYERS[nivel]} nivel={nivel} />
+              <MapaDepartamentos geojsonData={geojsonData} codigosSeleccionados={codigosCsv} layerConfig={layerConfig} nivel={nivel} />
             )}
           </div>
         </section>
@@ -234,22 +257,25 @@ function App() {
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <div className="mb-7">
         <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">Datos geográficos</p>
-        <h2 className="mt-2 text-3xl font-bold tracking-tight">Capas de Guatemala</h2>
-        <p className="mt-2 max-w-2xl leading-7 text-slate-600">Descarga las capas base que utiliza ConvertToMap en el formato que mejor se adapte a tu trabajo.</p>
+        <h2 className="mt-2 text-3xl font-bold tracking-tight">Capas por país</h2>
+        <p className="mt-2 max-w-2xl leading-7 text-slate-600">Descarga las capas base disponibles y consulta la fuente utilizada para cada país.</p>
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
-        {Object.entries(LAYERS).map(([key, layer]) => {
-          const selectedFormat = downloadFormats[key];
-          const format = DOWNLOAD_FORMATS[selectedFormat];
+        {catalog?.countries.flatMap((country) => country.levels.map((layer) => {
+          const key = `${country.code}-${layer.id}`;
+          const availableFormats = Object.keys(layer.downloads || {});
+          const selectedFormat = downloadFormats[key] || availableFormats[0] || 'geojson';
+          const format = DOWNLOAD_FORMATS[selectedFormat] || DOWNLOAD_FORMATS.geojson;
           return (
             <article key={key} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">4 formatos</span>
-                  <h3 className="mt-4 text-xl font-bold">{layer.label}</h3>
+                  <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{country.name}</span>
+                  <h3 className="mt-4 text-xl font-bold">{layer.name}</h3>
                   <p className="mt-1 text-sm font-semibold text-slate-400">{layer.count} territorios</p>
-                  <p className="mt-3 max-w-lg text-sm leading-6 text-slate-600">{layer.description}</p>
+                  <p className="mt-3 max-w-lg text-sm leading-6 text-slate-600">Límites de {layer.name.toLowerCase()} preparados para mapas, análisis y conversiones GIS.</p>
+                  <p className="mt-3 text-xs text-slate-500">Fuente: <a href={country.source_url} target="_blank" rel="noreferrer" className="font-semibold text-indigo-600 hover:underline">{country.source_label}</a></p>
                 </div>
                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-slate-100 text-2xl" aria-hidden="true">⌖</div>
               </div>
@@ -262,25 +288,28 @@ function App() {
                   onChange={(event) => setDownloadFormats((current) => ({ ...current, [key]: event.target.value }))}
                   className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-400"
                 >
-                  {Object.entries(DOWNLOAD_FORMATS).map(([formatKey, option]) => (
+                  {availableFormats.map((formatKey) => {
+                    const option = DOWNLOAD_FORMATS[formatKey];
+                    return (
                     <option key={formatKey} value={formatKey}>{option.label} — {option.note}</option>
-                  ))}
+                    );
+                  })}
                 </select>
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <a href={layer.downloads[selectedFormat]} download className="rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-bold text-white transition hover:bg-indigo-700">
+                <a href={layer.downloads?.[selectedFormat]} download className="rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-bold text-white transition hover:bg-indigo-700">
                   Descargar {format.label}
                 </a>
-                <button type="button" onClick={() => useLayer(key)} className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-bold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700">
+                <button type="button" onClick={() => useLayer(country.code, layer.id)} className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-bold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700">
                   Usar en ConvertToMap
                 </button>
               </div>
             </article>
           );
-        })}
+        }))}
       </div>
-      <p className="mt-5 text-xs leading-5 text-slate-500">Disponibles en GeoJSON, Shapefile, GeoPackage y KML. Los formatos se generan desde la misma capa base para mantener consistencia. Recomendamos revisar la metadata y la fuente antes de utilizarlas en análisis oficiales.</p>
+      <p className="mt-5 text-xs leading-5 text-slate-500">Los formatos disponibles dependen de cada capa. Desde el conversor puedes generar GeoJSON, Shapefile, GeoPackage y KML. Recomendamos revisar la metadata y la fuente antes de utilizarlas en análisis oficiales.</p>
     </main>
   );
 

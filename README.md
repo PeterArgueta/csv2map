@@ -1,13 +1,14 @@
 # ConvertToMap 2.0
 
-**ConvertToMap** convierte archivos CSV con códigos administrativos de Guatemala en capas geográficas listas para QGIS, ArcGIS, Google Earth o aplicaciones web. CSV2MAP GT es el primer conversor territorial disponible dentro de la plataforma.
+**ConvertToMap** convierte archivos CSV con códigos administrativos de distintos países en capas geográficas listas para QGIS, ArcGIS, Google Earth o aplicaciones web.
 
 - **Sitio:** <https://converttomap.com>
 - **API:** <https://api.converttomap.com>
 
 ## Funciones de la versión 2
 
-- Procesa los 22 departamentos y los 340 municipios de Guatemala.
+- Permite seleccionar el país y el nivel territorial desde un catálogo común.
+- Procesa los 22 departamentos y 340 municipios de Guatemala, y los 14 departamentos de El Salvador.
 - Detecta CSV separados por coma, punto y coma o tabulación.
 - Permite seleccionar manualmente la columna territorial.
 - Conserva las demás columnas del archivo como atributos de la capa.
@@ -24,6 +25,7 @@
 csv2map/
 ├── geo_guate_frontend/       React, Vite, Tailwind y Leaflet
 │   ├── public/               Límites GeoJSON para la vista previa
+│   │   └── countries/        Catálogo y capas optimizadas por país
 │   └── src/
 ├── Departamentos/            Capa base departamental
 ├── utils/                    Normalización y validación
@@ -69,11 +71,14 @@ VITE_API_URL=https://api.converttomap.com
 | Campo | Descripción |
 |---|---|
 | `file` | Archivo CSV de hasta 10 MB |
-| `nivel` | `departamentos` o `municipios` |
+| `pais` | Código ISO alfa-3: actualmente `GTM` o `SLV` |
+| `nivel` | Nivel disponible para el país: `departamentos` o `municipios` |
 | `columna_codigo` | Encabezado que contiene el código administrativo |
 | `formatos` | Lista separada por comas: `shp,kml,geojson,gpkg` |
 
 La descarga ZIP incluye los formatos seleccionados y `reporte_procesamiento.json`.
+
+El catálogo `geo_guate_frontend/public/countries/catalog.json` es consumido por el frontend y el backend. Para agregar un país se registra allí su capa, campos de unión, nivel administrativo, rutas y fuente.
 
 ## Fuentes cartográficas
 

@@ -10,31 +10,6 @@ const FORMAT_OPTIONS = [
   { id: 'gpkg', label: 'GeoPackage', note: 'QGIS y ArcGIS' },
 ];
 
-const DEPARTMENTS = [
-  ['01', 'Guatemala'],
-  ['02', 'El Progreso'],
-  ['03', 'Sacatepéquez'],
-  ['04', 'Chimaltenango'],
-  ['05', 'Escuintla'],
-  ['06', 'Santa Rosa'],
-  ['07', 'Sololá'],
-  ['08', 'Totonicapán'],
-  ['09', 'Quetzaltenango'],
-  ['10', 'Suchitepéquez'],
-  ['11', 'Retalhuleu'],
-  ['12', 'San Marcos'],
-  ['13', 'Huehuetenango'],
-  ['14', 'Quiché'],
-  ['15', 'Baja Verapaz'],
-  ['16', 'Alta Verapaz'],
-  ['17', 'Petén'],
-  ['18', 'Izabal'],
-  ['19', 'Zacapa'],
-  ['20', 'Chiquimula'],
-  ['21', 'Jalapa'],
-  ['22', 'Jutiapa'],
-];
-
 const COLUMN_HINTS = {
   departamentos: ['codigo_departamento', 'cod_departamento', 'cod_dep', 'departamento_codigo', 'codigo'],
   municipios: ['codigo_municipio', 'cod_municipio', 'cod_muni', 'codigo_ine', 'municipio_codigo', 'codigo'],
@@ -56,7 +31,8 @@ const normalizeCode = (value, width) => {
 
 const detectCodeColumn = (fields, nivel) => {
   const normalized = new Map(fields.map((field) => [normalizeHeader(field), field]));
-  return COLUMN_HINTS[nivel].map(normalizeHeader).map((hint) => normalized.get(hint)).find(Boolean) || '';
+  const hints = COLUMN_HINTS[nivel] || ['codigo', 'codigo_territorial', 'admin_code'];
+  return hints.map(normalizeHeader).map((hint) => normalized.get(hint)).find(Boolean) || '';
 };
 
 const buildSafeColumnHeaders = (columns) => {
@@ -70,7 +46,7 @@ const buildSafeColumnHeaders = (columns) => {
   });
 };
 
-export function UploadForm({ nivel, onLevelChange, onUpload }) {
+export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfig, geojsonData, onCountryChange, onLevelChange, onUpload }) {
   const fileInputRef = useRef();
   const [fileData, setFileData] = useState(null);
   const [rows, setRows] = useState([]);
@@ -86,8 +62,15 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
   const [customColumns, setCustomColumns] = useState([{ id: 'valor', name: 'valor' }]);
   const [departmentValues, setDepartmentValues] = useState({});
 
+  const territories = (geojsonData?.features || [])
+    .map((feature) => [
+      String(feature.properties?.[layerConfig.code_property] ?? '').padStart(layerConfig.code_width, '0'),
+      feature.properties?.[layerConfig.name_property] || 'Sin nombre',
+    ])
+    .sort((left, right) => left[0].localeCompare(right[0]));
+
   const emitPreview = (dataRows, fields, selectedColumn, currentFile = fileData) => {
-    const width = nivel === 'municipios' ? 4 : 2;
+    const width = layerConfig.code_width;
     const codes = selectedColumn
       ? [...new Set(dataRows.map((row) => normalizeCode(row[selectedColumn], width)).filter(Boolean))]
       : [];
@@ -142,7 +125,18 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
     }
     if (nivel !== 'departamentos') setShowCsvBuilder(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nivel]);
+    setSelectedDepartments([]);
+    setDepartmentValues({});
+  }, [pais, nivel]);
+
+  useEffect(() => {
+    setFileData(null);
+    setRows([]);
+    setHeaders([]);
+    setCodeColumn('');
+    setFileError('');
+    setSuccessMessage('');
+  }, [pais]);
 
   const handleColumnChange = (value) => {
     setCodeColumn(value);
@@ -183,6 +177,7 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
     const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
     const formData = new FormData();
     formData.append('file', fileData);
+    formData.append('pais', pais);
     formData.append('nivel', nivel);
     formData.append('columna_codigo', codeColumn);
     formData.append('formatos', formats.join(','));
@@ -192,7 +187,9 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
       const url = window.URL.createObjectURL(response.data);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `${nivel}_resultado.zip`;
+      const now = new Date();
+      const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
+      anchor.download = `converttomap_${pais.toLowerCase()}_${nivel}_${stamp}.zip`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -210,11 +207,11 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
   const downloadSample = () => {
     const content = nivel === 'municipios'
       ? 'codigo_municipio,valor,nombre\n0101,120,Guatemala\n0301,85,Antigua Guatemala\n'
-      : 'codigo_departamento,valor,nombre\n01,120,Guatemala\n03,85,Sacatepéquez\n';
+      : `codigo_departamento,valor,nombre\n${territories.slice(0, 2).map(([code, name], index) => `${code},${index ? 85 : 120},${name}`).join('\n')}\n`;
     const url = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8' }));
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `ejemplo_${nivel}.csv`;
+    anchor.download = `ejemplo_${pais.toLowerCase()}_${nivel}.csv`;
     anchor.click();
     URL.revokeObjectURL(url);
   };
@@ -262,7 +259,7 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
 
   const buildDepartmentCsv = () => {
     const outputColumns = buildSafeColumnHeaders(customColumns);
-    const rowsToExport = DEPARTMENTS
+    const rowsToExport = territories
       .filter(([code]) => selectedDepartments.includes(code))
       .map(([code, name]) => {
         const row = {
@@ -280,7 +277,7 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
   const useCreatedCsv = () => {
     if (!selectedDepartments.length) return;
     const csv = buildDepartmentCsv();
-    const file = new File([csv], 'departamentos_personalizado.csv', { type: 'text/csv;charset=utf-8' });
+    const file = new File([csv], `${pais.toLowerCase()}_departamentos_personalizado.csv`, { type: 'text/csv;charset=utf-8' });
     parseFile(file);
     setShowCsvBuilder(false);
   };
@@ -291,7 +288,7 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = 'departamentos_personalizado.csv';
+    anchor.download = `${pais.toLowerCase()}_departamentos_personalizado.csv`;
     anchor.click();
     URL.revokeObjectURL(url);
   };
@@ -301,10 +298,16 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
   return (
     <div className="space-y-6 p-6">
       <div>
+        <label htmlFor="pais" className="field-label">País</label>
+        <select id="pais" value={pais} onChange={(event) => onCountryChange(event.target.value)} className="field-control">
+          {countries.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}
+        </select>
+      </div>
+
+      <div>
         <label htmlFor="nivel" className="field-label">Nivel geográfico</label>
         <select id="nivel" value={nivel} onChange={(event) => onLevelChange(event.target.value)} className="field-control">
-          <option value="departamentos">Departamentos (22)</option>
-          <option value="municipios">Municipios (340)</option>
+          {selectedCountry.levels.map((level) => <option key={level.id} value={level.id}>{level.name} ({level.count})</option>)}
         </select>
       </div>
 
@@ -329,7 +332,7 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
                 <p className="text-xs text-slate-500">Selecciona territorios y agrega las variables que necesites.</p>
               </div>
               <div className="flex gap-2 text-xs font-bold">
-                <button type="button" onClick={() => setSelectedDepartments(DEPARTMENTS.map(([code]) => code))} className="text-indigo-600 hover:text-indigo-800">Todos</button>
+                <button type="button" onClick={() => setSelectedDepartments(territories.map(([code]) => code))} className="text-indigo-600 hover:text-indigo-800">Todos</button>
                 <button type="button" onClick={() => setSelectedDepartments([])} className="text-slate-500 hover:text-slate-700">Limpiar</button>
               </div>
             </div>
@@ -374,7 +377,7 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
             </div>
 
             <div className="grid max-h-72 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-              {DEPARTMENTS.map(([code, name]) => {
+              {territories.map(([code, name]) => {
                 const checked = selectedDepartments.includes(code);
                 return (
                   <div key={code} className={`rounded-lg border p-2 ${checked ? 'border-indigo-300 bg-white' : 'border-slate-200 bg-white/70'}`}>

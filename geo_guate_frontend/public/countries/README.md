@@ -4,6 +4,10 @@ Las capas se organizan con el código ISO 3166-1 alfa-3 del país:
 
 ```text
 countries/
+├── GTM/
+│   ├── admin1.optimized.geojson
+│   ├── admin2.optimized.geojson
+│   └── metadata.json
 └── SLV/
     ├── source.geojson.gz
     ├── admin1.geojson

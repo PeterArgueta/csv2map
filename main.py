@@ -22,27 +22,31 @@ from utils.normalizar_csv import normalizar_codigo, normalizar_csv
 BASE_DIR = Path(__file__).resolve().parent
 MAX_FILE_SIZE = 10 * 1024 * 1024
 ALLOWED_FORMATS = {"shp", "kml", "geojson", "gpkg"}
+CATALOG_PATH = BASE_DIR / "geo_guate_frontend" / "public" / "countries" / "catalog.json"
 
-LAYERS = {
-    "departamentos": {
-        "path": BASE_DIR / "Departamentos" / "departamentos.shp",
-        "code_field": "cod_dep",
-        "code_width": 2,
-        "basename": "departamentos_resultado",
-        "source": "IDEG - SEGEPLAN, Geoportal de la Infraestructura de Datos Espaciales de Guatemala",
-    },
-    "municipios": {
-        "path": BASE_DIR
-        / "geo_guate_frontend"
-        / "public"
-        / "Municipios"
-        / "municipios.geojson",
-        "code_field": "cod_muni_1",
-        "code_width": 4,
-        "basename": "municipios_resultado",
-        "source": "IDEG - SEGEPLAN, Geoportal de la Infraestructura de Datos Espaciales de Guatemala",
-    },
-}
+
+def load_layer_catalog() -> dict[str, dict[str, dict[str, object]]]:
+    catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    layers: dict[str, dict[str, dict[str, object]]] = {}
+    for country in catalog["countries"]:
+        country_layers: dict[str, dict[str, object]] = {}
+        for level in country["levels"]:
+            api = level.get("api")
+            if not api:
+                continue
+            country_layers[level["id"]] = {
+                "path": BASE_DIR / api["path"],
+                "code_field": api["code_field"],
+                "code_width": int(level["code_width"]),
+                "basename": api["basename"],
+                "country_name": country["name"],
+                "source": country["source_label"],
+            }
+        layers[country["code"]] = country_layers
+    return layers
+
+
+LAYERS = load_layer_catalog()
 
 
 def configured_origins() -> list[str]:
@@ -69,11 +73,14 @@ app.add_middleware(
 )
 
 
-@lru_cache(maxsize=2)
-def load_layer(nivel: str) -> gpd.GeoDataFrame:
-    if nivel not in LAYERS:
-        raise ValueError("Nivel geográfico no válido.")
-    return gpd.read_file(LAYERS[nivel]["path"])
+@lru_cache(maxsize=8)
+def load_layer(pais: str, nivel: str | None = None) -> gpd.GeoDataFrame:
+    # Compatibilidad temporal con llamadas anteriores: load_layer("departamentos").
+    if nivel is None:
+        pais, nivel = "GTM", pais
+    if pais not in LAYERS or nivel not in LAYERS[pais]:
+        raise ValueError("País o nivel geográfico no válido.")
+    return gpd.read_file(LAYERS[pais][nivel]["path"])
 
 
 def parse_csv(content: bytes) -> tuple[pd.DataFrame, str]:
@@ -233,12 +240,14 @@ async def exportar_geojson(
 async def procesar_csv(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    pais: str = Form("GTM"),
     nivel: str = Form("departamentos"),
     columna_codigo: str | None = Form(None),
     formatos: str = Form("shp,kml"),
 ):
-    if nivel not in LAYERS:
-        raise HTTPException(status_code=400, detail="Nivel geográfico no válido.")
+    pais = pais.upper().strip()
+    if pais not in LAYERS or nivel not in LAYERS[pais]:
+        raise HTTPException(status_code=400, detail="País o nivel geográfico no válido.")
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Debes cargar un archivo CSV.")
 
@@ -254,10 +263,10 @@ async def procesar_csv(
     if not selected_formats or not selected_formats.issubset(ALLOWED_FORMATS):
         raise HTTPException(status_code=400, detail="Selecciona al menos un formato válido.")
 
-    config = LAYERS[nivel]
+    config = LAYERS[pais][nivel]
     try:
         df_csv, encoding = parse_csv(content)
-        base = load_layer(nivel).copy()
+        base = load_layer(pais, nivel).copy()
         df_csv, summary = normalizar_csv(
             df_csv,
             base,
@@ -289,6 +298,8 @@ async def procesar_csv(
 
         metadata = {
             "csv2map_version": "2.1.0",
+            "pais_codigo": pais,
+            "pais": config["country_name"],
             "nivel": nivel,
             "source": config["source"],
             "encoding": encoding,
