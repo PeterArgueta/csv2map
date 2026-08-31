@@ -1,8 +1,9 @@
-# CSV2MAP GT 2.0
+# ConvertToMap 2.0
 
-CSV2MAP GT convierte archivos CSV con códigos administrativos de Guatemala en capas geográficas listas para QGIS, ArcGIS, Google Earth o aplicaciones web.
+**ConvertToMap** convierte archivos CSV con códigos administrativos de Guatemala en capas geográficas listas para QGIS, ArcGIS, Google Earth o aplicaciones web. CSV2MAP GT es el primer conversor territorial disponible dentro de la plataforma.
 
-**Aplicación actual:** <https://csv2map.vercel.app>
+- **Dominio comercial:** <https://converttomap.com> (en configuración)
+- **Aplicación actual:** <https://csv2map.vercel.app>
 
 ## Funciones de la versión 2
 
@@ -44,7 +45,7 @@ uvicorn main:app --reload
 La API queda disponible en `http://localhost:8000`. Para limitar CORS, define los orígenes separados por comas:
 
 ```env
-ALLOWED_ORIGINS=http://localhost:5173,https://csv2map.vercel.app
+ALLOWED_ORIGINS=http://localhost:5173,https://converttomap.com,https://www.converttomap.com
 ```
 
 ### Frontend
@@ -58,7 +59,7 @@ npm run dev
 Para producción, configura la dirección de la API:
 
 ```env
-VITE_API_URL=https://csv2map.onrender.com
+VITE_API_URL=https://api.converttomap.com
 ```
 
 ## API
@@ -76,21 +77,25 @@ La descarga ZIP incluye los formatos seleccionados y `reporte_procesamiento.json
 
 ## Fuentes cartográficas
 
-- Departamentos: capa incorporada originalmente al proyecto CSV2MAP GT.
+- Departamentos: capa incorporada originalmente al proyecto CSV2MAP GT de ConvertToMap.
 - Municipios: servicio público **Límites municipales** de CONRED Guatemala, consultado en formato GeoJSON desde su FeatureServer. La copia incluida contiene 340 municipios.
 - Mapas base: OpenStreetMap, CARTO y OpenTopoMap, con sus atribuciones visibles en la aplicación.
 
 Antes de utilizar los datos en un producto comercial, verifica las condiciones y atribuciones vigentes de cada fuente.
 
-## Despliegue actual
+## Despliegue
 
-- Frontend: Vercel.
-- Backend: Render.
+- Frontend: sitio estático de Render, con despliegue automático desde GitHub.
+- Backend: servicio FastAPI de Render.
+- Sitio: `converttomap.com` y redirección desde `www.converttomap.com`.
+- API: `api.converttomap.com`.
 
-Un dominio propio puede apuntar el sitio principal a Vercel y un subdominio como `api.tudominio.com` al backend de Render.
+El sitio y la API utilizan servicios separados para que el frontend pueda seguir disponible durante tareas de mantenimiento del conversor.
 
-## Licencia
+## Derechos y licencias
 
-El código del proyecto está bajo licencia MIT. Las capas y mapas base conservan las condiciones de sus respectivas fuentes.
+ConvertToMap 2.0 es software propietario. Consulta `LICENSE` para las condiciones del código. Las versiones publicadas anteriormente bajo licencia MIT conservan los permisos que ya hubieran sido concedidos sobre esas versiones.
+
+Las dependencias, capas y mapas base conservan las licencias y condiciones de sus respectivas fuentes.
 
 Creado por [Peter Argueta](https://www.linkedin.com/in/peterargueta/).

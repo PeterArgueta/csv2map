@@ -48,13 +48,13 @@ LAYERS = {
 def configured_origins() -> list[str]:
     value = os.getenv(
         "ALLOWED_ORIGINS",
-        "http://localhost:5173,https://csv2map.vercel.app",
+        "http://localhost:5173,https://converttomap.com,https://www.converttomap.com,https://csv2map.vercel.app",
     )
     return [origin.strip() for origin in value.split(",") if origin.strip()]
 
 
 app = FastAPI(
-    title="CSV2MAP GT API",
+    title="ConvertToMap API",
     version="2.0.0",
     description="Convierte tablas CSV en capas GIS de Guatemala.",
 )
@@ -137,7 +137,7 @@ def remove_workspace(path: str) -> None:
 
 @app.get("/")
 def root():
-    return {"name": "CSV2MAP GT API", "version": "2.0.0", "status": "ok"}
+    return {"name": "ConvertToMap API", "version": "2.0.0", "status": "ok"}
 
 
 @app.get("/health")

@@ -1,5 +1,5 @@
 {
-  "name": "geo_guate_frontend",
+  "name": "converttomap-frontend",
   "version": "2.0.0",
   "scripts": {
     "dev": "vite",
