@@ -10,16 +10,4 @@ services:
       - api.converttomap.com
     envVars:
       - key: ALLOWED_ORIGINS
-        value: https://converttomap.com,https://www.converttomap.com,https://csv2map.vercel.app
-
-  - type: web
-    name: converttomap-web
-    runtime: static
-    buildCommand: cd geo_guate_frontend && npm ci && npm run build
-    staticPublishPath: ./geo_guate_frontend/dist
-    autoDeployTrigger: checksPass
-    domains:
-      - converttomap.com
-    envVars:
-      - key: VITE_API_URL
-        value: https://api.converttomap.com
+        value: https://converttomap.com,https://www.converttomap.com
