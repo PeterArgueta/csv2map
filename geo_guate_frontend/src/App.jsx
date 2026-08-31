@@ -10,6 +10,9 @@ const LAYERS = {
     codeProperty: 'cod_dep',
     nameProperty: 'departamen',
     codeWidth: 2,
+    count: 22,
+    description: 'Límites departamentales de Guatemala listos para usar en SIG y aplicaciones web.',
+    fileName: 'departamentos_guatemala.geojson',
   },
   municipios: {
     label: 'Municipios',
@@ -17,6 +20,9 @@ const LAYERS = {
     codeProperty: 'cod_muni_1',
     nameProperty: 'nombre_1',
     codeWidth: 4,
+    count: 340,
+    description: 'Límites municipales de Guatemala en formato GeoJSON para análisis y cartografía.',
+    fileName: 'municipios_guatemala.geojson',
   },
 };
 
@@ -35,6 +41,11 @@ const PROJECTS = [
     external: true,
   },
 ];
+
+const EXAMPLES = {
+  departamentos: 'codigo_departamento,valor,nombre\n01,120,Guatemala\n03,85,Sacatepéquez\n09,64,Quetzaltenango\n17,98,Petén\n',
+  municipios: 'codigo_municipio,valor,nombre\n0101,120,Guatemala\n0301,85,Antigua Guatemala\n0901,64,Quetzaltenango\n',
+};
 
 function App() {
   const [nivel, setNivel] = useState('departamentos');
@@ -83,6 +94,17 @@ function App() {
     setFileName(name);
   };
 
+  const loadExample = () => {
+    const file = new File([EXAMPLES[nivel]], `ejemplo_${nivel}.csv`, { type: 'text/csv;charset=utf-8' });
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    const input = document.querySelector('input[type="file"][accept*=".csv"]');
+    if (!input) return;
+    input.files = dataTransfer.files;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    document.querySelector('#convertir')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="sticky top-0 z-[1000] border-b border-slate-200 bg-white/95 backdrop-blur">
@@ -94,19 +116,47 @@ function App() {
               <p className="text-xs font-medium text-slate-500">Conversor de datos</p>
             </div>
           </a>
-          <nav className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 text-sm font-semibold text-slate-600">
-            <a href="#convertir" className="rounded-lg px-3 py-2 transition hover:bg-white hover:text-slate-900">Convertir</a>
-            <a href="#proyectos" className="rounded-lg px-3 py-2 transition hover:bg-white hover:text-slate-900">Proyectos</a>
+          <nav className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 text-xs font-semibold text-slate-600 sm:text-sm">
+            <a href="#convertir" className="rounded-lg px-2.5 py-2 transition hover:bg-white hover:text-slate-900 sm:px-3">Convertir</a>
+            <a href="#capas" className="rounded-lg px-2.5 py-2 transition hover:bg-white hover:text-slate-900 sm:px-3">Capas</a>
+            <a href="#proyectos" className="rounded-lg px-2.5 py-2 transition hover:bg-white hover:text-slate-900 sm:px-3">Proyectos</a>
           </nav>
         </div>
       </header>
 
       <main id="convertir" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-7 sm:px-6">
-        <div className="mb-6 max-w-3xl">
+        <div className="mb-7 max-w-4xl">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+            Gratis · sin registro
+          </div>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Convierte tus datos en capas GIS</h2>
-          <p className="mt-3 text-base leading-7 text-slate-600">
-            Carga un CSV, identifica la columna territorial y descarga el resultado en los formatos que necesites.
+          <p className="mt-3 max-w-3xl text-base leading-7 text-slate-600">
+            Carga un CSV con códigos de departamentos o municipios, comprueba tus datos en el mapa y descarga el resultado listo para QGIS, ArcGIS o Google Earth.
           </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button type="button" onClick={loadExample} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700">
+              Probar con ejemplo
+            </button>
+            <a href="#capas" className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700">
+              Descargar capas
+            </a>
+          </div>
+        </div>
+
+        <div className="mb-6 grid gap-3 sm:grid-cols-3">
+          {[
+            ['1', 'Carga tus datos', 'Sube tu CSV o crea uno desde la página.'],
+            ['2', 'Comprueba el mapa', 'Verifica rápidamente los territorios encontrados.'],
+            ['3', 'Descarga', 'Obtén SHP, KML, GeoJSON o GeoPackage.'],
+          ].map(([number, title, text]) => (
+            <div key={number} className="flex gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-indigo-50 text-sm font-black text-indigo-700">{number}</span>
+              <div>
+                <p className="text-sm font-bold text-slate-800">{title}</p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">{text}</p>
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(380px,0.85fr)_minmax(0,1.15fr)]">
@@ -171,7 +221,48 @@ function App() {
           </section>
         )}
 
-        <section id="proyectos" className="scroll-mt-24 py-14">
+        <section id="capas" className="scroll-mt-24 py-14">
+          <div className="mb-6">
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">Datos geográficos</p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Capas de Guatemala</h2>
+            <p className="mt-2 max-w-2xl leading-7 text-slate-600">Descarga gratuitamente las capas base que utiliza ConvertToMap. Por ahora mantenemos una selección pequeña y útil.</p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {Object.entries(LAYERS).map(([key, layer]) => (
+              <article key={key} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">GeoJSON</span>
+                    <h3 className="mt-4 text-xl font-bold">{layer.label}</h3>
+                    <p className="mt-1 text-sm font-semibold text-slate-400">{layer.count} territorios</p>
+                    <p className="mt-3 max-w-lg text-sm leading-6 text-slate-600">{layer.description}</p>
+                  </div>
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-slate-100 text-2xl" aria-hidden="true">⌖</div>
+                </div>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <a
+                    href={layer.url}
+                    download={layer.fileName}
+                    className="rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-bold text-white transition hover:bg-indigo-700"
+                  >
+                    Descargar GeoJSON
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => { handleLevelChange(key); document.querySelector('#convertir')?.scrollIntoView({ behavior: 'smooth' }); }}
+                    className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-bold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700"
+                  >
+                    Usar en ConvertToMap
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+          <p className="mt-4 text-xs leading-5 text-slate-500">Formato GeoJSON · compatible con QGIS, ArcGIS y aplicaciones web. Recomendamos revisar la metadata y la fuente antes de utilizar las capas en análisis oficiales.</p>
+        </section>
+
+        <section id="proyectos" className="scroll-mt-24 pb-14">
           <div className="mb-6">
             <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">Herramientas</p>
             <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Proyectos</h2>
