@@ -77,11 +77,11 @@ La descarga ZIP incluye los formatos seleccionados y `reporte_procesamiento.json
 
 ## Fuentes cartográficas
 
-- Departamentos: capa incorporada originalmente al proyecto CSV2MAP GT de ConvertToMap.
-- Municipios: servicio público **Límites municipales** de CONRED Guatemala, consultado en formato GeoJSON desde su FeatureServer. La copia incluida contiene 340 municipios.
-- Mapas base: OpenStreetMap, CARTO y OpenTopoMap, con sus atribuciones visibles en la aplicación.
+- Departamentos: capa incorporada originalmente al proyecto CSV2MAP GT de ConvertToMap. La fuente institucional original está pendiente de verificación.
+- Municipios: **IDEG – SEGEPLAN**, Geoportal de la Infraestructura de Datos Espaciales de Guatemala: <https://ideg.segeplan.gob.gt/geoportal/>. La copia utilizada por ConvertToMap contiene 340 municipios y se trabaja a partir de GeoJSON.
+- Mapas base: OpenStreetMap y OpenTopoMap, con sus atribuciones visibles en la aplicación.
 
-Antes de utilizar los datos en un producto comercial, verifica las condiciones y atribuciones vigentes de cada fuente.
+Antes de utilizar los datos en un producto comercial u oficial, verifica las condiciones, metadata y atribuciones vigentes de cada fuente.
 
 ## Despliegue
 
