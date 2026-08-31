@@ -14,11 +14,71 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-XLFZT2C3BX');
+
+      // Analytics de producto: navegación y acciones clave.
+      (function () {
+        const sendPageView = () => {
+          gtag('event', 'page_view', {
+            page_path: window.location.pathname,
+            page_location: window.location.href,
+            page_title: document.title
+          });
+        };
+
+        const originalPushState = history.pushState;
+        history.pushState = function () {
+          originalPushState.apply(this, arguments);
+          setTimeout(sendPageView, 0);
+        };
+        window.addEventListener('popstate', () => setTimeout(sendPageView, 0));
+
+        document.addEventListener('click', (event) => {
+          const target = event.target.closest('a,button');
+          if (!target) return;
+          const text = (target.textContent || '').trim();
+          const href = target.getAttribute('href') || '';
+
+          if (text === 'Probar con ejemplo') {
+            const level = document.querySelector('#nivel')?.value || 'desconocido';
+            gtag('event', 'load_example', { geographic_level: level });
+          }
+
+          if (href.includes('/downloads/')) {
+            const file = href.split('/').pop() || '';
+            const layer = file.startsWith('municipios_') ? 'municipios' : 'departamentos';
+            let format = 'geojson';
+            if (file.endsWith('.gpkg')) format = 'gpkg';
+            else if (file.endsWith('.kml')) format = 'kml';
+            else if (file.endsWith('.zip')) format = 'shp';
+            gtag('event', 'download_layer', { layer, format, file_name: file });
+          }
+
+          if (href === 'https://qr.converttomap.com') {
+            gtag('event', 'visit_qr', { destination: 'qr.converttomap.com' });
+          }
+        });
+
+        let lastSuccess = '';
+        const observer = new MutationObserver(() => {
+          const messages = Array.from(document.querySelectorAll('div'))
+            .map((node) => (node.textContent || '').trim())
+            .filter((value) => value.startsWith('ZIP generado:'));
+          const success = messages[0] || '';
+          if (!success || success === lastSuccess) return;
+          lastSuccess = success;
+          const level = document.querySelector('#nivel')?.value || 'desconocido';
+          gtag('event', 'conversion_completed', {
+            geographic_level: level,
+            result_message: success.slice(0, 100)
+          });
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+          observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+        });
+      })();
     </script>
-
-
   </head>
   <body>
     <div id="root"></div>
