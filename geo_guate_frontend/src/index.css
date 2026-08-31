@@ -50,6 +50,17 @@
   animation: spin 0.8s linear infinite;
 }
 
+.processing-bar {
+  width: 38%;
+  animation: processing 1.35s ease-in-out infinite;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes processing {
+  0% { transform: translateX(-110%); }
+  50% { transform: translateX(85%); }
+  100% { transform: translateX(270%); }
 }
