@@ -75,7 +75,7 @@ function App() {
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-600 text-sm font-black text-white">CTM</div>
             <div>
               <h1 className="text-xl font-bold tracking-tight">ConvertToMap</h1>
-              <p className="text-xs font-medium text-slate-500">CSV2MAP GT · Conversor geográfico de Guatemala</p>
+              <p className="text-xs font-medium text-slate-500">Conversor de datos</p>
             </div>
           </div>
           <div className="hidden rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 sm:block">
@@ -86,8 +86,7 @@ function App() {
 
       <main className="mx-auto max-w-7xl px-4 py-7 sm:px-6">
         <div className="mb-6 max-w-3xl">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-600">De tabla a mapa</p>
-          <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Convierte tus datos en una capa GIS lista para usar.</h2>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Convierte tus datos en capas GIS</h2>
           <p className="mt-3 text-base leading-7 text-slate-600">
             Carga un CSV, identifica la columna territorial y descarga el resultado en los formatos que necesites.
           </p>
@@ -154,23 +153,10 @@ function App() {
             </div>
           </section>
         )}
-
-        <section className="mt-6 grid gap-4 sm:grid-cols-3">
-          {[
-            ['Lectura flexible', 'Coma, punto y coma, tabulación y textos entre comillas.'],
-            ['Cuatro formatos', 'Shapefile, KML, GeoJSON y GeoPackage.'],
-            ['Reporte incluido', 'Códigos encontrados, faltantes, vacíos y duplicados.'],
-          ].map(([title, text]) => (
-            <div key={title} className="rounded-2xl border border-slate-200 bg-white p-5">
-              <h3 className="font-bold">{title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-500">{text}</p>
-            </div>
-          ))}
-        </section>
       </main>
 
       <footer className="mt-8 border-t border-slate-200 bg-white py-6 text-center text-sm text-slate-500">
-        © {new Date().getFullYear()} ConvertToMap · Convierte tus datos en mapas GIS
+        © {new Date().getFullYear()} ConvertToMap
       </footer>
     </div>
   );
