@@ -79,6 +79,7 @@ La descarga ZIP incluye los formatos seleccionados y `reporte_procesamiento.json
 
 - Departamentos: **IDEG – SEGEPLAN**, Geoportal de la Infraestructura de Datos Espaciales de Guatemala: <https://ideg.segeplan.gob.gt/geoportal/>. La copia utilizada por ConvertToMap contiene 22 departamentos y se trabaja a partir de GeoJSON.
 - Municipios: **IDEG – SEGEPLAN**, Geoportal de la Infraestructura de Datos Espaciales de Guatemala: <https://ideg.segeplan.gob.gt/geoportal/>. La copia utilizada por ConvertToMap contiene 340 municipios y se trabaja a partir de GeoJSON.
+- Departamentos de El Salvador: **geoBoundaries gbOpen**, William & Mary geoLab: <https://www.geoboundaries.org/>. Fuente subyacente: OpenStreetMap; licencia CC BY-SA 2.0. La copia fuente, la versión normalizada y la versión optimizada para web se encuentran en `geo_guate_frontend/public/countries/SLV/`.
 - Mapas base: OpenStreetMap y OpenTopoMap, con sus atribuciones visibles en la aplicación.
 
 Antes de utilizar los datos en un producto comercial u oficial, verifica las condiciones, metadata y atribuciones vigentes de cada fuente.

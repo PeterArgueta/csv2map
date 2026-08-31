@@ -1,0 +1,40 @@
+{
+  "name": "Departamentos de El Salvador",
+  "country_code": "SLV",
+  "country_name": "El Salvador",
+  "admin_level": 1,
+  "admin_type": "departamento",
+  "coverage": "14 departamentos de El Salvador",
+  "feature_count": 14,
+  "crs": "EPSG:4326",
+  "boundary_id": "SLV-ADM1-98794003",
+  "boundary_year_represented": "2021",
+  "source_dataset": "geoBoundaries gbOpen",
+  "source_organization": "William & Mary geoLab",
+  "source_data": "OpenStreetMap",
+  "source_url": "https://www.geoboundaries.org/",
+  "source_file": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/SLV/ADM1/geoBoundaries-SLV-ADM1.geojson",
+  "source_attribution": "Runfola et al. (2020), geoBoundaries: A global database of political administrative boundaries",
+  "license": "Creative Commons Attribution-ShareAlike 2.0 (CC BY-SA 2.0)",
+  "license_url": "https://creativecommons.org/licenses/by-sa/2.0/",
+  "processed_by": "ConvertToMap",
+  "files": {
+    "source": "source.geojson.gz",
+    "normalized": "admin1.geojson",
+    "web_optimized": "admin1.optimized.geojson"
+  },
+  "schema": {
+    "country_code": "Código ISO 3166-1 alfa-3 del país",
+    "country_name": "Nombre del país",
+    "admin_level": "Nivel administrativo de la capa",
+    "admin_type": "Nombre local del nivel administrativo",
+    "admin_code": "Código departamental de dos dígitos",
+    "name": "Nombre oficial del departamento",
+    "source_id": "Identificador de la entidad en la fuente original"
+  },
+  "processing": {
+    "normalized_geometry": "Polygon convertido a MultiPolygon; coordenadas conservadas",
+    "web_optimization": "Geometría simplificada distribuida por geoBoundaries"
+  },
+  "notes": "La copia fuente se conserva sin modificaciones dentro de source.geojson.gz. admin1.geojson utiliza el esquema común de ConvertToMap y admin1.optimized.geojson está destinado a visualización web. Las capas derivadas deben conservar la atribución y compartirse bajo las condiciones de CC BY-SA 2.0. Verificar la vigencia de la fuente antes de utilizar la capa en análisis oficiales."
+}

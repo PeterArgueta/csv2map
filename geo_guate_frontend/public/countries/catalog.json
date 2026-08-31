@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "countries": [
+    {
+      "code": "SLV",
+      "name": "El Salvador",
+      "levels": [
+        {
+          "id": "admin1",
+          "name": "Departamentos",
+          "count": 14,
+          "code_property": "admin_code",
+          "name_property": "name",
+          "code_width": 2,
+          "map_url": "/countries/SLV/admin1.optimized.geojson",
+          "data_url": "/countries/SLV/admin1.geojson",
+          "metadata_url": "/countries/SLV/metadata.json"
+        }
+      ]
+    }
+  ]
+}
