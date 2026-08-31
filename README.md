@@ -2,8 +2,8 @@
 
 **ConvertToMap** convierte archivos CSV con códigos administrativos de Guatemala en capas geográficas listas para QGIS, ArcGIS, Google Earth o aplicaciones web. CSV2MAP GT es el primer conversor territorial disponible dentro de la plataforma.
 
-- **Dominio comercial:** <https://converttomap.com> (en configuración)
-- **Aplicación actual:** <https://csv2map.vercel.app>
+- **Sitio:** <https://converttomap.com>
+- **API:** <https://api.converttomap.com>
 
 ## Funciones de la versión 2
 
@@ -77,7 +77,7 @@ La descarga ZIP incluye los formatos seleccionados y `reporte_procesamiento.json
 
 ## Fuentes cartográficas
 
-- Departamentos: capa incorporada originalmente al proyecto CSV2MAP GT de ConvertToMap. La fuente institucional original está pendiente de verificación.
+- Departamentos: **IDEG – SEGEPLAN**, Geoportal de la Infraestructura de Datos Espaciales de Guatemala: <https://ideg.segeplan.gob.gt/geoportal/>. La copia utilizada por ConvertToMap contiene 22 departamentos y se trabaja a partir de GeoJSON.
 - Municipios: **IDEG – SEGEPLAN**, Geoportal de la Infraestructura de Datos Espaciales de Guatemala: <https://ideg.segeplan.gob.gt/geoportal/>. La copia utilizada por ConvertToMap contiene 340 municipios y se trabaja a partir de GeoJSON.
 - Mapas base: OpenStreetMap y OpenTopoMap, con sus atribuciones visibles en la aplicación.
 
@@ -85,8 +85,8 @@ Antes de utilizar los datos en un producto comercial u oficial, verifica las con
 
 ## Despliegue
 
-- Frontend: sitio estático de Render, con despliegue automático desde GitHub.
-- Backend: servicio FastAPI de Render.
+- Frontend: GitHub Pages.
+- Backend: servicio FastAPI en Render.
 - Sitio: `converttomap.com` y redirección desde `www.converttomap.com`.
 - API: `api.converttomap.com`.
 
@@ -97,5 +97,3 @@ El sitio y la API utilizan servicios separados para que el frontend pueda seguir
 ConvertToMap 2.0 es software propietario. Consulta `LICENSE` para las condiciones del código. Las versiones publicadas anteriormente bajo licencia MIT conservan los permisos que ya hubieran sido concedidos sobre esas versiones.
 
 Las dependencias, capas y mapas base conservan las licencias y condiciones de sus respectivas fuentes.
-
-Creado por [Peter Argueta](https://www.linkedin.com/in/peterargueta/).
