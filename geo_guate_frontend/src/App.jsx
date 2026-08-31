@@ -20,6 +20,22 @@ const LAYERS = {
   },
 };
 
+const PROJECTS = [
+  {
+    name: 'ConvertToMap',
+    description: 'Convierte archivos CSV en capas GIS listas para usar.',
+    href: '#convertir',
+    tag: 'GIS',
+  },
+  {
+    name: 'Generador QR',
+    description: 'Crea códigos QR personalizados con colores, logo, tamaño y descarga en PNG.',
+    href: 'https://qr.converttomap.com',
+    tag: 'QR',
+    external: true,
+  },
+];
+
 function App() {
   const [nivel, setNivel] = useState('departamentos');
   const [geojsonData, setGeojsonData] = useState(null);
@@ -69,22 +85,23 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-[1000] border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+          <a href="#convertir" className="flex items-center gap-3">
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-600 text-sm font-black text-white">CTM</div>
             <div>
               <h1 className="text-xl font-bold tracking-tight">ConvertToMap</h1>
               <p className="text-xs font-medium text-slate-500">Conversor de datos</p>
             </div>
-          </div>
-          <div className="hidden rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 sm:block">
-            22 departamentos · 340 municipios
-          </div>
+          </a>
+          <nav className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 text-sm font-semibold text-slate-600">
+            <a href="#convertir" className="rounded-lg px-3 py-2 transition hover:bg-white hover:text-slate-900">Convertir</a>
+            <a href="#proyectos" className="rounded-lg px-3 py-2 transition hover:bg-white hover:text-slate-900">Proyectos</a>
+          </nav>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-7 sm:px-6">
+      <main id="convertir" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-7 sm:px-6">
         <div className="mb-6 max-w-3xl">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Convierte tus datos en capas GIS</h2>
           <p className="mt-3 text-base leading-7 text-slate-600">
@@ -153,9 +170,37 @@ function App() {
             </div>
           </section>
         )}
+
+        <section id="proyectos" className="scroll-mt-24 py-14">
+          <div className="mb-6">
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">Herramientas</p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Proyectos</h2>
+            <p className="mt-2 max-w-2xl text-slate-600">Herramientas sencillas y gratuitas para trabajar con datos y contenido digital.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {PROJECTS.map((project) => (
+              <a
+                key={project.name}
+                href={project.href}
+                target={project.external ? '_blank' : undefined}
+                rel={project.external ? 'noreferrer' : undefined}
+                className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <span className="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">{project.tag}</span>
+                    <h3 className="mt-4 text-xl font-bold text-slate-900">{project.name}</h3>
+                    <p className="mt-2 leading-6 text-slate-600">{project.description}</p>
+                  </div>
+                  <span className="text-xl text-slate-400 transition group-hover:translate-x-1 group-hover:text-indigo-600">→</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
       </main>
 
-      <footer className="mt-8 border-t border-slate-200 bg-white py-6 text-center text-sm text-slate-500">
+      <footer className="border-t border-slate-200 bg-white py-6 text-center text-sm text-slate-500">
         © {new Date().getFullYear()} ConvertToMap
       </footer>
     </div>
