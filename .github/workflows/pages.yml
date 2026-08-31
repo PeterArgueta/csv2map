@@ -29,6 +29,26 @@ jobs:
           cache: npm
           cache-dependency-path: geo_guate_frontend/package-lock.json
 
+      - name: Generate static GIS downloads
+        working-directory: geo_guate_frontend
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gdal-bin zip
+          mkdir -p public/downloads /tmp/ctm-departamentos /tmp/ctm-municipios
+
+          cp public/Departamentos/departamentos.geojson public/downloads/departamentos_guatemala.geojson
+          cp public/Municipios/municipios.geojson public/downloads/municipios_guatemala.geojson
+
+          ogr2ogr -f GPKG public/downloads/departamentos_guatemala.gpkg public/Departamentos/departamentos.geojson -nln departamentos
+          ogr2ogr -f KML public/downloads/departamentos_guatemala.kml public/Departamentos/departamentos.geojson -nln departamentos
+          ogr2ogr -f "ESRI Shapefile" /tmp/ctm-departamentos public/Departamentos/departamentos.geojson -nln departamentos -lco ENCODING=UTF-8
+          zip -j public/downloads/departamentos_guatemala_shapefile.zip /tmp/ctm-departamentos/*
+
+          ogr2ogr -f GPKG public/downloads/municipios_guatemala.gpkg public/Municipios/municipios.geojson -nln municipios
+          ogr2ogr -f KML public/downloads/municipios_guatemala.kml public/Municipios/municipios.geojson -nln municipios
+          ogr2ogr -f "ESRI Shapefile" /tmp/ctm-municipios public/Municipios/municipios.geojson -nln municipios -lco ENCODING=UTF-8
+          zip -j public/downloads/municipios_guatemala_shapefile.zip /tmp/ctm-municipios/*
+
       - name: Build frontend
         working-directory: geo_guate_frontend
         env:
