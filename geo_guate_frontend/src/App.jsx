@@ -3,6 +3,13 @@ import { UploadForm } from './components/UploadForm';
 import { MapaDepartamentos } from './components/MapaDepartamentos';
 import './index.css';
 
+const DOWNLOAD_FORMATS = {
+  geojson: { label: 'GeoJSON', note: 'Web y GIS' },
+  shp: { label: 'Shapefile', note: 'QGIS y ArcGIS' },
+  gpkg: { label: 'GeoPackage', note: 'Formato GIS moderno' },
+  kml: { label: 'KML', note: 'Google Earth' },
+};
+
 const LAYERS = {
   departamentos: {
     label: 'Departamentos',
@@ -12,7 +19,12 @@ const LAYERS = {
     codeWidth: 2,
     count: 22,
     description: 'Límites departamentales de Guatemala listos para usar en SIG y aplicaciones web.',
-    fileName: 'departamentos_guatemala.geojson',
+    downloads: {
+      geojson: '/downloads/departamentos_guatemala.geojson',
+      shp: '/downloads/departamentos_guatemala_shapefile.zip',
+      gpkg: '/downloads/departamentos_guatemala.gpkg',
+      kml: '/downloads/departamentos_guatemala.kml',
+    },
   },
   municipios: {
     label: 'Municipios',
@@ -21,8 +33,13 @@ const LAYERS = {
     nameProperty: 'nombre_1',
     codeWidth: 4,
     count: 340,
-    description: 'Límites municipales de Guatemala en formato GeoJSON para análisis y cartografía.',
-    fileName: 'municipios_guatemala.geojson',
+    description: 'Límites municipales de Guatemala para análisis, cartografía y aplicaciones geográficas.',
+    downloads: {
+      geojson: '/downloads/municipios_guatemala.geojson',
+      shp: '/downloads/municipios_guatemala_shapefile.zip',
+      gpkg: '/downloads/municipios_guatemala.gpkg',
+      kml: '/downloads/municipios_guatemala.kml',
+    },
   },
 };
 
@@ -56,6 +73,7 @@ function App() {
   const [csvPreview, setCsvPreview] = useState([]);
   const [csvHeaders, setCsvHeaders] = useState([]);
   const [fileName, setFileName] = useState('');
+  const [downloadFormats, setDownloadFormats] = useState({ departamentos: 'geojson', municipios: 'geojson' });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -225,41 +243,60 @@ function App() {
           <div className="mb-6">
             <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">Datos geográficos</p>
             <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Capas de Guatemala</h2>
-            <p className="mt-2 max-w-2xl leading-7 text-slate-600">Descarga gratuitamente las capas base que utiliza ConvertToMap. Por ahora mantenemos una selección pequeña y útil.</p>
+            <p className="mt-2 max-w-2xl leading-7 text-slate-600">Descarga gratuitamente las capas base que utiliza ConvertToMap en el formato que mejor se adapte a tu trabajo.</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            {Object.entries(LAYERS).map(([key, layer]) => (
-              <article key={key} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">GeoJSON</span>
-                    <h3 className="mt-4 text-xl font-bold">{layer.label}</h3>
-                    <p className="mt-1 text-sm font-semibold text-slate-400">{layer.count} territorios</p>
-                    <p className="mt-3 max-w-lg text-sm leading-6 text-slate-600">{layer.description}</p>
+            {Object.entries(LAYERS).map(([key, layer]) => {
+              const selectedFormat = downloadFormats[key];
+              const format = DOWNLOAD_FORMATS[selectedFormat];
+              return (
+                <article key={key} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">4 formatos</span>
+                      <h3 className="mt-4 text-xl font-bold">{layer.label}</h3>
+                      <p className="mt-1 text-sm font-semibold text-slate-400">{layer.count} territorios</p>
+                      <p className="mt-3 max-w-lg text-sm leading-6 text-slate-600">{layer.description}</p>
+                    </div>
+                    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-slate-100 text-2xl" aria-hidden="true">⌖</div>
                   </div>
-                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-slate-100 text-2xl" aria-hidden="true">⌖</div>
-                </div>
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <a
-                    href={layer.url}
-                    download={layer.fileName}
-                    className="rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-bold text-white transition hover:bg-indigo-700"
-                  >
-                    Descargar GeoJSON
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => { handleLevelChange(key); document.querySelector('#convertir')?.scrollIntoView({ behavior: 'smooth' }); }}
-                    className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-bold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700"
-                  >
-                    Usar en ConvertToMap
-                  </button>
-                </div>
-              </article>
-            ))}
+
+                  <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <label htmlFor={`format-${key}`} className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">Formato de descarga</label>
+                    <select
+                      id={`format-${key}`}
+                      value={selectedFormat}
+                      onChange={(event) => setDownloadFormats((current) => ({ ...current, [key]: event.target.value }))}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-400"
+                    >
+                      {Object.entries(DOWNLOAD_FORMATS).map(([formatKey, option]) => (
+                        <option key={formatKey} value={formatKey}>{option.label} — {option.note}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <a
+                      href={layer.downloads[selectedFormat]}
+                      download
+                      className="rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-bold text-white transition hover:bg-indigo-700"
+                    >
+                      Descargar {format.label}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => { handleLevelChange(key); document.querySelector('#convertir')?.scrollIntoView({ behavior: 'smooth' }); }}
+                      className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-bold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700"
+                    >
+                      Usar en ConvertToMap
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
-          <p className="mt-4 text-xs leading-5 text-slate-500">Formato GeoJSON · compatible con QGIS, ArcGIS y aplicaciones web. Recomendamos revisar la metadata y la fuente antes de utilizar las capas en análisis oficiales.</p>
+          <p className="mt-4 text-xs leading-5 text-slate-500">Disponibles en GeoJSON, Shapefile, GeoPackage y KML. Los formatos se generan automáticamente desde la misma capa base para mantener consistencia. Recomendamos revisar la metadata y la fuente antes de utilizar las capas en análisis oficiales.</p>
         </section>
 
         <section id="proyectos" className="scroll-mt-24 pb-14">
