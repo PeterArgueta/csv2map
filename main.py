@@ -29,7 +29,7 @@ LAYERS = {
         "code_field": "cod_dep",
         "code_width": 2,
         "basename": "departamentos_resultado",
-        "source": "Límites departamentales incluidos en CSV2MAP GT",
+        "source": "IDEG - SEGEPLAN, Geoportal de la Infraestructura de Datos Espaciales de Guatemala",
     },
     "municipios": {
         "path": BASE_DIR
@@ -40,7 +40,7 @@ LAYERS = {
         "code_field": "cod_muni_1",
         "code_width": 4,
         "basename": "municipios_resultado",
-        "source": "CONRED Guatemala - Límites municipales (FeatureServer)",
+        "source": "IDEG - SEGEPLAN, Geoportal de la Infraestructura de Datos Espaciales de Guatemala",
     },
 }
 
@@ -55,8 +55,8 @@ def configured_origins() -> list[str]:
 
 app = FastAPI(
     title="ConvertToMap API",
-    version="2.0.0",
-    description="Convierte tablas CSV en capas GIS de Guatemala.",
+    version="2.1.0",
+    description="Convierte tablas CSV y capas GeoJSON en formatos GIS.",
 )
 
 app.add_middleware(
@@ -135,14 +135,98 @@ def remove_workspace(path: str) -> None:
     shutil.rmtree(path, ignore_errors=True)
 
 
+def build_zip_response(
+    background_tasks: BackgroundTasks,
+    workspace: Path,
+    output_dir: Path,
+    basename: str,
+    headers: dict[str, str] | None = None,
+) -> FileResponse:
+    zip_path = workspace / f"{basename}.zip"
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for output_file in output_dir.iterdir():
+            archive.write(output_file, arcname=output_file.name)
+
+    background_tasks.add_task(remove_workspace, str(workspace))
+    return FileResponse(
+        zip_path,
+        filename=zip_path.name,
+        media_type="application/zip",
+        headers=headers or {},
+    )
+
+
 @app.get("/")
 def root():
-    return {"name": "ConvertToMap API", "version": "2.0.0", "status": "ok"}
+    return {"name": "ConvertToMap API", "version": "2.1.0", "status": "ok"}
 
 
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+
+@app.post("/exportar_geojson/")
+async def exportar_geojson(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    formatos: str = Form("shp"),
+):
+    if not file.filename or not file.filename.lower().endswith((".geojson", ".json")):
+        raise HTTPException(status_code=400, detail="Debes cargar una capa GeoJSON.")
+
+    content = await file.read(MAX_FILE_SIZE + 1)
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="La capa supera el límite de 10 MB.")
+    if not content:
+        raise HTTPException(status_code=400, detail="La capa está vacía.")
+
+    selected_formats = {
+        value.strip().lower() for value in formatos.split(",") if value.strip()
+    }
+    if not selected_formats or not selected_formats.issubset(ALLOWED_FORMATS):
+        raise HTTPException(status_code=400, detail="Selecciona al menos un formato válido.")
+
+    workspace = Path(tempfile.mkdtemp(prefix="converttomap_geojson_"))
+    try:
+        input_path = workspace / "entrada.geojson"
+        input_path.write_bytes(content)
+        gdf = gpd.read_file(input_path)
+        if gdf.empty:
+            raise ValueError("La capa no contiene entidades geográficas.")
+        if gdf.crs is None:
+            gdf = gdf.set_crs("EPSG:4326")
+        if not set(gdf.geometry.geom_type).issubset({"Point", "MultiPoint"}):
+            raise ValueError("Por ahora Crear capa admite únicamente geometrías de puntos.")
+
+        output_dir = workspace / "archivos"
+        output_dir.mkdir()
+        basename = "converttomap_puntos"
+        export_formats(gdf, output_dir, basename, selected_formats)
+
+        metadata = {
+            "converttomap_version": "2.1.0",
+            "geometry": "Point",
+            "features": int(len(gdf)),
+            "formats": sorted(selected_formats),
+            "territorial_source": "IDEG - SEGEPLAN",
+        }
+        (output_dir / "metadata.json").write_text(
+            json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        return build_zip_response(background_tasks, workspace, output_dir, basename)
+    except ValueError as exc:
+        remove_workspace(str(workspace))
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except HTTPException:
+        remove_workspace(str(workspace))
+        raise
+    except Exception as exc:
+        remove_workspace(str(workspace))
+        raise HTTPException(
+            status_code=500,
+            detail="No se pudo exportar la capa. Revisa sus atributos e inténtalo nuevamente.",
+        ) from exc
 
 
 @app.post("/procesar_csv/")
@@ -204,7 +288,7 @@ async def procesar_csv(
         export_formats(gdf_out, output_dir, config["basename"], selected_formats)
 
         metadata = {
-            "csv2map_version": "2.0.0",
+            "csv2map_version": "2.1.0",
             "nivel": nivel,
             "source": config["source"],
             "encoding": encoding,
@@ -215,16 +299,11 @@ async def procesar_csv(
             json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
         )
 
-        zip_path = workspace / f"{config['basename']}.zip"
-        with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-            for output_file in output_dir.iterdir():
-                archive.write(output_file, arcname=output_file.name)
-
-        background_tasks.add_task(remove_workspace, str(workspace))
-        return FileResponse(
-            zip_path,
-            filename=zip_path.name,
-            media_type="application/zip",
+        return build_zip_response(
+            background_tasks,
+            workspace,
+            output_dir,
+            config["basename"],
             headers={
                 "X-Matched-Count": str(len(summary["matched_codes"])),
                 "X-Unmatched-Count": str(len(summary["unmatched_codes"])),
