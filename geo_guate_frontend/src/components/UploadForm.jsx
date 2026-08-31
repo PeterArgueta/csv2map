@@ -1,206 +1,257 @@
-// ✅ UploadForm.jsx con estilo original restaurado y funcionalidad completa
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
+import Papa from 'papaparse';
 
-export function UploadForm({ onUpload }) {
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const FORMAT_OPTIONS = [
+  { id: 'shp', label: 'Shapefile', note: '.shp + archivos auxiliares' },
+  { id: 'kml', label: 'KML', note: 'Google Earth' },
+  { id: 'geojson', label: 'GeoJSON', note: 'Web y aplicaciones' },
+  { id: 'gpkg', label: 'GeoPackage', note: 'QGIS y ArcGIS' },
+];
+
+const COLUMN_HINTS = {
+  departamentos: ['codigo_departamento', 'cod_departamento', 'cod_dep', 'departamento_codigo', 'codigo'],
+  municipios: ['codigo_municipio', 'cod_municipio', 'cod_muni', 'codigo_ine', 'municipio_codigo', 'codigo'],
+};
+
+const normalizeHeader = (value) => value
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .trim()
+  .replace(/[^a-z0-9]+/g, '_')
+  .replace(/^_|_$/g, '');
+
+const normalizeCode = (value, width) => {
+  const text = String(value ?? '').trim().replace(/\.0+$/, '');
+  const digits = text.replace(/\D/g, '');
+  return digits ? digits.padStart(width, '0') : null;
+};
+
+const detectCodeColumn = (fields, nivel) => {
+  const normalized = new Map(fields.map((field) => [normalizeHeader(field), field]));
+  return COLUMN_HINTS[nivel].map(normalizeHeader).map((hint) => normalized.get(hint)).find(Boolean) || '';
+};
+
+export function UploadForm({ nivel, onLevelChange, onUpload }) {
   const fileInputRef = useRef();
-  const [csvPreview, setCsvPreview] = useState([]);
-  const [csvHeaders, setCsvHeaders] = useState([]);
-  const [codigos, setCodigos] = useState([]);
   const [fileData, setFileData] = useState(null);
+  const [rows, setRows] = useState([]);
+  const [headers, setHeaders] = useState([]);
+  const [codeColumn, setCodeColumn] = useState('');
+  const [formats, setFormats] = useState(['shp', 'kml']);
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    processFile(file);
+  const emitPreview = (dataRows, fields, selectedColumn, currentFile = fileData) => {
+    const width = nivel === 'municipios' ? 4 : 2;
+    const codes = selectedColumn
+      ? [...new Set(dataRows.map((row) => normalizeCode(row[selectedColumn], width)).filter(Boolean))]
+      : [];
+    onUpload(codes, dataRows.slice(0, 10), fields, currentFile?.name || '');
   };
 
-  const processFile = (file) => {
+  const parseFile = (file) => {
     if (!file) return;
     setFileError('');
-    setFileData(file);
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target.result;
-      const lines = text.split('\n').filter(Boolean);
-
-      if (lines.length < 2) {
-        setFileError('El archivo parece estar vacío o no tiene datos suficientes.');
-        return;
-      }
-
-      const headers = lines[0].split(',');
-      setCsvHeaders(headers);
-
-      const codigoIndex = headers.findIndex(h =>
-        h.toLowerCase().includes('codigo_departamento') ||
-        h.toLowerCase().includes('codigo') ||
-        h.toLowerCase().includes('cod_dep')
-      );
-
-      if (codigoIndex === -1) {
-        setFileError('No se encontró una columna de códigos en el CSV. Asegúrate de que exista una columna "codigo_departamento", "codigo" o "cod_dep".');
-        return;
-      }
-
-      const codigosExtraidos = lines.slice(1).map(line => {
-        const cols = line.split(',');
-        return cols[codigoIndex]?.trim().padStart(2, '0');
-      }).filter(Boolean);
-
-      setCodigos(codigosExtraidos);
-
-      const preview = lines.slice(1, 10).map(line => line.split(','));
-      setCsvPreview(preview);
-
-      onUpload(codigosExtraidos, preview, headers, file.name);
-    };
-
-    reader.readAsText(file);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      processFile(e.dataTransfer.files[0]);
+    setSuccessMessage('');
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      setFileError('Selecciona un archivo con extensión .csv.');
+      return;
     }
+    if (file.size > MAX_FILE_SIZE) {
+      setFileError('El archivo supera el límite de 10 MB.');
+      return;
+    }
+
+    setFileData(file);
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: 'greedy',
+      transformHeader: (header) => header.trim(),
+      complete: ({ data, errors, meta }) => {
+        if (!data.length || !meta.fields?.length) {
+          setFileError('El archivo no contiene encabezados y filas de datos.');
+          return;
+        }
+        const seriousError = errors.find((error) => error.type !== 'FieldMismatch');
+        if (seriousError) {
+          setFileError(`No se pudo interpretar el CSV: ${seriousError.message}`);
+          return;
+        }
+        const selected = detectCodeColumn(meta.fields, nivel);
+        setRows(data);
+        setHeaders(meta.fields);
+        setCodeColumn(selected);
+        if (!selected) {
+          setFileError('Selecciona la columna que contiene el código territorial.');
+        }
+        emitPreview(data, meta.fields, selected, file);
+      },
+      error: () => setFileError('No fue posible leer el archivo seleccionado.'),
+    });
+  };
+
+  useEffect(() => {
+    if (fileData && rows.length) {
+      const selected = detectCodeColumn(headers, nivel);
+      setCodeColumn(selected);
+      setFileError(selected ? '' : 'Selecciona la columna que contiene el código territorial.');
+      emitPreview(rows, headers, selected, fileData);
+    }
+    // Re-evaluate the current table when its geographic level changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nivel]);
+
+  const handleColumnChange = (value) => {
+    setCodeColumn(value);
+    setFileError('');
+    emitPreview(rows, headers, value);
+  };
+
+  const toggleFormat = (format) => {
+    setFormats((current) => current.includes(format)
+      ? current.filter((value) => value !== format)
+      : [...current, format]);
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    setIsDragging(false);
+    parseFile(event.dataTransfer.files?.[0]);
+  };
+
+  const readApiError = async (error) => {
+    const payload = error.response?.data;
+    if (payload instanceof Blob) {
+      try {
+        const parsed = JSON.parse(await payload.text());
+        return parsed.detail || 'No fue posible procesar el archivo.';
+      } catch {
+        return 'No fue posible procesar el archivo.';
+      }
+    }
+    return payload?.detail || 'No fue posible conectar con el servicio de conversión.';
   };
 
   const handleProcesar = async () => {
-    if (!fileData) return;
+    if (!fileData || !codeColumn || formats.length === 0) return;
     setIsProcessing(true);
-  
-    const API_URL = import.meta.env.VITE_API_URL;
+    setFileError('');
+    setSuccessMessage('');
+    const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
     const formData = new FormData();
-    formData.append("file", fileData);
-  
+    formData.append('file', fileData);
+    formData.append('nivel', nivel);
+    formData.append('columna_codigo', codeColumn);
+    formData.append('formatos', formats.join(','));
+
     try {
-      const response = await axios.post(`${API_URL}/procesar_csv/`, formData, {
-        responseType: 'blob',
-      });
-  
-      const blob = new Blob([response.data], { type: 'application/zip' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "departamentos_resultado.zip";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-  
+      const response = await axios.post(`${apiUrl}/procesar_csv/`, formData, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(response.data);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${nivel}_resultado.zip`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
+      const matched = response.headers['x-matched-count'];
+      const unmatched = response.headers['x-unmatched-count'];
+      setSuccessMessage(`ZIP generado: ${matched || 'varios'} códigos encontrados${unmatched && unmatched !== '0' ? ` y ${unmatched} no encontrados` : ''}.`);
     } catch (error) {
-      console.error("❌ Error al procesar CSV:", error);
-      alert("Hubo un error al procesar el archivo.");
+      setFileError(await readApiError(error));
     } finally {
       setIsProcessing(false);
     }
   };
-  
+
+  const downloadSample = () => {
+    const content = nivel === 'municipios'
+      ? 'codigo_municipio,valor,nombre\n0101,120,Guatemala\n0301,85,Antigua Guatemala\n'
+      : 'codigo_departamento,valor,nombre\n01,120,Guatemala\n03,85,Sacatepéquez\n';
+    const url = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8' }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `ejemplo_${nivel}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <div className="p-6">
-      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-md">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="ml-3">
-            <p className="text-sm text-blue-800">
-            Sube un archivo CSV que contenga una columna con los códigos de departamentos. El sistema detectará automáticamente columnas con nombres como "codigo_departamento", "codigo" 
-            o "cod_dep", y generará un paquete ZIP con Shapefile (.shp) y KML (.kml).          </p>
-          </div>
+    <div className="space-y-6 p-6">
+      <div>
+        <label htmlFor="nivel" className="field-label">Nivel geográfico</label>
+        <select id="nivel" value={nivel} onChange={(event) => onLevelChange(event.target.value)} className="field-control">
+          <option value="departamentos">Departamentos (22)</option>
+          <option value="municipios">Municipios (340)</option>
+        </select>
+      </div>
+
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <label className="field-label mb-0">Archivo CSV</label>
+          <button type="button" onClick={downloadSample} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">Descargar ejemplo</button>
+        </div>
+        <div
+          className={`group cursor-pointer rounded-xl border-2 border-dashed px-5 py-7 text-center transition ${isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50'}`}
+          onDragOver={(event) => { event.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') fileInputRef.current?.click(); }}
+        >
+          <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-indigo-50 text-xl text-indigo-600">↑</div>
+          <p className="mt-3 text-sm font-semibold text-slate-700">{fileData ? fileData.name : 'Selecciona o arrastra tu archivo'}</p>
+          <p className="mt-1 text-xs text-slate-500">CSV de hasta 10 MB</p>
+          <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(event) => parseFile(event.target.files?.[0])} />
         </div>
       </div>
 
-      <div
-        className={`border-2 border-dashed rounded-lg p-6 text-center ${
-          isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-indigo-400'
-        } transition-colors duration-200 ease-in-out cursor-pointer`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current.click()}
+      {headers.length > 0 && (
+        <div>
+          <label htmlFor="code-column" className="field-label">Columna que contiene el código</label>
+          <select id="code-column" value={codeColumn} onChange={(event) => handleColumnChange(event.target.value)} className="field-control">
+            <option value="">Seleccionar columna…</option>
+            {headers.map((header) => <option key={header} value={header}>{header}</option>)}
+          </select>
+        </div>
+      )}
+
+      <fieldset>
+        <legend className="field-label">Formatos de salida</legend>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {FORMAT_OPTIONS.map((option) => {
+            const checked = formats.includes(option.id);
+            return (
+              <label key={option.id} className={`cursor-pointer rounded-xl border p-3 transition ${checked ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                <div className="flex items-start gap-3">
+                  <input type="checkbox" checked={checked} onChange={() => toggleFormat(option.id)} className="mt-1 h-4 w-4 accent-indigo-600" />
+                  <span><span className="block text-sm font-bold text-slate-700">{option.label}</span><span className="block text-xs text-slate-500">{option.note}</span></span>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      {fileError && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"><strong>Revisa el archivo:</strong> {fileError}</div>}
+      {successMessage && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{successMessage}</div>}
+
+      <button
+        type="button"
+        onClick={handleProcesar}
+        disabled={!fileData || !codeColumn || formats.length === 0 || isProcessing}
+        className="flex w-full items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-        </svg>
-
-        <div className="mt-3">
-          <span className="font-medium text-indigo-600">Haz clic para seleccionar</span> o arrastra y suelta un archivo
-        </div>
-        <p className="mt-1 text-xs text-gray-500">CSV (hasta 10MB)</p>
-
-        <input
-          type="file"
-          ref={fileInputRef}
-          className="hidden"
-          accept=".csv"
-          onChange={handleFileChange}
-        />
-
-        {fileData && (
-          <div className="mt-3 text-sm text-gray-600">
-            Archivo cargado: <span className="font-medium">{fileData.name}</span>
-          </div>
-        )}
-      </div>
-
-      {fileError && (
-        <div className="mt-3 text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">
-          <strong>Error:</strong> {fileError}
-        </div>
-      )}
-
-      {codigos.length > 0 && (
-        <div className="mt-4 flex justify-center">
-          <button
-            onClick={handleProcesar}
-            disabled={isProcessing}
-            className={`bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-700 hover:to-blue-600 text-white px-6 py-2 rounded-md font-medium shadow-md transition-all duration-200 ease-in-out transform flex items-center justify-center ${isProcessing ? 'opacity-60 cursor-wait' : 'hover:scale-105'}`}
-          >
-            {isProcessing ? (
-              <svg className="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            )}
-            {isProcessing ? 'Procesando...' : `Procesar ${codigos.length} departamentos`}
-          </button>
-        </div>
-      )}
-
-      {codigos.length > 0 && (
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <div className="bg-indigo-50 p-3 rounded-lg text-center">
-            <div className="text-indigo-600 text-xl font-bold">{codigos.length}</div>
-            <div className="text-xs text-indigo-700">Departamentos</div>
-          </div>
-          <div className="bg-green-50 p-3 rounded-lg text-center">
-            <div className="text-green-600 text-xl font-bold">{csvHeaders.length}</div>
-            <div className="text-xs text-green-700">Columnas</div>
-          </div>
-        </div>
-      )}
+        {isProcessing ? 'Generando archivos…' : `Generar paquete de ${nivel}`}
+      </button>
+      <p className="text-center text-xs leading-5 text-slate-500">Los archivos temporales se eliminan automáticamente después de la descarga.</p>
     </div>
   );
 }

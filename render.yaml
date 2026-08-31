@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: csv2map
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: https://csv2map.vercel.app

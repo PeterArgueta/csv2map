@@ -1,32 +1,64 @@
-// ✅ App.jsx - sincronizado con backend solo-CSV
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { UploadForm } from './components/UploadForm';
 import { MapaDepartamentos } from './components/MapaDepartamentos';
 import './index.css';
 
+const LAYERS = {
+  departamentos: {
+    label: 'Departamentos',
+    url: '/Departamentos/departamentos.geojson',
+    codeProperty: 'cod_dep',
+    nameProperty: 'departamen',
+    codeWidth: 2,
+  },
+  municipios: {
+    label: 'Municipios',
+    url: '/Municipios/municipios.geojson',
+    codeProperty: 'cod_muni_1',
+    nameProperty: 'nombre_1',
+    codeWidth: 4,
+  },
+};
+
 function App() {
+  const [nivel, setNivel] = useState('departamentos');
   const [geojsonData, setGeojsonData] = useState(null);
   const [codigosCsv, setCodigosCsv] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMap, setIsLoadingMap] = useState(true);
+  const [mapError, setMapError] = useState('');
   const [csvPreview, setCsvPreview] = useState([]);
   const [csvHeaders, setCsvHeaders] = useState([]);
-  const [fileName, setFileName] = useState("");
+  const [fileName, setFileName] = useState('');
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchGeojson = async () => {
+      setIsLoadingMap(true);
+      setMapError('');
       try {
-        const response = await fetch('/Departamentos/departamentos.geojson');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-        setGeojsonData(data);
-        setIsLoading(false);
+        const response = await fetch(LAYERS[nivel].url, { signal: controller.signal });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        setGeojsonData(await response.json());
       } catch (error) {
-        console.error('Error cargando GeoJSON:', error);
-        setIsLoading(false);
+        if (error.name !== 'AbortError') {
+          console.error('Error cargando GeoJSON:', error);
+          setMapError('No fue posible cargar la capa de límites.');
+        }
+      } finally {
+        setIsLoadingMap(false);
       }
     };
     fetchGeojson();
-  }, []);
+    return () => controller.abort();
+  }, [nivel]);
+
+  const handleLevelChange = (value) => {
+    setNivel(value);
+    setCodigosCsv([]);
+    setCsvPreview([]);
+    setCsvHeaders([]);
+    setFileName('');
+  };
 
   const handleUpload = (codigos, preview, headers, name) => {
     setCodigosCsv(codigos);
@@ -36,58 +68,85 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      <header className="bg-white shadow-md py-5 px-4 mb-8">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-indigo-600">CSV2MAP GT</h1>
-          <div className="text-sm text-gray-600">CSV → SHP/KML</div>
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-600 font-black text-white">C2</div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">CSV2MAP GT</h1>
+              <p className="text-xs font-medium text-slate-500">Conversor geográfico de Guatemala · Versión 2</p>
+            </div>
+          </div>
+          <div className="hidden rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 sm:block">
+            22 departamentos · 340 municipios
+          </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 pb-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <section className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div className="bg-indigo-600 py-3 px-6 text-white font-semibold">Carga de archivos</div>
-            <UploadForm onUpload={handleUpload} />
+      <main className="mx-auto max-w-7xl px-4 py-7 sm:px-6">
+        <div className="mb-6 max-w-3xl">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-600">De tabla a mapa</p>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Convierte tus datos en una capa GIS lista para usar.</h2>
+          <p className="mt-3 text-base leading-7 text-slate-600">
+            Carga un CSV, identifica la columna territorial y descarga el resultado en los formatos que necesites.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(380px,0.85fr)_minmax(0,1.15fr)]">
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-200 px-6 py-4">
+              <h3 className="font-bold">1. Configura la conversión</h3>
+              <p className="mt-1 text-sm text-slate-500">El archivo se valida antes de generar la descarga.</p>
+            </div>
+            <UploadForm nivel={nivel} onLevelChange={handleLevelChange} onUpload={handleUpload} />
           </section>
 
-          <section className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div className="bg-indigo-600 py-3 px-6 text-white font-semibold">Visualización geográfica</div>
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <div>
+                <h3 className="font-bold">2. Verifica en el mapa</h3>
+                <p className="mt-1 text-sm text-slate-500">Se resaltan los códigos encontrados en el CSV.</p>
+              </div>
+              <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+                {codigosCsv.length} seleccionados
+              </span>
+            </div>
             <div className="p-4">
-              {isLoading ? (
-                <div className="flex justify-center items-center h-[500px]">
-                  <div className="loader"></div>
-                </div>
+              {isLoadingMap ? (
+                <div className="grid h-[560px] place-items-center"><div className="loader" aria-label="Cargando mapa" /></div>
+              ) : mapError ? (
+                <div className="grid h-[560px] place-items-center text-sm text-red-600">{mapError}</div>
               ) : (
-                <MapaDepartamentos geojsonData={geojsonData} codigosSeleccionados={codigosCsv} />
+                <MapaDepartamentos
+                  geojsonData={geojsonData}
+                  codigosSeleccionados={codigosCsv}
+                  layerConfig={LAYERS[nivel]}
+                  nivel={nivel}
+                />
               )}
             </div>
           </section>
         </div>
 
         {csvPreview.length > 0 && (
-          <section className="bg-white rounded-xl shadow-lg overflow-hidden mt-6">
-            <div className="bg-indigo-600 py-3 px-6 text-white font-semibold flex justify-between">
-              <span>Datos del archivo: {fileName}</span>
-              <span className="bg-indigo-700 px-3 py-1 rounded-full">{codigosCsv.length} departamentos</span>
+          <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-col gap-2 border-b border-slate-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="font-bold">Vista previa de datos</h3>
+                <p className="text-sm text-slate-500">{fileName}</p>
+              </div>
+              <span className="text-xs font-semibold text-slate-500">Primeras {csvPreview.length} filas</span>
             </div>
-            <div className="p-4 overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    {csvHeaders.map((header, idx) => (
-                      <th key={idx} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50">
+                  <tr>{csvHeaders.map((header) => <th key={header} className="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">{header}</th>)}</tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-slate-100">
                   {csvPreview.map((row, rowIndex) => (
-                    <tr key={rowIndex} className="hover:bg-gray-50">
-                      {row.map((cell, colIndex) => (
-                        <td key={colIndex} className="px-4 py-2 text-sm text-gray-600">{cell}</td>
-                      ))}
+                    <tr key={rowIndex} className="hover:bg-slate-50">
+                      {csvHeaders.map((header) => <td key={header} className="max-w-xs truncate px-4 py-3 text-slate-600">{row[header] ?? ''}</td>)}
                     </tr>
                   ))}
                 </tbody>
@@ -95,10 +154,23 @@ function App() {
             </div>
           </section>
         )}
+
+        <section className="mt-6 grid gap-4 sm:grid-cols-3">
+          {[
+            ['Lectura flexible', 'Coma, punto y coma, tabulación y textos entre comillas.'],
+            ['Cuatro formatos', 'Shapefile, KML, GeoJSON y GeoPackage.'],
+            ['Reporte incluido', 'Códigos encontrados, faltantes, vacíos y duplicados.'],
+          ].map(([title, text]) => (
+            <div key={title} className="rounded-2xl border border-slate-200 bg-white p-5">
+              <h3 className="font-bold">{title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-500">{text}</p>
+            </div>
+          ))}
+        </section>
       </main>
 
-      <footer className="bg-white shadow-inner py-4 mt-auto text-center text-sm text-gray-600">
-        © {new Date().getFullYear()} CSV2MAP GT - Todos los derechos reservados.
+      <footer className="mt-8 border-t border-slate-200 bg-white py-6 text-center text-sm text-slate-500">
+        © {new Date().getFullYear()} CSV2MAP GT · Herramientas geográficas para Guatemala
       </footer>
     </div>
   );

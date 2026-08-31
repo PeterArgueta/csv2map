@@ -1,68 +1,53 @@
-# 📍 CSV2MAP GT
+# CSV2MAP GT 2.0
 
-**CSV2MAP GT** es una herramienta web que permite convertir archivos `.CSV` con códigos de departamentos en **archivos geoespaciales `.SHP` y `.KML`**, listos para análisis en software GIS.
+CSV2MAP GT convierte archivos CSV con códigos administrativos de Guatemala en capas geográficas listas para QGIS, ArcGIS, Google Earth o aplicaciones web.
 
-### 🧭 Sitio en producción:
-👉 https://csv2map.vercel.app
+**Aplicación actual:** <https://csv2map.vercel.app>
 
----
+## Funciones de la versión 2
 
-## 🔎 ¿Qué hace?
+- Procesa los 22 departamentos y los 340 municipios de Guatemala.
+- Detecta CSV separados por coma, punto y coma o tabulación.
+- Permite seleccionar manualmente la columna territorial.
+- Conserva las demás columnas del archivo como atributos de la capa.
+- Exporta Shapefile, KML, GeoJSON y GeoPackage.
+- Genera un reporte JSON con códigos encontrados, no encontrados, vacíos y duplicados.
+- Incluye vista previa de la tabla y selección resaltada en el mapa.
+- Ofrece mapas base claro, vial y topográfico.
+- Valida tipo y tamaño del archivo (máximo 10 MB).
+- Elimina automáticamente los archivos temporales del servidor.
 
-- ✅ Carga archivos CSV con una columna de códigos de departamento
-- 🗺️ Muestra en un mapa los departamentos seleccionados
-- 📦 Descarga un ZIP con archivos `.shp` y `.kml` generados desde el CSV
+## Estructura
 
----
-
-## 🛠️ Tecnologías utilizadas
-
-| Parte         | Tecnología                        |
-|---------------|-----------------------------------|
-| Frontend      | React + Vite + Tailwind CSS       |
-| Backend       | FastAPI + GeoPandas               |
-| Mapas         | Leaflet.js                        |
-| Hosting       | Vercel (frontend) + Render (API)  |
-| Análisis      | Google Analytics                  |
-
----
-
-## 📁 Estructura
-
-```bash
-GEO_GUATE/
-├── geo_guate_frontend/        # App React
-│   ├── public/                # GeoJSON y archivos públicos
-│   └── src/                   # Componentes de React
-├── Departamentos/             # Shapefile base (.shp, .dbf, etc.)
-├── utils/                     # Funciones auxiliares
-├── main.py                    # API FastAPI
-├── requirements.txt           # Dependencias Python
-└── README.md
+```text
+csv2map/
+├── geo_guate_frontend/       React, Vite, Tailwind y Leaflet
+│   ├── public/               Límites GeoJSON para la vista previa
+│   └── src/
+├── Departamentos/            Capa base departamental
+├── utils/                    Normalización y validación
+├── main.py                   API FastAPI y exportación GIS
+└── requirements.txt
 ```
 
----
+## Desarrollo local
 
-## 🚀 Cómo correr localmente
-
-### 1. Clonar el repositorio
+### Backend
 
 ```bash
-git clone https://github.com/PeterArgueta/csv2map.git
-cd csv2map
-```
-
-### 2. Ejecutar el backend (FastAPI)
-
-```bash
-cd GEO_GUATE
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-> El backend se inicia en `http://localhost:8000`
+La API queda disponible en `http://localhost:8000`. Para limitar CORS, define los orígenes separados por comas:
 
-### 3. Ejecutar el frontend
+```env
+ALLOWED_ORIGINS=http://localhost:5173,https://csv2map.vercel.app
+```
+
+### Frontend
 
 ```bash
 cd geo_guate_frontend
@@ -70,24 +55,42 @@ npm install
 npm run dev
 ```
 
-> La app se abre en `http://localhost:5173`
-
-> Asegúrate de tener configurada esta variable en `.env`:
+Para producción, configura la dirección de la API:
 
 ```env
-VITE_API_URL=http://localhost:8000
+VITE_API_URL=https://csv2map.onrender.com
 ```
 
----
+## API
 
-## 📦 Producción
+`POST /procesar_csv/` recibe `multipart/form-data` con:
 
-- Backend (Render): https://csv2map.onrender.com
-- Frontend (Vercel): https://csv2map.vercel.app
+| Campo | Descripción |
+|---|---|
+| `file` | Archivo CSV de hasta 10 MB |
+| `nivel` | `departamentos` o `municipios` |
+| `columna_codigo` | Encabezado que contiene el código administrativo |
+| `formatos` | Lista separada por comas: `shp,kml,geojson,gpkg` |
 
----
+La descarga ZIP incluye los formatos seleccionados y `reporte_procesamiento.json`.
 
-## 📄 Licencia
+## Fuentes cartográficas
 
-Este proyecto está bajo la licencia MIT.  
-Hecho por [Peter Argueta](https://www.linkedin.com/in/peterargueta/)
+- Departamentos: capa incorporada originalmente al proyecto CSV2MAP GT.
+- Municipios: servicio público **Límites municipales** de CONRED Guatemala, consultado en formato GeoJSON desde su FeatureServer. La copia incluida contiene 340 municipios.
+- Mapas base: OpenStreetMap, CARTO y OpenTopoMap, con sus atribuciones visibles en la aplicación.
+
+Antes de utilizar los datos en un producto comercial, verifica las condiciones y atribuciones vigentes de cada fuente.
+
+## Despliegue actual
+
+- Frontend: Vercel.
+- Backend: Render.
+
+Un dominio propio puede apuntar el sitio principal a Vercel y un subdominio como `api.tudominio.com` al backend de Render.
+
+## Licencia
+
+El código del proyecto está bajo licencia MIT. Las capas y mapas base conservan las condiciones de sus respectivas fuentes.
+
+Creado por [Peter Argueta](https://www.linkedin.com/in/peterargueta/).
