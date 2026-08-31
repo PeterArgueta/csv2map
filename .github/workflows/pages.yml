@@ -53,7 +53,10 @@ jobs:
         working-directory: geo_guate_frontend
         env:
           VITE_API_URL: https://api.converttomap.com
-        run: npm ci && npm run build
+        run: |
+          npm ci
+          npm run build
+          cp dist/index.html dist/404.html
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
