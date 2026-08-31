@@ -4,10 +4,11 @@ import { GeoJSON, MapContainer, TileLayer, ZoomControl, useMap } from 'react-lea
 import 'leaflet/dist/leaflet.css';
 
 const BASEMAPS = {
-  claro: {
-    label: 'Mapa claro',
-    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; OpenStreetMap &copy; CARTO',
+  gris: {
+    label: 'Mapa gris',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenStreetMap contributors',
+    className: 'grayscale-tiles',
   },
   calles: {
     label: 'Calles',
@@ -33,7 +34,7 @@ function FitLayer({ data }) {
 
 export function MapaDepartamentos({ geojsonData, codigosSeleccionados, layerConfig, nivel }) {
   const [hoveredCode, setHoveredCode] = useState(null);
-  const [basemap, setBasemap] = useState('claro');
+  const [basemap, setBasemap] = useState('gris');
 
   const getCode = (feature) => String(feature.properties?.[layerConfig.codeProperty] ?? '').padStart(layerConfig.codeWidth, '0');
   const selectedSet = new Set(codigosSeleccionados);
@@ -71,7 +72,12 @@ export function MapaDepartamentos({ geojsonData, codigosSeleccionados, layerConf
         </div>
         <MapContainer center={[15.5, -90.5]} zoom={7} minZoom={5} maxZoom={15} zoomControl={false} className="h-full w-full" style={{ background: '#f8fafc' }}>
           <ZoomControl position="bottomright" />
-          <TileLayer key={basemap} attribution={BASEMAPS[basemap].attribution} url={BASEMAPS[basemap].url} />
+          <TileLayer
+            key={basemap}
+            attribution={BASEMAPS[basemap].attribution}
+            url={BASEMAPS[basemap].url}
+            className={BASEMAPS[basemap].className || ''}
+          />
           <FitLayer data={geojsonData} />
           {geojsonData && (
             <GeoJSON
