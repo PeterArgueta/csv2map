@@ -32,6 +32,10 @@
   font-family: inherit;
 }
 
+.grayscale-tiles {
+  filter: grayscale(1) saturate(0) brightness(1.08) contrast(0.88);
+}
+
 .custom-tooltip {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
