@@ -40,7 +40,7 @@ const COLUMN_HINTS = {
   municipios: ['codigo_municipio', 'cod_municipio', 'cod_muni', 'codigo_ine', 'municipio_codigo', 'codigo'],
 };
 
-const normalizeHeader = (value) => value
+const normalizeHeader = (value) => String(value ?? '')
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
   .toLowerCase()
@@ -59,6 +59,17 @@ const detectCodeColumn = (fields, nivel) => {
   return COLUMN_HINTS[nivel].map(normalizeHeader).map((hint) => normalized.get(hint)).find(Boolean) || '';
 };
 
+const buildSafeColumnHeaders = (columns) => {
+  const used = new Map();
+  return columns.map((column, index) => {
+    let base = normalizeHeader(column.name) || `dato_${index + 1}`;
+    if (base === 'codigo_departamento' || base === 'departamento') base = `${base}_dato`;
+    const count = used.get(base) || 0;
+    used.set(base, count + 1);
+    return { ...column, header: count ? `${base}_${count + 1}` : base };
+  });
+};
+
 export function UploadForm({ nivel, onLevelChange, onUpload }) {
   const fileInputRef = useRef();
   const [fileData, setFileData] = useState(null);
@@ -72,6 +83,7 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
   const [successMessage, setSuccessMessage] = useState('');
   const [showCsvBuilder, setShowCsvBuilder] = useState(false);
   const [selectedDepartments, setSelectedDepartments] = useState([]);
+  const [customColumns, setCustomColumns] = useState([{ id: 'valor', name: 'valor' }]);
   const [departmentValues, setDepartmentValues] = useState({});
 
   const emitPreview = (dataRows, fields, selectedColumn, currentFile = fileData) => {
@@ -213,14 +225,55 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
       : [...current, code]);
   };
 
+  const addCustomColumn = () => {
+    if (customColumns.length >= 8) return;
+    setCustomColumns((current) => [
+      ...current,
+      { id: `dato_${Date.now()}`, name: `dato_${current.length + 1}` },
+    ]);
+  };
+
+  const renameCustomColumn = (id, name) => {
+    setCustomColumns((current) => current.map((column) => (column.id === id ? { ...column, name } : column)));
+  };
+
+  const removeCustomColumn = (id) => {
+    setCustomColumns((current) => current.filter((column) => column.id !== id));
+    setDepartmentValues((current) => {
+      const next = {};
+      Object.entries(current).forEach(([code, values]) => {
+        const { [id]: removed, ...remaining } = values;
+        void removed;
+        next[code] = remaining;
+      });
+      return next;
+    });
+  };
+
+  const setDepartmentValue = (code, columnId, value) => {
+    setDepartmentValues((current) => ({
+      ...current,
+      [code]: {
+        ...(current[code] || {}),
+        [columnId]: value,
+      },
+    }));
+  };
+
   const buildDepartmentCsv = () => {
+    const outputColumns = buildSafeColumnHeaders(customColumns);
     const rowsToExport = DEPARTMENTS
       .filter(([code]) => selectedDepartments.includes(code))
-      .map(([code, name]) => ({
-        codigo_departamento: code,
-        departamento: name,
-        valor: departmentValues[code] ?? '',
-      }));
+      .map(([code, name]) => {
+        const row = {
+          codigo_departamento: code,
+          departamento: name,
+        };
+        outputColumns.forEach((column) => {
+          row[column.header] = departmentValues[code]?.[column.id] ?? '';
+        });
+        return row;
+      });
     return Papa.unparse(rowsToExport);
   };
 
@@ -242,6 +295,8 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
     anchor.click();
     URL.revokeObjectURL(url);
   };
+
+  const safeHeaders = buildSafeColumnHeaders(customColumns);
 
   return (
     <div className="space-y-6 p-6">
@@ -268,10 +323,10 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
 
         {showCsvBuilder && nivel === 'departamentos' && (
           <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-sm font-bold text-slate-800">Crear CSV de departamentos</p>
-                <p className="text-xs text-slate-500">Selecciona uno, varios o todos.</p>
+                <p className="text-xs text-slate-500">Selecciona territorios y agrega las variables que necesites.</p>
               </div>
               <div className="flex gap-2 text-xs font-bold">
                 <button type="button" onClick={() => setSelectedDepartments(DEPARTMENTS.map(([code]) => code))} className="text-indigo-600 hover:text-indigo-800">Todos</button>
@@ -279,7 +334,46 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
               </div>
             </div>
 
-            <div className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+            <div className="mb-4 rounded-lg border border-slate-200 bg-white p-3">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold text-slate-700">Columnas de datos</p>
+                  <p className="text-[11px] text-slate-500">Ej.: población, presupuesto, ventas o pobreza.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addCustomColumn}
+                  disabled={customColumns.length >= 8}
+                  className="rounded-lg border border-indigo-200 px-2.5 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:text-slate-300"
+                >
+                  + Agregar columna
+                </button>
+              </div>
+
+              {customColumns.length === 0 ? (
+                <p className="rounded-lg bg-slate-50 p-2 text-xs text-slate-500">El CSV contendrá únicamente código y departamento.</p>
+              ) : (
+                <div className="space-y-2">
+                  {customColumns.map((column, index) => (
+                    <div key={column.id} className="flex items-start gap-2">
+                      <div className="min-w-0 flex-1">
+                        <input
+                          type="text"
+                          value={column.name}
+                          onChange={(event) => renameCustomColumn(column.id, event.target.value)}
+                          placeholder={`Nombre de columna ${index + 1}`}
+                          className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs outline-none focus:border-indigo-400"
+                        />
+                        <p className="mt-1 truncate text-[10px] text-slate-400">CSV: {safeHeaders[index]?.header}</p>
+                      </div>
+                      <button type="button" onClick={() => removeCustomColumn(column.id)} className="mt-1 rounded-md px-2 py-1 text-sm font-bold text-slate-400 hover:bg-red-50 hover:text-red-600" aria-label={`Eliminar ${column.name || 'columna'}`}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="grid max-h-72 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
               {DEPARTMENTS.map(([code, name]) => {
                 const checked = selectedDepartments.includes(code);
                 return (
@@ -289,14 +383,19 @@ export function UploadForm({ nivel, onLevelChange, onUpload }) {
                       <span className="w-6 text-xs text-slate-400">{code}</span>
                       <span>{name}</span>
                     </label>
-                    {checked && (
-                      <input
-                        type="text"
-                        value={departmentValues[code] ?? ''}
-                        onChange={(event) => setDepartmentValues((current) => ({ ...current, [code]: event.target.value }))}
-                        placeholder="Valor (opcional)"
-                        className="mt-2 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs outline-none focus:border-indigo-400"
-                      />
+                    {checked && customColumns.length > 0 && (
+                      <div className="mt-2 space-y-1.5">
+                        {customColumns.map((column, index) => (
+                          <input
+                            key={column.id}
+                            type="text"
+                            value={departmentValues[code]?.[column.id] ?? ''}
+                            onChange={(event) => setDepartmentValue(code, column.id, event.target.value)}
+                            placeholder={column.name.trim() || `Dato ${index + 1}`}
+                            className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs outline-none focus:border-indigo-400"
+                          />
+                        ))}
+                      </div>
                     )}
                   </div>
                 );
