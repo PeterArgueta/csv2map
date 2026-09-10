@@ -56,7 +56,7 @@
           const text = (target.textContent || '').trim();
           const href = target.getAttribute('href') || '';
 
-          if (text === 'Probar con ejemplo') {
+          if (text === 'Probar con ejemplo' || text === 'Try an example') {
             const level = document.querySelector('#nivel')?.value || 'desconocido';
             gtag('event', 'load_example', { geographic_level: level });
           }
@@ -110,6 +110,7 @@
         };
       })();
     </script>
+    <script defer src="/i18n.js"></script>
   </head>
   <body>
     <div id="root"></div>
