@@ -236,6 +236,208 @@ async def exportar_geojson(
         ) from exc
 
 
+def resolve_csv_coordinate_column(frame: pd.DataFrame, requested: str, candidates: tuple[str, ...]) -> str:
+    by_lower = {str(column).strip().lower(): str(column) for column in frame.columns}
+    requested_key = requested.strip().lower()
+    if requested_key and requested_key in by_lower:
+        return by_lower[requested_key]
+    for candidate in candidates:
+        if candidate in by_lower:
+            return by_lower[candidate]
+    raise ValueError(
+        "No se encontró una columna de coordenadas válida. "
+        "Indica los nombres de las columnas de latitud y longitud."
+    )
+
+
+def read_convertible_layer(
+    workspace: Path,
+    filename: str,
+    content: bytes,
+    columna_latitud: str,
+    columna_longitud: str,
+) -> tuple[gpd.GeoDataFrame, str]:
+    lower_name = filename.lower()
+
+    if lower_name.endswith(".csv"):
+        frame, _ = parse_csv(content)
+        lat_col = resolve_csv_coordinate_column(
+            frame,
+            columna_latitud,
+            ("latitud", "latitude", "lat", "y"),
+        )
+        lon_col = resolve_csv_coordinate_column(
+            frame,
+            columna_longitud,
+            ("longitud", "longitude", "lon", "lng", "long", "x"),
+        )
+        lat = pd.to_numeric(frame[lat_col], errors="coerce")
+        lon = pd.to_numeric(frame[lon_col], errors="coerce")
+        invalid = int((lat.isna() | lon.isna()).sum())
+        if invalid:
+            raise ValueError(
+                f"El CSV contiene {invalid} fila(s) con coordenadas vacías o no numéricas."
+            )
+        gdf = gpd.GeoDataFrame(
+            frame.copy(),
+            geometry=gpd.points_from_xy(lon, lat),
+            crs="EPSG:4326",
+        )
+        return gdf, "csv"
+
+    if lower_name.endswith(".zip"):
+        zip_path = workspace / "entrada.zip"
+        zip_path.write_bytes(content)
+        extract_dir = workspace / "shapefile"
+        extract_dir.mkdir()
+        with zipfile.ZipFile(zip_path) as archive:
+            for member in archive.infolist():
+                member_path = (extract_dir / member.filename).resolve()
+                if extract_dir.resolve() not in member_path.parents and member_path != extract_dir.resolve():
+                    raise ValueError("El ZIP contiene rutas no válidas.")
+                archive.extract(member, extract_dir)
+        shapefiles = list(extract_dir.rglob("*.shp"))
+        if not shapefiles:
+            raise ValueError("El ZIP no contiene un archivo .shp.")
+        return gpd.read_file(shapefiles[0]), "shp"
+
+    suffix_map = {
+        ".geojson": "geojson",
+        ".json": "geojson",
+        ".kml": "kml",
+        ".gpkg": "gpkg",
+    }
+    source_format = next(
+        (value for suffix, value in suffix_map.items() if lower_name.endswith(suffix)),
+        None,
+    )
+    if not source_format:
+        raise ValueError("Formato de entrada no compatible.")
+
+    suffix = Path(filename).suffix.lower()
+    input_path = workspace / f"entrada{suffix}"
+    input_path.write_bytes(content)
+    return gpd.read_file(input_path), source_format
+
+
+def export_single_format(
+    gdf: gpd.GeoDataFrame,
+    workspace: Path,
+    formato: str,
+) -> tuple[Path, str]:
+    basename = "converttomap_conversion"
+
+    if formato == "geojson":
+        output = workspace / f"{basename}.geojson"
+        gdf.to_crs("EPSG:4326").to_file(output, driver="GeoJSON")
+        return output, "application/geo+json"
+
+    if formato == "gpkg":
+        output = workspace / f"{basename}.gpkg"
+        gdf.to_file(output, driver="GPKG", layer=basename)
+        return output, "application/geopackage+sqlite3"
+
+    if formato == "kml":
+        output = workspace / f"{basename}.kml"
+        clean_properties_for_kml(gdf).to_crs("EPSG:4326").to_file(output, driver="KML")
+        return output, "application/vnd.google-earth.kml+xml"
+
+    if formato == "csv":
+        output = workspace / f"{basename}.csv"
+        tabular = gdf.copy()
+        geometry_4326 = tabular.to_crs("EPSG:4326").geometry
+        if set(geometry_4326.geom_type).issubset({"Point"}):
+            if "latitud" not in tabular.columns:
+                tabular["latitud"] = geometry_4326.y
+            if "longitud" not in tabular.columns:
+                tabular["longitud"] = geometry_4326.x
+        tabular["geometry_wkt"] = geometry_4326.to_wkt()
+        pd.DataFrame(tabular.drop(columns=[tabular.geometry.name])).to_csv(
+            output, index=False, encoding="utf-8-sig"
+        )
+        return output, "text/csv"
+
+    if formato == "shp":
+        shp_dir = workspace / "shapefile_salida"
+        shp_dir.mkdir()
+        shp_path = shp_dir / f"{basename}.shp"
+        gdf.to_file(shp_path, driver="ESRI Shapefile", encoding="utf-8")
+        output = workspace / f"{basename}_shapefile.zip"
+        with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for part in shp_dir.iterdir():
+                archive.write(part, arcname=part.name)
+        return output, "application/zip"
+
+    raise ValueError("Formato de salida no válido.")
+
+
+@app.post("/convertir_formato/")
+async def convertir_formato(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    formato_salida: str = Form(...),
+    columna_latitud: str = Form(""),
+    columna_longitud: str = Form(""),
+):
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Debes cargar un archivo.")
+
+    formato_salida = formato_salida.strip().lower()
+    allowed_outputs = {"geojson", "shp", "kml", "gpkg", "csv"}
+    if formato_salida not in allowed_outputs:
+        raise HTTPException(status_code=400, detail="Formato de salida no válido.")
+
+    content = await file.read(MAX_FILE_SIZE + 1)
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="El archivo supera el límite de 10 MB.")
+    if not content:
+        raise HTTPException(status_code=400, detail="El archivo está vacío.")
+
+    workspace = Path(tempfile.mkdtemp(prefix="converttomap_convert_"))
+    try:
+        gdf, source_format = read_convertible_layer(
+            workspace,
+            file.filename,
+            content,
+            columna_latitud,
+            columna_longitud,
+        )
+        if gdf.empty:
+            raise ValueError("La capa no contiene entidades geográficas.")
+        if gdf.geometry.isna().all():
+            raise ValueError("La capa no contiene geometrías válidas.")
+        gdf = gdf[gdf.geometry.notnull()].copy()
+        if gdf.crs is None:
+            gdf = gdf.set_crs("EPSG:4326")
+
+        if source_format == formato_salida:
+            raise ValueError("El formato de salida es igual al formato de entrada.")
+
+        output_path, media_type = export_single_format(gdf, workspace, formato_salida)
+        background_tasks.add_task(remove_workspace, str(workspace))
+        return FileResponse(
+            output_path,
+            filename=output_path.name,
+            media_type=media_type,
+            headers={
+                "X-Source-Format": source_format,
+                "X-Feature-Count": str(len(gdf)),
+            },
+        )
+    except ValueError as exc:
+        remove_workspace(str(workspace))
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except HTTPException:
+        remove_workspace(str(workspace))
+        raise
+    except Exception as exc:
+        remove_workspace(str(workspace))
+        raise HTTPException(
+            status_code=500,
+            detail="No se pudo convertir la capa. Verifica que el archivo sea válido y vuelve a intentarlo.",
+        ) from exc
+
+
 @app.post("/procesar_csv/")
 async def procesar_csv(
     background_tasks: BackgroundTasks,
