@@ -108,7 +108,7 @@ export function ConvertirFormatos({ language = 'es' }) {
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
-      setMessage(`Conversión completada: ${INPUT_LABELS[inputFormat]} → ${outputInfo?.label}.`);
+      setMessage(`${en ? 'Conversion completed' : 'Conversión completada'}: ${INPUT_LABELS[inputFormat]} → ${outputInfo?.label}.`);
     } catch (requestError) {
       let detail = `${en ? 'The file could not be converted.' : 'No fue posible convertir el archivo.'}`;
       if (requestError.response?.data instanceof Blob) {
