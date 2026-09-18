@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { UploadForm } from './components/UploadForm';
 import { MapaDepartamentos } from './components/MapaDepartamentos';
+import { CrearCapaPuntos } from './components/CrearCapaPuntos';
+import { ConvertirFormatos } from './components/ConvertirFormatos';
 import './index.css';
 
 const DOWNLOAD_FORMATS = {
@@ -36,6 +38,8 @@ const exampleFor = (pais, nivel) => {
 };
 
 const pathToView = (pathname) => {
+  if (pathname === '/crear-capa' || pathname.startsWith('/crear-capa/')) return 'crear-capa';
+  if (pathname === '/convertir-formatos' || pathname.startsWith('/convertir-formatos/')) return 'formatos';
   if (pathname === '/capas' || pathname.startsWith('/capas/')) return 'capas';
   if (pathname === '/proyectos' || pathname.startsWith('/proyectos/')) return 'proyectos';
   return 'convertir';
@@ -355,8 +359,10 @@ function App() {
               <p className="text-xs font-medium text-slate-500">Conversor de datos</p>
             </div>
           </a>
-          <nav className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 text-xs font-semibold text-slate-600 sm:text-sm">
+          <nav className="flex flex-wrap items-center justify-end gap-1 rounded-xl bg-slate-100 p-1 text-xs font-semibold text-slate-600 sm:text-sm">
             <a href="/" onClick={(event) => handleNav(event, '/')} className={navClass('convertir')}>Convertir</a>
+            <a href="/crear-capa" onClick={(event) => handleNav(event, '/crear-capa')} className={navClass('crear-capa')}>Crear capa</a>
+            <a href="/convertir-formatos" onClick={(event) => handleNav(event, '/convertir-formatos')} className={navClass('formatos')}>Formatos</a>
             <a href="/capas" onClick={(event) => handleNav(event, '/capas')} className={navClass('capas')}>Capas</a>
             <a href="/proyectos" onClick={(event) => handleNav(event, '/proyectos')} className={navClass('proyectos')}>Proyectos</a>
           </nav>
@@ -364,6 +370,8 @@ function App() {
       </header>
 
       {view === 'convertir' && renderConvert()}
+      {view === 'crear-capa' && <CrearCapaPuntos />}
+      {view === 'formatos' && <ConvertirFormatos />}
       {view === 'capas' && renderLayers()}
       {view === 'proyectos' && renderProjects()}
 
