@@ -14,6 +14,32 @@ const DOWNLOAD_FORMATS = {
 
 const CATALOG_URL = '/countries/catalog.json';
 
+
+const NAV_LABELS = {
+  es: {
+    subtitle: 'Conversor de datos',
+    georeference: 'Georeferenciar',
+    createLayer: 'Crear capa',
+    layerConverter: 'Convertidor de capas',
+    layers: 'Capas',
+    projects: 'Proyectos',
+  },
+  en: {
+    subtitle: 'Data converter',
+    georeference: 'Georeference',
+    createLayer: 'Create layer',
+    layerConverter: 'Layer converter',
+    layers: 'Layers',
+    projects: 'Projects',
+  },
+};
+
+const getInitialLanguage = () => {
+  const saved = window.localStorage.getItem('ctm-language');
+  if (saved === 'es' || saved === 'en') return saved;
+  return (navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en';
+};
+
 const PROJECTS = [
   {
     name: 'ConvertToMap',
@@ -47,6 +73,7 @@ const pathToView = (pathname) => {
 
 function App() {
   const [view, setView] = useState(() => pathToView(window.location.pathname));
+  const [language, setLanguage] = useState(getInitialLanguage);
   const [catalog, setCatalog] = useState(null);
   const [pais, setPais] = useState('GTM');
   const [nivel, setNivel] = useState('departamentos');
@@ -58,6 +85,13 @@ function App() {
   const [csvHeaders, setCsvHeaders] = useState([]);
   const [fileName, setFileName] = useState('');
   const [downloadFormats, setDownloadFormats] = useState({});
+
+  const ui = NAV_LABELS[language];
+
+  useEffect(() => {
+    window.localStorage.setItem('ctm-language', language);
+    document.documentElement.lang = language;
+  }, [language]);
 
   const selectedCountry = catalog?.countries.find((country) => country.code === pais) || null;
   const layerConfig = selectedCountry?.levels.find((level) => level.id === nivel) || null;
@@ -356,22 +390,28 @@ function App() {
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-600 text-sm font-black text-white">CTM</div>
             <div>
               <h1 className="text-xl font-bold tracking-tight">ConvertToMap</h1>
-              <p className="text-xs font-medium text-slate-500">Conversor de datos</p>
+              <p className="text-xs font-medium text-slate-500">{ui.subtitle}</p>
             </div>
           </a>
-          <nav className="flex flex-wrap items-center justify-end gap-1 rounded-xl bg-slate-100 p-1 text-xs font-semibold text-slate-600 sm:text-sm">
-            <a href="/" onClick={(event) => handleNav(event, '/')} className={navClass('convertir')}>Convertir</a>
-            <a href="/crear-capa" onClick={(event) => handleNav(event, '/crear-capa')} className={navClass('crear-capa')}>Crear capa</a>
-            <a href="/convertir-formatos" onClick={(event) => handleNav(event, '/convertir-formatos')} className={navClass('formatos')}>Formatos</a>
-            <a href="/capas" onClick={(event) => handleNav(event, '/capas')} className={navClass('capas')}>Capas</a>
-            <a href="/proyectos" onClick={(event) => handleNav(event, '/proyectos')} className={navClass('proyectos')}>Proyectos</a>
-          </nav>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <nav className="flex flex-wrap items-center justify-end gap-1 rounded-xl bg-slate-100 p-1 text-xs font-semibold text-slate-600 sm:text-sm">
+              <a href="/" onClick={(event) => handleNav(event, '/')} className={navClass('convertir')}>{ui.georeference}</a>
+              <a href="/crear-capa" onClick={(event) => handleNav(event, '/crear-capa')} className={navClass('crear-capa')}>{ui.createLayer}</a>
+              <a href="/convertir-formatos" onClick={(event) => handleNav(event, '/convertir-formatos')} className={navClass('formatos')}>{ui.layerConverter}</a>
+              <a href="/capas" onClick={(event) => handleNav(event, '/capas')} className={navClass('capas')}>{ui.layers}</a>
+              <a href="/proyectos" onClick={(event) => handleNav(event, '/proyectos')} className={navClass('proyectos')}>{ui.projects}</a>
+            </nav>
+            <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 text-xs font-bold">
+              <button type="button" onClick={() => setLanguage('es')} className={`rounded-md px-2 py-1.5 ${language === 'es' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900'}`} aria-label="Español">ES</button>
+              <button type="button" onClick={() => setLanguage('en')} className={`rounded-md px-2 py-1.5 ${language === 'en' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900'}`} aria-label="English">EN</button>
+            </div>
+          </div>
         </div>
       </header>
 
       {view === 'convertir' && renderConvert()}
-      {view === 'crear-capa' && <CrearCapaPuntos />}
-      {view === 'formatos' && <ConvertirFormatos />}
+      {view === 'crear-capa' && <CrearCapaPuntos language={language} />}
+      {view === 'formatos' && <ConvertirFormatos language={language} />}
       {view === 'capas' && renderLayers()}
       {view === 'proyectos' && renderProjects()}
 
