@@ -1,0 +1,20 @@
+{
+  "country": "México",
+  "country_code": "MEX",
+  "layer": "Estados",
+  "layer_en": "States",
+  "admin_level": "ADM1",
+  "count": 32,
+  "source_label": "geoBoundaries · INEGI",
+  "source_url": "https://www.geoboundaries.org/api/current/gbOpen/MEX/ADM1/",
+  "boundary_source": "Instituto Nacional de Estadística y Geografía (INEGI)",
+  "boundary_year_represented": "2020",
+  "source_data_update_date": "2024-02-21",
+  "license": "CC BY 3.0 IGO",
+  "public_fields": ["admin_code", "name"],
+  "notes": [
+    "Las claves admin_code usan dos dígitos (01–32).",
+    "La geometría distribuida por ConvertToMap proviene de la versión simplificada de geoBoundaries.",
+    "Para usos oficiales en México se recomienda revisar también el Marco Geoestadístico vigente de INEGI."
+  ]
+}
