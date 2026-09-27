@@ -1,0 +1,21 @@
+{
+  "country": "Panamá",
+  "country_code": "PAN",
+  "layer": "Provincias y comarcas",
+  "layer_en": "Provinces and comarcas",
+  "admin_level": "ADM1",
+  "count": 13,
+  "source_label": "geoBoundaries · OpenStreetMap",
+  "source_url": "https://www.geoboundaries.org/api/current/gbOpen/PAN/ADM1/",
+  "boundary_year_represented": "2017",
+  "license": "Open Data Commons Open Database License 1.0",
+  "public_fields": [
+    "admin_code",
+    "name"
+  ],
+  "notes": [
+    "La capa ADM1 contiene 10 provincias y 3 comarcas con tratamiento de primer nivel.",
+    "La DPA oficial de Panamá 2025 mantiene 10 provincias y 3 comarcas a nivel de provincia; la Comarca Naso Tjër Di está registrada a nivel de distrito en esa base.",
+    "ConvertToMap distribuye una geometría simplificada de geoBoundaries; para uso oficial se recomienda contrastar con el IGN Tommy Guardia."
+  ]
+}
