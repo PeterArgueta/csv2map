@@ -1,5 +1,5 @@
 (() => {
-  const STORAGE_KEY = 'converttomap_language';
+  const STORAGE_KEY = 'ctm-language';
   const supported = ['es', 'en'];
   const browserLanguage = (navigator.languages?.[0] || navigator.language || 'en').toLowerCase();
   let language = localStorage.getItem(STORAGE_KEY);
@@ -192,64 +192,30 @@
     document.querySelector('meta[name="twitter:description"]')?.setAttribute('content', values.socialDescription);
   }
 
-  function injectSwitcher() {
-    if (document.getElementById('ctm-language-switcher')) return;
-    const headerRow = document.querySelector('header > div');
-    if (!headerRow) return;
-    const nav = headerRow.querySelector('nav');
-    const wrapper = document.createElement('div');
-    wrapper.id = 'ctm-language-switcher';
-    wrapper.style.cssText = 'display:flex;align-items:center;gap:4px;margin-left:auto;border:1px solid #e2e8f0;border-radius:10px;padding:3px;background:#fff;flex-shrink:0';
-    wrapper.setAttribute('aria-label', language === 'en' ? 'Language' : 'Idioma');
 
-    ['es', 'en'].forEach((code) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.textContent = code.toUpperCase();
-      button.dataset.lang = code;
-      button.style.cssText = 'border:0;border-radius:7px;padding:6px 8px;font-size:12px;font-weight:700;cursor:pointer;line-height:1;background:transparent;color:#64748b';
-      button.addEventListener('click', () => setLanguage(code));
-      wrapper.appendChild(button);
-    });
-
-    if (nav) headerRow.insertBefore(wrapper, nav);
-    else headerRow.appendChild(wrapper);
-    paintSwitcher();
-  }
-
-  function paintSwitcher() {
-    document.querySelectorAll('#ctm-language-switcher button').forEach((button) => {
-      const active = button.dataset.lang === language;
-      button.style.background = active ? '#4f46e5' : 'transparent';
-      button.style.color = active ? '#fff' : '#64748b';
-      button.setAttribute('aria-pressed', String(active));
-    });
-    const wrapper = document.getElementById('ctm-language-switcher');
-    if (wrapper) wrapper.setAttribute('aria-label', language === 'en' ? 'Language' : 'Idioma');
-  }
-
-  function setLanguage(next) {
+  function setLanguage(next, { emit = true } = {}) {
     if (!supported.includes(next)) return;
     language = next;
     localStorage.setItem(STORAGE_KEY, language);
     applyTranslations();
     updateMeta();
-    paintSwitcher();
-    window.dispatchEvent(new CustomEvent('ctm-language-change', { detail: { language } }));
-    if (typeof window.gtag === 'function') window.gtag('event', 'language_change', { language });
+    if (emit) window.dispatchEvent(new CustomEvent('ctm-language-change', { detail: { language } }));
+    if (emit && typeof window.gtag === 'function') window.gtag('event', 'language_change', { language });
   }
 
   const observer = new MutationObserver(() => {
     if (applying) return;
-    injectSwitcher();
     applyTranslations();
   });
 
   const start = () => {
-    injectSwitcher();
     applyTranslations();
     updateMeta();
     observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['placeholder', 'aria-label', 'title'] });
+    window.addEventListener('ctm-language-change', (event) => {
+      const next = event.detail?.language;
+      if (supported.includes(next) && next !== language) setLanguage(next, { emit: false });
+    });
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
