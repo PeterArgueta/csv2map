@@ -103,11 +103,21 @@ export function Geoportal({ language = 'es' }) {
     const term = query.trim().toLowerCase();
     if (!term) return layers;
     return layers.filter((layer) =>
-      [layer.name, layer.countryName, layer.singular, layer.source_label, layer.countrySourceLabel]
+      [layer.name, layer.name_en, layer.countryName, layer.singular, layer.source_label, layer.countrySourceLabel]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(term)),
     );
   }, [layers, query]);
+
+  const groupedVisibleLayers = useMemo(() => {
+    if (!catalog) return [];
+    return catalog.countries
+      .map((country) => ({
+        country,
+        layers: visibleLayers.filter((layer) => layer.countryCode === country.code),
+      }))
+      .filter((group) => group.layers.length > 0);
+  }, [catalog, visibleLayers]);
 
   const ensureLayer = async (layer) => {
     if (datasets[layer.key] || loading[layer.key]) return;
@@ -199,59 +209,75 @@ export function Geoportal({ language = 'es' }) {
           </div>
           <div className="max-h-[720px] space-y-3 overflow-y-auto p-3">
             {errors.catalog && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{errors.catalog}</div>}
-            {visibleLayers.map((layer) => {
-              const enabled = Boolean(active[layer.key]);
-              const formats = Object.keys(layer.downloads || {});
-              const selectedFormat = format[layer.key] || formats[0];
-              return (
-                <section key={layer.key} className={`rounded-xl border p-3 transition ${enabled ? 'border-indigo-300 bg-indigo-50/40' : 'border-slate-200 bg-white'}`}>
-                  <div className="flex items-start gap-3">
-                    <input type="checkbox" checked={enabled} onChange={() => toggleLayer(layer)} className="mt-1 h-4 w-4 accent-indigo-600" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="h-3 w-3 rounded-full" style={{ background: layer.color }} />
-                        <h3 className="truncate text-sm font-bold text-slate-800">{layerLabel(layer)}</h3>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500">{layer.countryName} · {layer.count} {en ? 'features' : 'entidades'}</p>
-                      {loading[layer.key] && <p className="mt-1 text-xs font-semibold text-indigo-600">{en ? 'Loading…' : 'Cargando…'}</p>}
-                      {errors[layer.key] && <p className="mt-1 text-xs text-red-600">{errors[layer.key]}</p>}
-                    </div>
+            {groupedVisibleLayers.map(({ country, layers: countryLayers }) => (
+              <section key={country.code} className="space-y-2">
+                <div className="sticky top-0 z-10 flex items-center justify-between rounded-lg bg-slate-100 px-3 py-2">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                      {en ? country.region : country.region_es}
+                    </p>
+                    <h3 className="text-sm font-bold text-slate-800">{country.name}</h3>
                   </div>
+                  <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold text-slate-500">{countryLayers.length}</span>
+                </div>
 
-                  {enabled && (
-                    <div className="mt-3 space-y-3 border-t border-slate-200/70 pt-3">
-                      <label className="block">
-                        <span className="mb-1 flex justify-between text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                          <span>{en ? 'Opacity' : 'Transparencia'}</span>
-                          <span>{Math.round((opacity[layer.key] ?? 0.45) * 100)}%</span>
-                        </span>
-                        <input type="range" min="0.05" max="0.9" step="0.05" value={opacity[layer.key] ?? 0.45} onChange={(event) => setOpacity((current) => ({ ...current, [layer.key]: Number(event.target.value) }))} className="w-full accent-indigo-600" />
-                      </label>
-
-                      <div className="text-[11px] leading-5 text-slate-500">
-                        <span className="font-bold">{en ? 'Source:' : 'Fuente:'}</span>{' '}
-                        {sourceUrl(layer) ? (
-                          <a href={sourceUrl(layer)} target="_blank" rel="noreferrer" className="font-semibold text-indigo-600 hover:underline">{sourceLabel(layer)}</a>
-                        ) : (
-                          <span>{sourceLabel(layer)}</span>
-                        )}
+                {countryLayers.map((layer) => {
+                  const enabled = Boolean(active[layer.key]);
+                  const formats = Object.keys(layer.downloads || {});
+                  const selectedFormat = format[layer.key] || formats[0];
+                  return (
+                    <section key={layer.key} className={`rounded-xl border p-3 transition ${enabled ? 'border-indigo-300 bg-indigo-50/40' : 'border-slate-200 bg-white'}`}>
+                      <div className="flex items-start gap-3">
+                        <input type="checkbox" checked={enabled} onChange={() => toggleLayer(layer)} className="mt-1 h-4 w-4 accent-indigo-600" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="h-3 w-3 rounded-full" style={{ background: layer.color }} />
+                            <h4 className="truncate text-sm font-bold text-slate-800">{layerLabel(layer)}</h4>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {(en ? layer.category_en : layer.category_es) || (en ? 'Geographic layer' : 'Capa geográfica')} · {layer.count} {en ? 'features' : 'entidades'}
+                          </p>
+                          {loading[layer.key] && <p className="mt-1 text-xs font-semibold text-indigo-600">{en ? 'Loading…' : 'Cargando…'}</p>}
+                          {errors[layer.key] && <p className="mt-1 text-xs text-red-600">{errors[layer.key]}</p>}
+                        </div>
                       </div>
 
-                      {formats.length > 0 && (
-                        <div className="flex gap-2">
-                          <select value={selectedFormat} onChange={(event) => setFormat((current) => ({ ...current, [layer.key]: event.target.value }))} className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2 py-2 text-xs font-semibold text-slate-700">
-                            {formats.map((item) => <option key={item} value={item}>{item.toUpperCase()}</option>)}
-                          </select>
-                          <a href={layer.downloads[selectedFormat]} download className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700">
-                            {en ? 'Download' : 'Descargar'}
-                          </a>
+                      {enabled && (
+                        <div className="mt-3 space-y-3 border-t border-slate-200/70 pt-3">
+                          <label className="block">
+                            <span className="mb-1 flex justify-between text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                              <span>{en ? 'Opacity' : 'Transparencia'}</span>
+                              <span>{Math.round((opacity[layer.key] ?? 0.45) * 100)}%</span>
+                            </span>
+                            <input type="range" min="0.05" max="0.9" step="0.05" value={opacity[layer.key] ?? 0.45} onChange={(event) => setOpacity((current) => ({ ...current, [layer.key]: Number(event.target.value) }))} className="w-full accent-indigo-600" />
+                          </label>
+
+                          <div className="text-[11px] leading-5 text-slate-500">
+                            <span className="font-bold">{en ? 'Source:' : 'Fuente:'}</span>{' '}
+                            {sourceUrl(layer) ? (
+                              <a href={sourceUrl(layer)} target="_blank" rel="noreferrer" className="font-semibold text-indigo-600 hover:underline">{sourceLabel(layer)}</a>
+                            ) : (
+                              <span>{sourceLabel(layer)}</span>
+                            )}
+                          </div>
+
+                          {formats.length > 0 && (
+                            <div className="flex gap-2">
+                              <select value={selectedFormat} onChange={(event) => setFormat((current) => ({ ...current, [layer.key]: event.target.value }))} className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2 py-2 text-xs font-semibold text-slate-700">
+                                {formats.map((item) => <option key={item} value={item}>{item.toUpperCase()}</option>)}
+                              </select>
+                              <a href={layer.downloads[selectedFormat]} download className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700">
+                                {en ? 'Download' : 'Descargar'}
+                              </a>
+                            </div>
+                          )}
                         </div>
                       )}
-                    </div>
-                  )}
-                </section>
-              );
-            })}
+                    </section>
+                  );
+                })}
+              </section>
+            ))}
           </div>
         </aside>
 
