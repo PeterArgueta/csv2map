@@ -1,0 +1,19 @@
+{
+  "country": "Costa Rica",
+  "country_code": "CRI",
+  "layer": "Provincias",
+  "layer_en": "Provinces",
+  "admin_level": "ADM1",
+  "count": 7,
+  "source_label": "geoBoundaries · gbOpen",
+  "source_url": "https://www.geoboundaries.org/",
+  "public_fields": [
+    "admin_code",
+    "name"
+  ],
+  "notes": [
+    "Costa Rica tiene siete provincias en el primer nivel administrativo.",
+    "ConvertToMap utiliza la versión gbOpen simplificada de geoBoundaries para visualización y conversión GIS.",
+    "Las claves admin_code usan dos dígitos (01–07)."
+  ]
+}
