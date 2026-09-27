@@ -65,9 +65,10 @@ def build_guatemala_zones() -> Path:
 def transform_remote_geojson(source: Path, target: Path, code_map_name: str, code_maps: dict) -> Path:
     with source.open(encoding="utf-8") as handle:
         data = json.load(handle)
-    mapping = code_maps.get(code_map_name, {})
-    if not mapping:
+    raw_mapping = code_maps.get(code_map_name, {})
+    if not raw_mapping:
         raise RuntimeError(f"Missing administrative code map: {code_map_name}")
+    mapping = {normalize_key(key): value for key, value in raw_mapping.items()}
 
     features = []
     missing = []
