@@ -21,6 +21,17 @@ const BASEMAPS = {
 
 const COLORS = ['#4f46e5', '#059669', '#dc2626', '#d97706', '#7c3aed', '#0891b2'];
 
+const ROAD_CATEGORY_STYLES = {
+  'Carreteras Pavimentadas': { color: '#6f8faf', labelEs: 'Carreteras pavimentadas', labelEn: 'Paved roads' },
+  'Carreteras Terraceria': { color: '#c2a56b', labelEs: 'Carreteras de terracería', labelEn: 'Unpaved roads' },
+  'Carreteras Dirección General de Caminos': { color: '#7fa38d', labelEs: 'Dirección General de Caminos', labelEn: 'General Directorate of Roads' },
+  'Carreteras Fondo Social de Solidaridad': { color: '#9b8cb8', labelEs: 'Fondo Social de Solidaridad', labelEn: 'Social Solidarity Fund' },
+  'Caminos Rurales': { color: '#9aa3ad', labelEs: 'Caminos rurales', labelEn: 'Rural roads' },
+};
+
+const roadCategoryStyle = (category) =>
+  ROAD_CATEGORY_STYLES[category] || { color: '#94a3b8', labelEs: category || 'Otra categoría', labelEn: category || 'Other category' };
+
 const BELIZE_DISPUTE_NOTE = 'Diferendo Territorial Insular y Marítimo pendiente de resolver';
 
 const ADJACENCY_LINE = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"name":"Línea de Adyacencia","note":"Diferendo Territorial Insular y Marítimo pendiente de resolver"},"geometry":{"type":"LineString","coordinates":[[-89.15688626855435,17.815612157632316],[-89.1568705951382,17.791406839527664],[-89.15653016884981,17.77918925651892],[-89.15677071341372,17.768364535138954],[-89.1563738123118,17.76743990637591],[-89.156658966638,17.74532648454261],[-89.1562217778594,17.700167474937476],[-89.15591663208616,17.686325513263526],[-89.15623807595061,17.675952266696],[-89.15595873003289,17.67183062319578],[-89.15595579500467,17.664365054856905],[-89.15563527634832,17.61745908389311],[-89.15517792083496,17.599091952446372],[-89.1554025225937,17.560089429140195],[-89.15475418484588,17.524599649745827],[-89.15445365921968,17.425050133825554],[-89.15444926345987,17.422066064587234],[-89.15435758456103,17.420162934062557],[-89.15442082009027,17.398136110128217],[-89.15405049062124,17.396664035274725],[-89.15427473869138,17.35765882188847],[-89.15327138264637,17.327970974598223],[-89.15330390300194,17.2884984540444],[-89.15310639149958,17.279537016091588],[-89.15295759616546,17.248499827626613],[-89.15249388943334,17.246694448815322],[-89.15266116513952,17.234925143905],[-89.1526882904303,17.23344719058902],[-89.15260883682474,17.23071314742641],[-89.15227157090355,17.22382745584005],[-89.15256852358847,17.22147502587409],[-89.15207352995519,17.192558079135356],[-89.15246460551882,17.190413812064087],[-89.15199679874314,17.18897827775051],[-89.15194080687122,17.143631637007708],[-89.1515559810411,17.142667969714758],[-89.15182137586375,17.120286090063246],[-89.15143943932851,17.11946796577863],[-89.15151793903861,17.096306606201107],[-89.15223541336411,17.049801580072707],[-89.1529290604544,17.039152938899388],[-89.15321618383155,17.023210782210814],[-89.15365749252305,17.01140700462336],[-89.15436792458004,17.001164608146365],[-89.15445918931499,17.000025041968314],[-89.15499662920165,16.993222404607707],[-89.15504741821282,16.99073439708141],[-89.15553560731784,16.986339712202803],[-89.15559807295033,16.983277891876696],[-89.1558420902266,16.978410567788135],[-89.15631933174615,16.97716325017518],[-89.15632313276295,16.97306728797777],[-89.1569532915692,16.961004210578988],[-89.15825624056131,16.937799039629418],[-89.15904106421587,16.93135283194041],[-89.16021031197842,16.904654562290144],[-89.1632229530732,16.86241728110802],[-89.16338626890655,16.85926143519946],[-89.16370032588675,16.85884778367401],[-89.16545839398141,16.830484304242354],[-89.16624254074361,16.817862151422307],[-89.1666579032587,16.810402850417784],[-89.16797758580599,16.79458997447261],[-89.16748381810088,16.79404845450806],[-89.16903193227434,16.781267894917036],[-89.16896587103281,16.77612958796219],[-89.17001984322886,16.766716370624717],[-89.17167339673438,16.734294877157115],[-89.1734057594231,16.71170568494512],[-89.17335218785526,16.70521196026155],[-89.17483501933793,16.68903745717461],[-89.1747611096656,16.685257956878395],[-89.17572859779062,16.67774890480972],[-89.17614293752851,16.67398068340752],[-89.17599657541635,16.672831676444275],[-89.17580137058343,16.671299223570117],[-89.17648538845417,16.666795013059264],[-89.1771151488364,16.65512710312249],[-89.17745946493493,16.651989136625197],[-89.17821252140915,16.639840767054714],[-89.17892185638792,16.636402755802955],[-89.17963386960139,16.622617133573577],[-89.18019534752491,16.619696293485692],[-89.18006772282875,16.61645374590098],[-89.18101950450104,16.607581851817987],[-89.18129953887649,16.594607007590557],[-89.18174935218815,16.59164461423154],[-89.18252025146033,16.577309588281757],[-89.18295449807228,16.575870573651063],[-89.18271121849187,16.57317513739728],[-89.18363000708536,16.566766825927964],[-89.18328639881685,16.56494699317081],[-89.18504368840806,16.54472921967498],[-89.18497266122833,16.540407238413895],[-89.18667442125891,16.520466907600166],[-89.18715998123007,16.50845430456234],[-89.18734858891821,16.50512954004349],[-89.18751612526012,16.50290740094132],[-89.18798870038212,16.488319702370177],[-89.18921245048018,16.474306200683802],[-89.18941492869645,16.464348900748185],[-89.19009226483965,16.46007773758632],[-89.19060972490475,16.452410276828658],[-89.19183518362048,16.43424824360328],[-89.19235977121774,16.430332913224834],[-89.19297533704032,16.414193482263972],[-89.19533807181863,16.384257231409105],[-89.19534121799364,16.373991678169418],[-89.19640095818482,16.363936961840093],[-89.19688079197782,16.351062273716128],[-89.19683978766751,16.349139684518278],[-89.1973200099419,16.34684417223769],[-89.1982095572742,16.338522067909796],[-89.19903902791219,16.321702775354403],[-89.20092960673375,16.29472142313651],[-89.20276928810294,16.266522046761192],[-89.20294218252589,16.25814404771388],[-89.204056073786,16.242653932789963],[-89.20414857828503,16.241367372679434],[-89.20446299370445,16.240954572246682],[-89.20519857226668,16.227421022530226],[-89.20582596222027,16.226271686632032],[-89.20561585105234,16.22222228385362],[-89.20736358434159,16.198939477377618],[-89.20763062241303,16.19413503070242],[-89.20935575565738,16.171267859290186],[-89.20984494241834,16.157531231167983],[-89.21165749850681,16.133546591502455],[-89.21152851253805,16.130575736105136],[-89.21232933922352,16.12365918190231],[-89.21244709834399,16.118203488230666],[-89.21283677603603,16.114093662387486],[-89.21327267058689,16.11086552607248],[-89.21299226650832,16.110363153501762],[-89.21647371870357,16.063139629091836],[-89.21960869104211,16.001215352732395],[-89.21962049798917,15.99956658474176],[-89.21977423629939,15.991462014483279],[-89.22129404176299,15.973395108815733],[-89.22126467749504,15.968534498217215],[-89.22226302174822,15.9589559119496],[-89.22202612160066,15.956265104920865],[-89.22468764378327,15.918743753641287],[-89.22457931745052,15.91468818282403],[-89.22575987765362,15.89564278781172],[-89.22529752411027,15.895185796164782],[-89.22457299633797,15.894412920626946],[-89.22426259171075,15.893714960663509],[-89.22417537662967,15.891558748267224]]}}]};
@@ -308,12 +319,16 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
     const props = { ...(feature.properties || {}) };
     if (layer.countryCode === 'BLZ' && !props.note) props.note = BELIZE_DISPUTE_NOTE;
     const title = props[layer.name_property] || layerLabel(layer);
-    const preferred = [layer.name_property, layer.code_property, layer.parent_name_property, 'note', 'area_km2']
+    const roadPreferred = layer.style_mode === 'road_category'
+      ? ['RUTA', 'DESCRIPCION', 'categoria', 'LONGITUD', 'Longiutd', 'PROYECTO', 'REGIONAL']
+      : [];
+    const preferred = [...roadPreferred, layer.name_property, layer.code_property, layer.parent_name_property, 'note', 'area_km2']
       .filter(Boolean)
       .filter((key, index, array) => array.indexOf(key) === index && Object.prototype.hasOwnProperty.call(props, key));
+    const popupLimit = layer.style_mode === 'road_category' ? 10 : 7;
     const remaining = Object.keys(props)
-      .filter((key) => !preferred.includes(key))
-      .slice(0, Math.max(0, 7 - preferred.length));
+      .filter((key) => !preferred.includes(key) && key !== 'descripcion_texto' && key !== 'style_url')
+      .slice(0, Math.max(0, popupLimit - preferred.length));
     const keys = [...preferred, ...remaining];
     const rows = keys.map((key) =>
       `<div style="display:grid;grid-template-columns:100px 1fr;gap:8px;padding:4px 0;border-top:1px solid #f1f5f9">
@@ -338,12 +353,37 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
   }, [layers, active, datasets]);
 
   const showAdjacencyReference = useMemo(
-    () => layers.some((layer) => active[layer.key] && ['GTM', 'BLZ'].includes(layer.countryCode)),
+    () => layers.some((layer) =>
+      active[layer.key] && ['belice_diferendo', 'departamentos_diferendo'].includes(layer.id),
+    ),
     [layers, active],
   );
 
   const toggleCountry = (code) => {
     setExpandedCountries((current) => ({ ...current, [code]: !current[code] }));
+  };
+
+  const renderRoadLegend = (layer) => {
+    if (layer.style_mode !== 'road_category' || !layer.categories?.length) return null;
+    return (
+      <div className="rounded-lg bg-slate-50 p-2.5">
+        <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-slate-400">
+          {en ? 'Road categories' : 'Categorías viales'}
+        </p>
+        <div className="space-y-1.5">
+          {layer.categories.map((item) => {
+            const style = roadCategoryStyle(item.value);
+            return (
+              <div key={item.value} className="flex items-center gap-2 text-[10px] text-slate-600">
+                <span className="h-[3px] w-5 shrink-0 rounded-full" style={{ backgroundColor: style.color }} />
+                <span className="min-w-0 flex-1 leading-4">{en ? style.labelEn : style.labelEs}</span>
+                <span className="font-semibold text-slate-400">{item.count}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   const renderDownload = (layer, compact = false) => {
@@ -479,6 +519,8 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
                                         </button>
                                       </div>
 
+                                      {renderRoadLegend(layer)}
+
                                       <div>
                                         <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-slate-400">{en ? 'Download' : 'Descargar'}</p>
                                         {renderDownload(layer, true)}
@@ -583,6 +625,10 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
                     {en ? 'Hide' : 'Ocultar'}
                   </button>
                 </div>
+
+                {layer.style_mode === 'road_category' && (
+                  <div className="mt-3">{renderRoadLegend(layer)}</div>
+                )}
 
                 <div className="mt-3 border-t border-slate-100 pt-3">
                   {renderDownload(layer, true)}
@@ -727,12 +773,23 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
                 <GeoJSON
                   key={`${layer.key}-${alpha}`}
                   data={datasets[layer.key]}
-                  style={{
-                    color: layer.color,
-                    weight: 1.4,
-                    fillColor: layer.color,
-                    fillOpacity: alpha,
-                    opacity: Math.min(1, alpha + 0.35),
+                  style={(feature) => {
+                    if (layer.style_mode === 'road_category') {
+                      const road = roadCategoryStyle(feature?.properties?.categoria);
+                      return {
+                        color: road.color,
+                        weight: 2,
+                        opacity: Math.min(0.88, 0.45 + alpha * 0.45),
+                        fillOpacity: 0,
+                      };
+                    }
+                    return {
+                      color: layer.color,
+                      weight: 1.4,
+                      fillColor: layer.color,
+                      fillOpacity: alpha,
+                      opacity: Math.min(1, alpha + 0.35),
+                    };
                   }}
                   onEachFeature={(feature, leafletLayer) => bindPopup(feature, leafletLayer, layer)}
                 />
