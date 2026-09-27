@@ -62,8 +62,12 @@ const PROJECTS = [
 
 const exampleFor = (pais, nivel) => {
   if (pais === 'MEX') return 'codigo_estado,valor,nombre\n01,120,Aguascalientes\n09,85,Ciudad de México\n14,64,Jalisco\n';
+  if (pais === 'BLZ') return 'codigo_distrito,valor,nombre\n01,120,Belize\n02,85,Cayo\n06,64,Toledo\n';
   if (pais === 'SLV') return 'codigo_departamento,valor,nombre\n01,120,Ahuachapán\n06,85,San Salvador\n12,64,San Miguel\n';
   if (pais === 'HND') return 'codigo_departamento,valor,nombre\n01,120,Atlántida\n08,85,Francisco Morazán\n18,64,Yoro\n';
+  if (pais === 'NIC') return 'codigo_territorial,valor,nombre\n05,120,Nueva Segovia\n50,85,Managua\n91,64,Costa Caribe Norte\n';
+  if (pais === 'CRI') return 'codigo_provincia,valor,nombre\n01,120,San José\n05,85,Guanacaste\n07,64,Limón\n';
+  if (pais === 'PAN') return 'codigo_territorial,valor,nombre\n01,120,Bocas del Toro\n08,85,Panamá\n13,64,Panamá Oeste\n';
   if (nivel === 'municipios') return 'codigo_municipio,valor,nombre\n0101,120,Guatemala\n0301,85,Antigua Guatemala\n0901,64,Quetzaltenango\n';
   return 'codigo_departamento,valor,nombre\n01,120,Guatemala\n03,85,Sacatepéquez\n09,64,Quetzaltenango\n17,98,Petén\n';
 };
