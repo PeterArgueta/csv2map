@@ -22,6 +22,15 @@ COLUMN_CANDIDATES = {
         "municipio_codigo",
         "codigo",
     ],
+    "estados": [
+        "codigo_estado",
+        "codigo estado",
+        "cod_estado",
+        "cve_ent",
+        "clave_entidad",
+        "estado_codigo",
+        "codigo",
+    ],
 }
 
 
