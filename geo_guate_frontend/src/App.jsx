@@ -3,6 +3,7 @@ import { UploadForm } from './components/UploadForm';
 import { MapaDepartamentos } from './components/MapaDepartamentos';
 import { CrearCapaPuntos } from './components/CrearCapaPuntos';
 import { ConvertirFormatos } from './components/ConvertirFormatos';
+import { Geoportal } from './components/Geoportal';
 import './index.css';
 
 const DOWNLOAD_FORMATS = {
@@ -23,6 +24,7 @@ const NAV_LABELS = {
     layerConverter: 'Convertidor de capas',
     layers: 'Capas',
     projects: 'Proyectos',
+    geoportal: 'Geoportal',
   },
   en: {
     subtitle: 'Data converter',
@@ -31,6 +33,7 @@ const NAV_LABELS = {
     layerConverter: 'Layer converter',
     layers: 'Layers',
     projects: 'Projects',
+    geoportal: 'Geoportal',
   },
 };
 
@@ -64,6 +67,7 @@ const exampleFor = (pais, nivel) => {
 };
 
 const pathToView = (pathname) => {
+  if (pathname === '/geoportal' || pathname.startsWith('/geoportal/')) return 'geoportal';
   if (pathname === '/crear-capa' || pathname.startsWith('/crear-capa/')) return 'crear-capa';
   if (pathname === '/convertir-formatos' || pathname.startsWith('/convertir-formatos/')) return 'formatos';
   if (pathname === '/capas' || pathname.startsWith('/capas/')) return 'capas';
@@ -415,6 +419,7 @@ function App() {
               <a href="/crear-capa" onClick={(event) => handleNav(event, '/crear-capa')} className={navClass('crear-capa')}>{ui.createLayer}</a>
               <a href="/convertir-formatos" onClick={(event) => handleNav(event, '/convertir-formatos')} className={navClass('formatos')}>{ui.layerConverter}</a>
               <a href="/capas" onClick={(event) => handleNav(event, '/capas')} className={navClass('capas')}>{ui.layers}</a>
+              <a href="/geoportal" onClick={(event) => handleNav(event, '/geoportal')} className={navClass('geoportal')}>{ui.geoportal}</a>
               <a href="/proyectos" onClick={(event) => handleNav(event, '/proyectos')} className={navClass('proyectos')}>{ui.projects}</a>
             </nav>
             <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 text-xs font-bold">
@@ -428,6 +433,7 @@ function App() {
       {view === 'convertir' && renderConvert()}
       {view === 'crear-capa' && <CrearCapaPuntos language={language} />}
       {view === 'formatos' && <ConvertirFormatos language={language} />}
+      {view === 'geoportal' && <Geoportal language={language} />}
       {view === 'capas' && renderLayers()}
       {view === 'proyectos' && renderProjects()}
 
