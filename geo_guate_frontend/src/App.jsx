@@ -47,7 +47,7 @@ const PROJECTS = [
   {
     name: 'ConvertToMap',
     description: 'Convierte archivos CSV en capas GIS listas para usar.',
-    href: '/',
+    href: '/geoportal',
     tag: 'GIS',
     internal: true,
   },
@@ -69,17 +69,18 @@ const exampleFor = (pais, nivel) => {
 };
 
 const pathToView = (pathname) => {
-  if (pathname === '/geoportal' || pathname.startsWith('/geoportal/')) return 'geoportal';
+  if (pathname === '/' || pathname === '/geoportal' || pathname.startsWith('/geoportal/')) return 'geoportal';
+  if (pathname === '/georeferenciar' || pathname.startsWith('/georeferenciar/')) return 'convertir';
   if (pathname === '/crear-capa' || pathname.startsWith('/crear-capa/')) return 'crear-capa';
   if (pathname === '/convertir-formatos' || pathname.startsWith('/convertir-formatos/')) return 'formatos';
   if (pathname === '/capas' || pathname.startsWith('/capas/')) return 'capas';
   if (pathname === '/proyectos' || pathname.startsWith('/proyectos/')) return 'proyectos';
-  return 'convertir';
+  return 'geoportal';
 };
 
 const APP_NAV_ITEMS = [
   { view: 'geoportal', path: '/geoportal', icon: '▱', es: 'Geoportal', en: 'Geoportal' },
-  { view: 'convertir', path: '/', icon: '◎', es: 'Georeferenciar', en: 'Georeference' },
+  { view: 'convertir', path: '/georeferenciar', icon: '◎', es: 'Georeferenciar', en: 'Georeference' },
   { view: 'crear-capa', path: '/crear-capa', icon: '+', es: 'Crear capa', en: 'Create layer' },
   { view: 'formatos', path: '/convertir-formatos', icon: '⇄', es: 'Convertidor', en: 'Converter' },
   { view: 'capas', path: '/capas', icon: '▰', es: 'Capas', en: 'Layers' },
@@ -87,6 +88,10 @@ const APP_NAV_ITEMS = [
 ];
 
 function App() {
+  if (window.location.pathname === '/') {
+    window.history.replaceState({}, '', '/geoportal');
+  }
+
   const [view, setView] = useState(() => pathToView(window.location.pathname));
   const [language, setLanguage] = useState(getInitialLanguage);
   const [catalog, setCatalog] = useState(null);
@@ -221,7 +226,7 @@ function App() {
   const useLayer = (countryCode, levelId) => {
     setPais(countryCode);
     handleLevelChange(levelId);
-    navigate('/');
+    navigate('/georeferenciar');
   };
 
   const navClass = (name) => `rounded-lg px-2.5 py-2 transition sm:px-3 ${view === name ? 'bg-white text-slate-900 shadow-sm' : 'hover:bg-white hover:text-slate-900'}`;
@@ -464,7 +469,7 @@ function App() {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
       <header className="sticky top-0 z-[1200] flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-3 sm:h-16 sm:px-5">
-        <a href="/" onClick={(event) => handleNav(event, '/')} className="flex items-center gap-3">
+        <a href="/geoportal" onClick={(event) => handleNav(event, '/geoportal')} className="flex items-center gap-3">
           <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-indigo-600 text-[10px] font-black text-white sm:h-9 sm:w-9 sm:text-xs">CTM</div>
           <div className="flex min-w-0 items-baseline gap-2">
             <span className="truncate text-base font-bold tracking-tight text-slate-900 sm:text-lg">ConvertToMap</span>
