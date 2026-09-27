@@ -27,15 +27,31 @@ const BASEMAPS = {
 
 const COLORS = ['#4f46e5', '#059669', '#dc2626', '#d97706', '#7c3aed', '#0891b2'];
 
-function FitToActiveLayers({ datasets, fitToken }) {
+const TOOL_LINKS = [
+  { href: '/', es: 'Georeferenciar', en: 'Georeference', descriptionEs: 'CSV → mapa GIS', descriptionEn: 'CSV → GIS map', icon: '◎' },
+  { href: '/crear-capa', es: 'Crear capa', en: 'Create layer', descriptionEs: 'Crea puntos en el mapa', descriptionEn: 'Create points on the map', icon: '+' },
+  { href: '/convertir-formatos', es: 'Convertidor de capas', en: 'Layer converter', descriptionEs: 'SHP · GeoJSON · KML · GPKG · CSV', descriptionEn: 'SHP · GeoJSON · KML · GPKG · CSV', icon: '⇄' },
+  { href: '/capas', es: 'Catálogo de capas', en: 'Layer catalog', descriptionEs: 'Explorar y descargar', descriptionEn: 'Browse and download', icon: '▰' },
+  { href: '/proyectos', es: 'Proyectos', en: 'Projects', descriptionEs: 'Otras herramientas', descriptionEn: 'Other tools', icon: '◫' },
+];
+
+function MapController({ activeDatasets, fitToken, focusedData, focusToken }) {
   const map = useMap();
+
   useEffect(() => {
-    const layers = Object.values(datasets).filter(Boolean);
-    if (!layers.length) return;
-    const group = L.featureGroup(layers.map((data) => L.geoJSON(data)));
+    const datasets = Object.values(activeDatasets).filter(Boolean);
+    if (!datasets.length) return;
+    const group = L.featureGroup(datasets.map((data) => L.geoJSON(data)));
     const bounds = group.getBounds();
-    if (bounds.isValid()) map.fitBounds(bounds, { padding: [24, 24], maxZoom: 12 });
-  }, [datasets, fitToken, map]);
+    if (bounds.isValid()) map.fitBounds(bounds, { padding: [28, 28], maxZoom: 11 });
+  }, [activeDatasets, fitToken, map]);
+
+  useEffect(() => {
+    if (!focusedData) return;
+    const bounds = L.geoJSON(focusedData).getBounds();
+    if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
+  }, [focusedData, focusToken, map]);
+
   return null;
 }
 
@@ -45,8 +61,9 @@ const displayValue = (value) => {
   return String(value);
 };
 
-export function Geoportal({ language = 'es' }) {
+export function Geoportal({ language = 'es', onLanguageChange }) {
   const en = language === 'en';
+  const [panel, setPanel] = useState('layers');
   const [catalog, setCatalog] = useState(null);
   const [active, setActive] = useState({});
   const [datasets, setDatasets] = useState({});
@@ -54,9 +71,14 @@ export function Geoportal({ language = 'es' }) {
   const [errors, setErrors] = useState({});
   const [opacity, setOpacity] = useState({});
   const [format, setFormat] = useState({});
+  const [expandedCountries, setExpandedCountries] = useState({ GTM: true });
+  const [expandedLayer, setExpandedLayer] = useState(null);
   const [basemap, setBasemap] = useState('gray');
+  const [showBasemaps, setShowBasemaps] = useState(false);
   const [query, setQuery] = useState('');
   const [fitToken, setFitToken] = useState(0);
+  const [focusedData, setFocusedData] = useState(null);
+  const [focusToken, setFocusToken] = useState(0);
 
   useEffect(() => {
     fetch('/countries/catalog.json')
@@ -81,23 +103,35 @@ export function Geoportal({ language = 'es' }) {
         setOpacity(initialOpacity);
         setFormat(initialFormat);
       })
-      .catch(() => setErrors((current) => ({ ...current, catalog: en ? 'Could not load the layer catalog.' : 'No fue posible cargar el catálogo de capas.' })));
+      .catch(() => setErrors((current) => ({
+        ...current,
+        catalog: en ? 'Could not load the layer catalog.' : 'No fue posible cargar el catálogo de capas.',
+      })));
   }, [en]);
 
   const layers = useMemo(() => {
     if (!catalog) return [];
+    let colorIndex = 0;
     return catalog.countries.flatMap((country) =>
-      country.levels.map((layer, index) => ({
+      country.levels.map((layer) => ({
         ...layer,
         countryCode: country.code,
         countryName: country.name,
+        countryRegion: en ? country.region : country.region_es,
         countrySourceLabel: country.source_label,
         countrySourceUrl: country.source_url,
         key: `${country.code}-${layer.id}`,
-        color: COLORS[index % COLORS.length],
+        color: COLORS[(colorIndex++) % COLORS.length],
       })),
     );
-  }, [catalog]);
+  }, [catalog, en]);
+
+  const layerLabel = (layer) => (en && layer.name_en ? layer.name_en : layer.name);
+  const categoryLabel = (layer) =>
+    (en ? layer.category_en : layer.category_es) || (en ? 'Geographic layers' : 'Capas geográficas');
+  const sourceLabel = (layer) => layer.source_label || layer.countrySourceLabel;
+  const sourceUrl = (layer) =>
+    Object.prototype.hasOwnProperty.call(layer, 'source_url') ? layer.source_url : layer.countrySourceUrl;
 
   const visibleLayers = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -109,31 +143,46 @@ export function Geoportal({ language = 'es' }) {
     );
   }, [layers, query]);
 
-  const groupedVisibleLayers = useMemo(() => {
+  const groupedCountries = useMemo(() => {
     if (!catalog) return [];
     return catalog.countries
-      .map((country) => ({
-        country,
-        layers: visibleLayers.filter((layer) => layer.countryCode === country.code),
-      }))
-      .filter((group) => group.layers.length > 0);
-  }, [catalog, visibleLayers]);
+      .map((country) => {
+        const countryLayers = visibleLayers.filter((layer) => layer.countryCode === country.code);
+        const categories = countryLayers.reduce((acc, layer) => {
+          const label = categoryLabel(layer);
+          if (!acc[label]) acc[label] = [];
+          acc[label].push(layer);
+          return acc;
+        }, {});
+        return { country, categories, count: countryLayers.length };
+      })
+      .filter((group) => group.count > 0);
+  }, [catalog, visibleLayers, en]);
+
+  const selectedLayers = useMemo(
+    () => layers.filter((layer) => active[layer.key]),
+    [layers, active],
+  );
 
   const ensureLayer = async (layer) => {
-    if (datasets[layer.key] || loading[layer.key]) return;
+    if (datasets[layer.key]) return datasets[layer.key];
+    if (loading[layer.key]) return null;
+
     setLoading((current) => ({ ...current, [layer.key]: true }));
     setErrors((current) => ({ ...current, [layer.key]: '' }));
+
     try {
       const response = await fetch(layer.map_url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       setDatasets((current) => ({ ...current, [layer.key]: data }));
-      setFitToken((value) => value + 1);
+      return data;
     } catch {
       setErrors((current) => ({
         ...current,
         [layer.key]: en ? 'Could not load this layer.' : 'No fue posible cargar esta capa.',
       }));
+      return null;
     } finally {
       setLoading((current) => ({ ...current, [layer.key]: false }));
     }
@@ -141,28 +190,53 @@ export function Geoportal({ language = 'es' }) {
 
   useEffect(() => {
     if (!layers.length) return;
-    layers.filter((layer) => active[layer.key]).forEach(ensureLayer);
+    layers.filter((layer) => active[layer.key] && !datasets[layer.key]).forEach((layer) => {
+      ensureLayer(layer);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layers, active]);
 
-  const toggleLayer = (layer) => {
-    setActive((current) => ({ ...current, [layer.key]: !current[layer.key] }));
+  const toggleLayer = async (layer) => {
+    const next = !active[layer.key];
+    setActive((current) => ({ ...current, [layer.key]: next }));
+    if (next) {
+      const data = await ensureLayer(layer);
+      if (data) {
+        setFocusedData(data);
+        setFocusToken((value) => value + 1);
+      }
+    }
   };
 
-  const layerLabel = (layer) => (en && layer.name_en ? layer.name_en : layer.name);
-  const sourceLabel = (layer) => layer.source_label || layer.countrySourceLabel;
-  const sourceUrl = (layer) =>
-    Object.prototype.hasOwnProperty.call(layer, 'source_url') ? layer.source_url : layer.countrySourceUrl;
+  const zoomLayer = async (layer) => {
+    const data = await ensureLayer(layer);
+    if (!data) return;
+    setFocusedData(data);
+    setFocusToken((value) => value + 1);
+  };
 
   const bindPopup = (feature, leafletLayer, layer) => {
     const props = feature.properties || {};
+    const title = props[layer.name_property] || layerLabel(layer);
     const preferred = [layer.name_property, layer.code_property, layer.parent_name_property, 'area_km2']
       .filter(Boolean)
       .filter((key, index, array) => array.indexOf(key) === index && Object.prototype.hasOwnProperty.call(props, key));
-    const remaining = Object.keys(props).filter((key) => !preferred.includes(key)).slice(0, Math.max(0, 8 - preferred.length));
+    const remaining = Object.keys(props)
+      .filter((key) => !preferred.includes(key))
+      .slice(0, Math.max(0, 7 - preferred.length));
     const keys = [...preferred, ...remaining];
-    const rows = keys.map((key) => `<div style="display:grid;grid-template-columns:110px 1fr;gap:8px;padding:3px 0"><strong style="font-size:11px;color:#64748b">${key}</strong><span style="font-size:12px;color:#0f172a;word-break:break-word">${displayValue(props[key])}</span></div>`).join('');
-    leafletLayer.bindPopup(`<div style="min-width:230px"><div style="font-weight:700;font-size:14px;margin-bottom:8px">${props[layer.name_property] || layer.name}</div>${rows || '<span>Sin atributos</span>'}</div>`);
+    const rows = keys.map((key) =>
+      `<div style="display:grid;grid-template-columns:100px 1fr;gap:8px;padding:4px 0;border-top:1px solid #f1f5f9">
+        <strong style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">${key}</strong>
+        <span style="font-size:12px;color:#0f172a;word-break:break-word">${displayValue(props[key])}</span>
+      </div>`,
+    ).join('');
+    leafletLayer.bindPopup(
+      `<div style="min-width:220px">
+        <div style="font-weight:800;font-size:14px;color:#0f172a;margin-bottom:8px">${title}</div>
+        ${rows || `<span style="font-size:12px;color:#64748b">${en ? 'No attributes' : 'Sin atributos'}</span>`}
+      </div>`,
+    );
   };
 
   const activeDatasets = useMemo(() => {
@@ -173,116 +247,364 @@ export function Geoportal({ language = 'es' }) {
     return result;
   }, [layers, active, datasets]);
 
-  return (
-    <main className="mx-auto max-w-[1600px] px-3 py-4 sm:px-5 sm:py-6">
-      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">ConvertToMap Geoportal</p>
-          <h2 className="mt-1 text-3xl font-bold tracking-tight">{en ? 'Explore geographic layers' : 'Explora capas geográficas'}</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            {en
-              ? 'View available layers, inspect their attributes, adjust transparency and download them for your GIS workflow.'
-              : 'Visualiza las capas disponibles, consulta sus atributos, ajusta la transparencia y descárgalas para tu flujo GIS.'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <select value={basemap} onChange={(event) => setBasemap(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
-            {Object.entries(BASEMAPS).map(([id, item]) => <option key={id} value={id}>{item[language] || item.es}</option>)}
-          </select>
-          <button type="button" onClick={() => setFitToken((value) => value + 1)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700">
-            {en ? 'Zoom to layers' : 'Zoom a capas'}
-          </button>
-        </div>
+  const toggleCountry = (code) => {
+    setExpandedCountries((current) => ({ ...current, [code]: !current[code] }));
+  };
+
+  const renderDownload = (layer, compact = false) => {
+    const formats = Object.keys(layer.downloads || {});
+    if (!formats.length) return null;
+    const selectedFormat = format[layer.key] || formats[0];
+
+    return (
+      <div className={compact ? 'flex gap-2' : 'space-y-2'}>
+        <select
+          value={selectedFormat}
+          onChange={(event) => setFormat((current) => ({ ...current, [layer.key]: event.target.value }))}
+          className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-400"
+        >
+          {formats.map((item) => <option key={item} value={item}>{item.toUpperCase()}</option>)}
+        </select>
+        <a
+          href={layer.downloads[selectedFormat]}
+          download
+          className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-indigo-700"
+        >
+          {en ? 'Download' : 'Descargar'}
+        </a>
+      </div>
+    );
+  };
+
+  const renderLayersPanel = () => (
+    <>
+      <div className="border-b border-slate-200 px-4 py-4">
+        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-indigo-600">
+          {en ? 'Geographic layers' : 'Capas geográficas'}
+        </p>
+        <h2 className="mt-1 text-lg font-bold text-slate-900">
+          {en ? 'Explore the catalog' : 'Explora el catálogo'}
+        </h2>
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={en ? 'Search layer…' : 'Buscar capa…'}
+          className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+        />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
-        <aside className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 p-4">
-            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">{en ? 'Layer catalog' : 'Catálogo de capas'}</label>
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={en ? 'Search layers…' : 'Buscar capas…'}
-              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-400"
-            />
-          </div>
-          <div className="max-h-[720px] space-y-3 overflow-y-auto p-3">
-            {errors.catalog && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{errors.catalog}</div>}
-            {groupedVisibleLayers.map(({ country, layers: countryLayers }) => (
-              <section key={country.code} className="space-y-2">
-                <div className="sticky top-0 z-10 flex items-center justify-between rounded-lg bg-slate-100 px-3 py-2">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                      {en ? country.region : country.region_es}
-                    </p>
-                    <h3 className="text-sm font-bold text-slate-800">{country.name}</h3>
-                  </div>
-                  <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold text-slate-500">{countryLayers.length}</span>
-                </div>
+      <div className="flex-1 overflow-y-auto p-3">
+        {errors.catalog && <div className="rounded-lg bg-red-50 p-3 text-xs text-red-700">{errors.catalog}</div>}
 
-                {countryLayers.map((layer) => {
-                  const enabled = Boolean(active[layer.key]);
-                  const formats = Object.keys(layer.downloads || {});
-                  const selectedFormat = format[layer.key] || formats[0];
-                  return (
-                    <section key={layer.key} className={`rounded-xl border p-3 transition ${enabled ? 'border-indigo-300 bg-indigo-50/40' : 'border-slate-200 bg-white'}`}>
-                      <div className="flex items-start gap-3">
-                        <input type="checkbox" checked={enabled} onChange={() => toggleLayer(layer)} className="mt-1 h-4 w-4 accent-indigo-600" />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="h-3 w-3 rounded-full" style={{ background: layer.color }} />
-                            <h4 className="truncate text-sm font-bold text-slate-800">{layerLabel(layer)}</h4>
-                          </div>
-                          <p className="mt-1 text-xs text-slate-500">
-                            {(en ? layer.category_en : layer.category_es) || (en ? 'Geographic layer' : 'Capa geográfica')} · {layer.count} {en ? 'features' : 'entidades'}
-                          </p>
-                          {loading[layer.key] && <p className="mt-1 text-xs font-semibold text-indigo-600">{en ? 'Loading…' : 'Cargando…'}</p>}
-                          {errors[layer.key] && <p className="mt-1 text-xs text-red-600">{errors[layer.key]}</p>}
+        <div className="space-y-2">
+          {groupedCountries.map(({ country, categories, count }) => {
+            const open = Boolean(expandedCountries[country.code]) || Boolean(query.trim());
+            return (
+              <section key={country.code} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <button
+                  type="button"
+                  onClick={() => toggleCountry(country.code)}
+                  className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-slate-50"
+                >
+                  <span className={`text-xs text-slate-400 transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-slate-800">{country.name}</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                      {en ? country.region : country.region_es}
+                    </div>
+                  </div>
+                  <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500">{count}</span>
+                </button>
+
+                {open && (
+                  <div className="border-t border-slate-100 px-3 pb-3">
+                    {Object.entries(categories).map(([category, categoryLayers]) => (
+                      <div key={category} className="pt-3">
+                        <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.13em] text-slate-400">{category}</p>
+                        <div className="space-y-1">
+                          {categoryLayers.map((layer) => {
+                            const enabled = Boolean(active[layer.key]);
+                            const detailsOpen = expandedLayer === layer.key;
+                            return (
+                              <div key={layer.key} className={`rounded-lg border transition ${enabled ? 'border-indigo-200 bg-indigo-50/50' : 'border-transparent hover:bg-slate-50'}`}>
+                                <div className="flex items-center gap-2 px-2 py-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={enabled}
+                                    onChange={() => toggleLayer(layer)}
+                                    className="h-4 w-4 shrink-0 accent-indigo-600"
+                                    aria-label={`${en ? 'Show' : 'Mostrar'} ${layerLabel(layer)}`}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleLayer(layer)}
+                                    className="min-w-0 flex-1 text-left"
+                                  >
+                                    <span className="flex items-center gap-2">
+                                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: layer.color }} />
+                                      <span className="truncate text-sm font-semibold text-slate-700">{layerLabel(layer)}</span>
+                                    </span>
+                                    <span className="ml-[18px] block text-[10px] text-slate-400">
+                                      {layer.count} {en ? 'features' : 'entidades'}
+                                    </span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedLayer(detailsOpen ? null : layer.key)}
+                                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-lg font-bold text-slate-400 hover:bg-white hover:text-indigo-600"
+                                    aria-label={en ? 'Layer options' : 'Opciones de capa'}
+                                  >
+                                    ⋮
+                                  </button>
+                                </div>
+
+                                {loading[layer.key] && <p className="px-3 pb-2 text-[10px] font-semibold text-indigo-600">{en ? 'Loading…' : 'Cargando…'}</p>}
+                                {errors[layer.key] && <p className="px-3 pb-2 text-[10px] text-red-600">{errors[layer.key]}</p>}
+
+                                {detailsOpen && (
+                                  <div className="space-y-3 border-t border-slate-200/70 bg-white px-3 py-3">
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleLayer(layer)}
+                                        className="rounded-lg border border-slate-300 px-2 py-2 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700"
+                                      >
+                                        {enabled ? (en ? 'Hide' : 'Ocultar') : (en ? 'View on map' : 'Ver en mapa')}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => zoomLayer(layer)}
+                                        className="rounded-lg border border-slate-300 px-2 py-2 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700"
+                                      >
+                                        {en ? 'Zoom to layer' : 'Zoom a capa'}
+                                      </button>
+                                    </div>
+
+                                    <div>
+                                      <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-slate-400">{en ? 'Download' : 'Descargar'}</p>
+                                      {renderDownload(layer, true)}
+                                    </div>
+
+                                    <div className="text-[10px] leading-4 text-slate-500">
+                                      <span className="font-bold">{en ? 'Source:' : 'Fuente:'}</span>{' '}
+                                      {sourceUrl(layer) ? (
+                                        <a href={sourceUrl(layer)} target="_blank" rel="noreferrer" className="font-semibold text-indigo-600 hover:underline">
+                                          {sourceLabel(layer)}
+                                        </a>
+                                      ) : (
+                                        <span>{sourceLabel(layer)}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
 
-                      {enabled && (
-                        <div className="mt-3 space-y-3 border-t border-slate-200/70 pt-3">
-                          <label className="block">
-                            <span className="mb-1 flex justify-between text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                              <span>{en ? 'Opacity' : 'Transparencia'}</span>
-                              <span>{Math.round((opacity[layer.key] ?? 0.45) * 100)}%</span>
-                            </span>
-                            <input type="range" min="0.05" max="0.9" step="0.05" value={opacity[layer.key] ?? 0.45} onChange={(event) => setOpacity((current) => ({ ...current, [layer.key]: Number(event.target.value) }))} className="w-full accent-indigo-600" />
-                          </label>
+  const renderSelectedPanel = () => (
+    <>
+      <div className="border-b border-slate-200 px-4 py-4">
+        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-indigo-600">
+          {en ? 'Selected layers' : 'Capas seleccionadas'}
+        </p>
+        <h2 className="mt-1 text-lg font-bold text-slate-900">
+          {selectedLayers.length
+            ? `${selectedLayers.length} ${en ? (selectedLayers.length === 1 ? 'active layer' : 'active layers') : (selectedLayers.length === 1 ? 'capa activa' : 'capas activas')}`
+            : (en ? 'No active layers' : 'Sin capas activas')}
+        </h2>
+      </div>
 
-                          <div className="text-[11px] leading-5 text-slate-500">
-                            <span className="font-bold">{en ? 'Source:' : 'Fuente:'}</span>{' '}
-                            {sourceUrl(layer) ? (
-                              <a href={sourceUrl(layer)} target="_blank" rel="noreferrer" className="font-semibold text-indigo-600 hover:underline">{sourceLabel(layer)}</a>
-                            ) : (
-                              <span>{sourceLabel(layer)}</span>
-                            )}
-                          </div>
+      <div className="flex-1 overflow-y-auto p-3">
+        {!selectedLayers.length ? (
+          <div className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm leading-6 text-slate-500">
+            {en ? 'Activate layers from the geographic catalog to manage them here.' : 'Activa capas desde el catálogo geográfico para administrarlas aquí.'}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {selectedLayers.map((layer) => (
+              <section key={layer.key} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                <div className="flex items-start gap-2">
+                  <span className="mt-1 h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: layer.color }} />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-bold text-slate-800">{layerLabel(layer)}</h3>
+                    <p className="text-[10px] text-slate-400">{layer.countryName}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleLayer(layer)}
+                    className="grid h-7 w-7 place-items-center rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    aria-label={en ? 'Remove layer' : 'Quitar capa'}
+                  >
+                    ×
+                  </button>
+                </div>
 
-                          {formats.length > 0 && (
-                            <div className="flex gap-2">
-                              <select value={selectedFormat} onChange={(event) => setFormat((current) => ({ ...current, [layer.key]: event.target.value }))} className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2 py-2 text-xs font-semibold text-slate-700">
-                                {formats.map((item) => <option key={item} value={item}>{item.toUpperCase()}</option>)}
-                              </select>
-                              <a href={layer.downloads[selectedFormat]} download className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700">
-                                {en ? 'Download' : 'Descargar'}
-                              </a>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </section>
-                  );
-                })}
+                <label className="mt-4 block">
+                  <span className="mb-1.5 flex justify-between text-[10px] font-black uppercase tracking-wide text-slate-400">
+                    <span>{en ? 'Opacity' : 'Transparencia'}</span>
+                    <span>{Math.round((opacity[layer.key] ?? 0.45) * 100)}%</span>
+                  </span>
+                  <input
+                    type="range"
+                    min="0.05"
+                    max="0.9"
+                    step="0.05"
+                    value={opacity[layer.key] ?? 0.45}
+                    onChange={(event) => setOpacity((current) => ({ ...current, [layer.key]: Number(event.target.value) }))}
+                    className="w-full accent-indigo-600"
+                  />
+                </label>
+
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => zoomLayer(layer)}
+                    className="rounded-lg border border-slate-300 px-2 py-2 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700"
+                  >
+                    {en ? 'Zoom' : 'Zoom'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleLayer(layer)}
+                    className="rounded-lg border border-slate-300 px-2 py-2 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700"
+                  >
+                    {en ? 'Hide' : 'Ocultar'}
+                  </button>
+                </div>
+
+                <div className="mt-3 border-t border-slate-100 pt-3">
+                  {renderDownload(layer, true)}
+                </div>
               </section>
             ))}
           </div>
+        )}
+      </div>
+    </>
+  );
+
+  const renderToolsPanel = () => (
+    <>
+      <div className="border-b border-slate-200 px-4 py-4">
+        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-indigo-600">
+          {en ? 'Tools' : 'Herramientas'}
+        </p>
+        <h2 className="mt-1 text-lg font-bold text-slate-900">ConvertToMap</h2>
+        <p className="mt-1 text-xs leading-5 text-slate-500">
+          {en ? 'Open another tool without losing the Geoportal structure.' : 'Accede a las demás funciones de ConvertToMap.'}
+        </p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-3">
+        <div className="space-y-2">
+          {TOOL_LINKS.map((tool) => (
+            <a
+              key={tool.href}
+              href={tool.href}
+              className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 transition hover:border-indigo-200 hover:bg-indigo-50/40"
+            >
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-slate-100 text-lg font-black text-slate-600 transition group-hover:bg-indigo-600 group-hover:text-white">
+                {tool.icon}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-bold text-slate-800">{en ? tool.en : tool.es}</span>
+                <span className="mt-0.5 block truncate text-[11px] text-slate-500">{en ? tool.descriptionEn : tool.descriptionEs}</span>
+              </span>
+              <span className="ml-auto text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-indigo-500">→</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="flex min-h-screen flex-col bg-slate-100 text-slate-900">
+      <header className="z-[1100] flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-5">
+        <a href="/" className="flex items-center gap-3">
+          <div className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-600 text-xs font-black text-white">CTM</div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-lg font-bold tracking-tight text-slate-900">ConvertToMap</span>
+            <span className="text-sm font-black uppercase tracking-[0.16em] text-indigo-600">Geoportal</span>
+          </div>
+        </a>
+
+        <div className="flex items-center gap-2">
+          <div className="hidden text-xs font-medium text-slate-400 sm:block">
+            {en ? 'Geographic data viewer' : 'Visor de datos geográficos'}
+          </div>
+          <div className="ml-2 flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => onLanguageChange?.('es')}
+              className={`rounded-md px-2.5 py-1.5 ${language === 'es' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900'}`}
+            >
+              ES
+            </button>
+            <button
+              type="button"
+              onClick={() => onLanguageChange?.('en')}
+              className={`rounded-md px-2.5 py-1.5 ${language === 'en' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900'}`}
+            >
+              EN
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <nav className="z-[1050] flex shrink-0 border-b border-slate-200 bg-white lg:w-[76px] lg:flex-col lg:border-b-0 lg:border-r">
+          {[
+            { id: 'layers', icon: '▱', es: 'Capas', en: 'Layers' },
+            { id: 'selected', icon: '★', es: 'Selecc.', en: 'Selected' },
+            { id: 'tools', icon: '⚙', es: 'Herram.', en: 'Tools' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setPanel(item.id)}
+              className={`flex min-h-[64px] flex-1 flex-col items-center justify-center gap-1 border-indigo-600 px-2 py-2 text-center transition lg:flex-none lg:min-h-[92px] ${panel === item.id ? 'border-b-2 bg-indigo-50 text-indigo-700 lg:border-b-0 lg:border-l-4' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}`}
+            >
+              <span className="text-xl leading-none">{item.icon}</span>
+              <span className="text-[10px] font-bold leading-tight">{en ? item.en : item.es}</span>
+              {item.id === 'selected' && selectedLayers.length > 0 && (
+                <span className="absolute mt-[-38px] ml-[28px] grid h-4 min-w-4 place-items-center rounded-full bg-indigo-600 px-1 text-[9px] font-black text-white">
+                  {selectedLayers.length}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        <aside className="flex max-h-[42vh] shrink-0 flex-col border-b border-slate-200 bg-slate-50 lg:max-h-none lg:w-[320px] lg:border-b-0 lg:border-r">
+          {panel === 'layers' && renderLayersPanel()}
+          {panel === 'selected' && renderSelectedPanel()}
+          {panel === 'tools' && renderToolsPanel()}
         </aside>
 
-        <section className="relative h-[72vh] min-h-[560px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <MapContainer center={[15.4, -90.4]} zoom={7} minZoom={4} maxZoom={18} zoomControl={false} className="h-full w-full" style={{ background: '#f8fafc' }}>
+        <main className="relative min-h-[58vh] flex-1 bg-slate-200 lg:min-h-0">
+          <MapContainer
+            center={[15.4, -90.4]}
+            zoom={7}
+            minZoom={3}
+            maxZoom={18}
+            zoomControl={false}
+            className="h-full min-h-[58vh] w-full lg:min-h-0"
+            style={{ background: '#f8fafc' }}
+          >
             <ZoomControl position="bottomright" />
             <TileLayer
               key={basemap}
@@ -290,7 +612,12 @@ export function Geoportal({ language = 'es' }) {
               url={BASEMAPS[basemap].url}
               className={BASEMAPS[basemap].className || ''}
             />
-            <FitToActiveLayers datasets={activeDatasets} fitToken={fitToken} />
+            <MapController
+              activeDatasets={activeDatasets}
+              fitToken={fitToken}
+              focusedData={focusedData}
+              focusToken={focusToken}
+            />
             {layers.map((layer) => {
               if (!active[layer.key] || !datasets[layer.key]) return null;
               const alpha = opacity[layer.key] ?? 0.45;
@@ -300,7 +627,7 @@ export function Geoportal({ language = 'es' }) {
                   data={datasets[layer.key]}
                   style={{
                     color: layer.color,
-                    weight: 1.2,
+                    weight: 1.4,
                     fillColor: layer.color,
                     fillOpacity: alpha,
                     opacity: Math.min(1, alpha + 0.35),
@@ -310,11 +637,52 @@ export function Geoportal({ language = 'es' }) {
               );
             })}
           </MapContainer>
-          <div className="pointer-events-none absolute left-3 top-3 z-[500] rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-xs text-slate-600 shadow-sm backdrop-blur">
+
+          <div className="absolute left-3 top-3 z-[500] flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => setFitToken((value) => value + 1)}
+              className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-white text-base font-bold text-slate-600 shadow-sm transition hover:text-indigo-600"
+              title={en ? 'Zoom to active layers' : 'Zoom a capas activas'}
+            >
+              ⌂
+            </button>
+          </div>
+
+          <div className="absolute right-3 top-3 z-[500]">
+            <button
+              type="button"
+              onClick={() => setShowBasemaps((value) => !value)}
+              className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm transition hover:text-indigo-600"
+            >
+              ▱ {en ? 'Base map' : 'Mapa base'}
+            </button>
+
+            {showBasemaps && (
+              <div className="mt-2 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                {Object.entries(BASEMAPS).map(([id, item]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => {
+                      setBasemap(id);
+                      setShowBasemaps(false);
+                    }}
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold ${basemap === id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    {item[language] || item.es}
+                    {basemap === id && <span>✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="pointer-events-none absolute bottom-3 left-3 z-[500] hidden rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-[11px] font-medium text-slate-500 shadow-sm backdrop-blur sm:block">
             {en ? 'Click a feature to inspect its attributes.' : 'Haz clic en una entidad para consultar sus atributos.'}
           </div>
-        </section>
+        </main>
       </div>
-    </main>
+    </div>
   );
 }
