@@ -1,0 +1,17 @@
+{
+  "name": "Zonas de Ciudad de Guatemala",
+  "coverage": "22 zonas incluidas en el archivo proporcionado",
+  "source_institution": "No identificada en la metadata original",
+  "source_url": null,
+  "original_dataset_title": "zonas_23022015",
+  "original_metadata_date": "2015-02-23",
+  "original_projection": "GTM / WGS 84",
+  "public_crs": "EPSG:4326",
+  "public_fields": ["admin_code", "name", "area_km2"],
+  "processing": [
+    "Se excluyeron OBJECTID_1, OBJECTID, GLOBALID, Shape_Leng y Shape_Area de la versión pública.",
+    "Se excluyó el archivo .shp.xml original porque contiene referencias a infraestructura y usuarios internos.",
+    "La geometría pública fue reproyectada a WGS84 y generalizada con una tolerancia aproximada de 50 metros para distribución web."
+  ],
+  "notes": "La metadata original no identifica formalmente la institución autora ni las condiciones de uso. Verificar fuente y licencia antes de emplear esta capa en análisis oficiales."
+}
