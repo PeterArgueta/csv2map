@@ -34,10 +34,29 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gdal-bin zip
-          mkdir -p public/downloads /tmp/ctm-departamentos /tmp/ctm-municipios
+          mkdir -p public/downloads /tmp/ctm-departamentos /tmp/ctm-municipios /tmp/ctm-zonas
 
           cp public/Departamentos/departamentos.geojson public/downloads/departamentos_guatemala.geojson
           cp public/Municipios/municipios.geojson public/downloads/municipios_guatemala.geojson
+          python - <<'PY'
+          import glob
+          import json
+
+          features = []
+          for path in sorted(glob.glob("public/ZonasGuatemala/parts/*.geojson")):
+              with open(path, encoding="utf-8") as source:
+                  features.extend(json.load(source)["features"])
+
+          with open("public/ZonasGuatemala/zonas_ciudad_guatemala.geojson", "w", encoding="utf-8") as output:
+              json.dump(
+                  {"type": "FeatureCollection", "features": features},
+                  output,
+                  ensure_ascii=False,
+                  separators=(",", ":"),
+              )
+          PY
+
+          cp public/ZonasGuatemala/zonas_ciudad_guatemala.geojson public/downloads/zonas_ciudad_guatemala.geojson
 
           ogr2ogr -f GPKG public/downloads/departamentos_guatemala.gpkg public/Departamentos/departamentos.geojson -nln departamentos
           ogr2ogr -f KML public/downloads/departamentos_guatemala.kml public/Departamentos/departamentos.geojson -nln departamentos
@@ -48,6 +67,11 @@ jobs:
           ogr2ogr -f KML public/downloads/municipios_guatemala.kml public/Municipios/municipios.geojson -nln municipios
           ogr2ogr -f "ESRI Shapefile" /tmp/ctm-municipios public/Municipios/municipios.geojson -nln municipios -lco ENCODING=UTF-8
           zip -j public/downloads/municipios_guatemala_shapefile.zip /tmp/ctm-municipios/*
+
+          ogr2ogr -f GPKG public/downloads/zonas_ciudad_guatemala.gpkg public/ZonasGuatemala/zonas_ciudad_guatemala.geojson -nln zonas_ciudad_guatemala
+          ogr2ogr -f KML public/downloads/zonas_ciudad_guatemala.kml public/ZonasGuatemala/zonas_ciudad_guatemala.geojson -nln zonas_ciudad_guatemala
+          ogr2ogr -f "ESRI Shapefile" /tmp/ctm-zonas public/ZonasGuatemala/zonas_ciudad_guatemala.geojson -nln zonas_ciudad_guatemala -lco ENCODING=UTF-8
+          zip -j public/downloads/zonas_ciudad_guatemala_shapefile.zip /tmp/ctm-zonas/*
 
       - name: Build frontend
         working-directory: geo_guate_frontend
