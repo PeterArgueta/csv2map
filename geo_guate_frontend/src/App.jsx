@@ -63,6 +63,7 @@ const PROJECTS = [
 const exampleFor = (pais, nivel) => {
   if (pais === 'MEX') return 'codigo_estado,valor,nombre\n01,120,Aguascalientes\n09,85,Ciudad de México\n14,64,Jalisco\n';
   if (pais === 'SLV') return 'codigo_departamento,valor,nombre\n01,120,Ahuachapán\n06,85,San Salvador\n12,64,San Miguel\n';
+  if (pais === 'HND') return 'codigo_departamento,valor,nombre\n01,120,Atlántida\n08,85,Francisco Morazán\n18,64,Yoro\n';
   if (nivel === 'municipios') return 'codigo_municipio,valor,nombre\n0101,120,Guatemala\n0301,85,Antigua Guatemala\n0901,64,Quetzaltenango\n';
   return 'codigo_departamento,valor,nombre\n01,120,Guatemala\n03,85,Sacatepéquez\n09,64,Quetzaltenango\n17,98,Petén\n';
 };
@@ -299,76 +300,112 @@ function App() {
   const renderLayers = () => (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <div className="mb-7">
-        <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">Datos geográficos</p>
-        <h2 className="mt-2 text-3xl font-bold tracking-tight">Capas por país</h2>
-        <p className="mt-2 max-w-2xl leading-7 text-slate-600">Descarga las capas base disponibles y consulta la fuente utilizada para cada país.</p>
+        <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">{language === 'en' ? 'Geographic data' : 'Datos geográficos'}</p>
+        <h2 className="mt-2 text-3xl font-bold tracking-tight">{language === 'en' ? 'Layers by country' : 'Capas por país'}</h2>
+        <p className="mt-2 max-w-2xl leading-7 text-slate-600">
+          {language === 'en'
+            ? 'Browse the catalog by country, download available formats and review each source.'
+            : 'Explora el catálogo por país, descarga los formatos disponibles y consulta la fuente de cada capa.'}
+        </p>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2">
-        {catalog?.countries.flatMap((country) => country.levels.map((layer) => {
-          const key = `${country.code}-${layer.id}`;
-          const availableFormats = Object.keys(layer.downloads || {});
-          const selectedFormat = downloadFormats[key] || availableFormats[0] || 'geojson';
-          const format = DOWNLOAD_FORMATS[selectedFormat] || DOWNLOAD_FORMATS.geojson;
-          return (
-            <article key={key} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{country.name}</span>
-                  <h3 className="mt-4 text-xl font-bold">{language === 'en' && layer.name_en ? layer.name_en : layer.name}</h3>
-                  <p className="mt-1 text-sm font-semibold text-slate-400">{layer.count} territorios</p>
-                  <p className="mt-3 max-w-lg text-sm leading-6 text-slate-600">{language === 'en' ? `Boundaries of ${(layer.name_en || layer.name).toLowerCase()} prepared for maps, analysis and GIS conversions.` : `Límites de ${layer.name.toLowerCase()} preparados para mapas, análisis y conversiones GIS.`}</p>
-                  <p className="mt-3 text-xs text-slate-500">
-                    Fuente:{' '}
-                    {Object.prototype.hasOwnProperty.call(layer, 'source_url') && !layer.source_url ? (
-                      <span className="font-semibold text-slate-600">{layer.source_label || country.source_label}</span>
-                    ) : (
-                      <a
-                        href={Object.prototype.hasOwnProperty.call(layer, 'source_url') ? layer.source_url : country.source_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-semibold text-indigo-600 hover:underline"
+      <div className="space-y-8">
+        {catalog?.countries.map((country) => (
+          <section key={country.code}>
+            <div className="mb-3 flex flex-wrap items-end justify-between gap-2 border-b border-slate-200 pb-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  {language === 'en' ? country.region : country.region_es}
+                </p>
+                <h3 className="mt-1 text-2xl font-bold text-slate-900">{country.name}</h3>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                {country.levels.length} {language === 'en' ? (country.levels.length === 1 ? 'layer' : 'layers') : (country.levels.length === 1 ? 'capa' : 'capas')}
+              </span>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2">
+              {country.levels.map((layer) => {
+                const key = `${country.code}-${layer.id}`;
+                const availableFormats = Object.keys(layer.downloads || {});
+                const selectedFormat = downloadFormats[key] || availableFormats[0] || 'geojson';
+                const formatInfo = DOWNLOAD_FORMATS[selectedFormat] || DOWNLOAD_FORMATS.geojson;
+                const layerName = language === 'en' && layer.name_en ? layer.name_en : layer.name;
+                return (
+                  <article key={key} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                          {language === 'en' ? (layer.category_en || 'Geographic layer') : (layer.category_es || 'Capa geográfica')}
+                        </span>
+                        <h4 className="mt-4 text-xl font-bold">{layerName}</h4>
+                        <p className="mt-1 text-sm font-semibold text-slate-400">
+                          {layer.count} {language === 'en' ? 'features' : 'entidades'}
+                        </p>
+                        <p className="mt-3 max-w-lg text-sm leading-6 text-slate-600">
+                          {language === 'en'
+                            ? `Boundaries of ${layerName.toLowerCase()} prepared for maps, analysis and GIS conversions.`
+                            : `Límites de ${layer.name.toLowerCase()} preparados para mapas, análisis y conversiones GIS.`}
+                        </p>
+                        <p className="mt-3 text-xs text-slate-500">
+                          {language === 'en' ? 'Source:' : 'Fuente:'}{' '}
+                          {Object.prototype.hasOwnProperty.call(layer, 'source_url') && !layer.source_url ? (
+                            <span className="font-semibold text-slate-600">{layer.source_label || country.source_label}</span>
+                          ) : (
+                            <a
+                              href={Object.prototype.hasOwnProperty.call(layer, 'source_url') ? layer.source_url : country.source_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-semibold text-indigo-600 hover:underline"
+                            >
+                              {layer.source_label || country.source_label}
+                            </a>
+                          )}
+                        </p>
+                      </div>
+                      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-slate-100 text-2xl" aria-hidden="true">⌖</div>
+                    </div>
+
+                    <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <label htmlFor={`format-${key}`} className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+                        {language === 'en' ? 'Download format' : 'Formato de descarga'}
+                      </label>
+                      <select
+                        id={`format-${key}`}
+                        value={selectedFormat}
+                        onChange={(event) => setDownloadFormats((current) => ({ ...current, [key]: event.target.value }))}
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-400"
                       >
-                        {layer.source_label || country.source_label}
+                        {availableFormats.map((formatKey) => {
+                          const option = DOWNLOAD_FORMATS[formatKey];
+                          return <option key={formatKey} value={formatKey}>{option.label} — {option.note}</option>;
+                        })}
+                      </select>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <a href={layer.downloads?.[selectedFormat]} download className="rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-bold text-white transition hover:bg-indigo-700">
+                        {language === 'en' ? 'Download' : 'Descargar'} {formatInfo.label}
                       </a>
-                    )}
-                  </p>
-                </div>
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-slate-100 text-2xl" aria-hidden="true">⌖</div>
-              </div>
-
-              <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <label htmlFor={`format-${key}`} className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">Formato de descarga</label>
-                <select
-                  id={`format-${key}`}
-                  value={selectedFormat}
-                  onChange={(event) => setDownloadFormats((current) => ({ ...current, [key]: event.target.value }))}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-400"
-                >
-                  {availableFormats.map((formatKey) => {
-                    const option = DOWNLOAD_FORMATS[formatKey];
-                    return (
-                    <option key={formatKey} value={formatKey}>{option.label} — {option.note}</option>
-                    );
-                  })}
-                </select>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                <a href={layer.downloads?.[selectedFormat]} download className="rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-bold text-white transition hover:bg-indigo-700">
-                  Descargar {format.label}
-                </a>
-                {!layer.download_only && (
-                  <button type="button" onClick={() => useLayer(country.code, layer.id)} className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-bold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700">
-                    Usar en ConvertToMap
-                  </button>
-                )}
-              </div>
-            </article>
-          );
-        }))}
+                      {!layer.download_only && (
+                        <button type="button" onClick={() => useLayer(country.code, layer.id)} className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-bold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700">
+                          {language === 'en' ? 'Use in Georeference' : 'Usar en Georeferenciar'}
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ))}
       </div>
-      <p className="mt-5 text-xs leading-5 text-slate-500">Los formatos disponibles dependen de cada capa. Desde el conversor puedes generar GeoJSON, Shapefile, GeoPackage y KML. Recomendamos revisar la metadata y la fuente antes de utilizarlas en análisis oficiales.</p>
+
+      <p className="mt-7 text-xs leading-5 text-slate-500">
+        {language === 'en'
+          ? 'Available formats depend on each layer. Review metadata and source information before using a layer for official analysis.'
+          : 'Los formatos disponibles dependen de cada capa. Recomendamos revisar la metadata y la fuente antes de utilizarlas en análisis oficiales.'}
+      </p>
     </main>
   );
 
