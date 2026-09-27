@@ -77,6 +77,15 @@ const pathToView = (pathname) => {
   return 'convertir';
 };
 
+const APP_NAV_ITEMS = [
+  { view: 'convertir', path: '/', icon: '◎', es: 'Georeferenciar', en: 'Georeference' },
+  { view: 'crear-capa', path: '/crear-capa', icon: '+', es: 'Crear capa', en: 'Create layer' },
+  { view: 'formatos', path: '/convertir-formatos', icon: '⇄', es: 'Convertidor', en: 'Converter' },
+  { view: 'capas', path: '/capas', icon: '▰', es: 'Capas', en: 'Layers' },
+  { view: 'geoportal', path: '/geoportal', icon: '▱', es: 'Geoportal', en: 'Geoportal' },
+  { view: 'proyectos', path: '/proyectos', icon: '◫', es: 'Proyectos', en: 'Projects' },
+];
+
 function App() {
   const [view, setView] = useState(() => pathToView(window.location.pathname));
   const [language, setLanguage] = useState(getInitialLanguage);
@@ -440,45 +449,79 @@ function App() {
     </main>
   );
 
-  if (view === 'geoportal') {
-    return <Geoportal language={language} onLanguageChange={setLanguage} />;
-  }
+  const currentNavItem = APP_NAV_ITEMS.find((item) => item.view === view) || APP_NAV_ITEMS[0];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="sticky top-0 z-[1000] border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <a href="/" onClick={(event) => handleNav(event, '/')} className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-600 text-sm font-black text-white">CTM</div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">ConvertToMap</h1>
-              <p className="text-xs font-medium text-slate-500">{ui.subtitle}</p>
-            </div>
-          </a>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <nav className="flex flex-wrap items-center justify-end gap-1 rounded-xl bg-slate-100 p-1 text-xs font-semibold text-slate-600 sm:text-sm">
-              <a href="/" onClick={(event) => handleNav(event, '/')} className={navClass('convertir')}>{ui.georeference}</a>
-              <a href="/crear-capa" onClick={(event) => handleNav(event, '/crear-capa')} className={navClass('crear-capa')}>{ui.createLayer}</a>
-              <a href="/convertir-formatos" onClick={(event) => handleNav(event, '/convertir-formatos')} className={navClass('formatos')}>{ui.layerConverter}</a>
-              <a href="/capas" onClick={(event) => handleNav(event, '/capas')} className={navClass('capas')}>{ui.layers}</a>
-              <a href="/geoportal" onClick={(event) => handleNav(event, '/geoportal')} className={navClass('geoportal')}>{ui.geoportal}</a>
-              <a href="/proyectos" onClick={(event) => handleNav(event, '/proyectos')} className={navClass('proyectos')}>{ui.projects}</a>
-            </nav>
-            <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 text-xs font-bold">
-              <button type="button" onClick={() => setLanguage('es')} className={`rounded-md px-2 py-1.5 ${language === 'es' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900'}`} aria-label="Español">ES</button>
-              <button type="button" onClick={() => setLanguage('en')} className={`rounded-md px-2 py-1.5 ${language === 'en' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900'}`} aria-label="English">EN</button>
-            </div>
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+      <header className="sticky top-0 z-[1200] flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-5">
+        <a href="/" onClick={(event) => handleNav(event, '/')} className="flex items-center gap-3">
+          <div className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-600 text-xs font-black text-white">CTM</div>
+          <div className="flex min-w-0 items-baseline gap-2">
+            <span className="text-lg font-bold tracking-tight text-slate-900">ConvertToMap</span>
+            <span className="hidden text-xs font-black uppercase tracking-[0.15em] text-indigo-600 sm:inline">
+              {language === 'en' ? currentNavItem.en : currentNavItem.es}
+            </span>
+          </div>
+        </a>
+
+        <div className="flex items-center gap-2">
+          <div className="hidden text-xs font-medium text-slate-400 md:block">
+            {language === 'en' ? 'GIS tools and geographic data' : 'Herramientas GIS y datos geográficos'}
+          </div>
+          <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setLanguage('es')}
+              className={`rounded-md px-2.5 py-1.5 ${language === 'es' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900'}`}
+              aria-label="Español"
+            >
+              ES
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguage('en')}
+              className={`rounded-md px-2.5 py-1.5 ${language === 'en' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900'}`}
+              aria-label="English"
+            >
+              EN
+            </button>
           </div>
         </div>
       </header>
 
-      {view === 'convertir' && renderConvert()}
-      {view === 'crear-capa' && <CrearCapaPuntos language={language} />}
-      {view === 'formatos' && <ConvertirFormatos language={language} />}
-      {view === 'capas' && renderLayers()}
-      {view === 'proyectos' && renderProjects()}
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <nav className="sticky top-16 z-[1100] flex shrink-0 border-b border-slate-200 bg-white lg:h-[calc(100vh-64px)] lg:w-[88px] lg:flex-col lg:border-b-0 lg:border-r">
+          {APP_NAV_ITEMS.map((item) => {
+            const activeItem = view === item.view;
+            return (
+              <a
+                key={item.view}
+                href={item.path}
+                onClick={(event) => handleNav(event, item.path)}
+                className={`flex min-h-[62px] flex-1 flex-col items-center justify-center gap-1 border-indigo-600 px-2 py-2 text-center transition lg:min-h-[88px] lg:flex-none ${activeItem ? 'border-b-2 bg-indigo-50 text-indigo-700 lg:border-b-0 lg:border-l-4' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+              >
+                <span className="text-xl leading-none">{item.icon}</span>
+                <span className="text-[10px] font-bold leading-tight">{language === 'en' ? item.en : item.es}</span>
+              </a>
+            );
+          })}
+        </nav>
 
-      <footer className="border-t border-slate-200 bg-white py-5 text-center text-sm text-slate-500">© {new Date().getFullYear()} ConvertToMap</footer>
+        <div className="min-w-0 flex-1">
+          {view === 'convertir' && renderConvert()}
+          {view === 'crear-capa' && <CrearCapaPuntos language={language} />}
+          {view === 'formatos' && <ConvertirFormatos language={language} />}
+          {view === 'capas' && renderLayers()}
+          {view === 'geoportal' && <Geoportal language={language} onLanguageChange={setLanguage} embedded />}
+          {view === 'proyectos' && renderProjects()}
+
+          {view !== 'geoportal' && (
+            <footer className="border-t border-slate-200 bg-white py-5 text-center text-sm text-slate-500">
+              © {new Date().getFullYear()} ConvertToMap
+            </footer>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
