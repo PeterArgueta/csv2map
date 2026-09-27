@@ -78,11 +78,11 @@ const pathToView = (pathname) => {
 };
 
 const APP_NAV_ITEMS = [
+  { view: 'geoportal', path: '/geoportal', icon: '▱', es: 'Geoportal', en: 'Geoportal' },
   { view: 'convertir', path: '/', icon: '◎', es: 'Georeferenciar', en: 'Georeference' },
   { view: 'crear-capa', path: '/crear-capa', icon: '+', es: 'Crear capa', en: 'Create layer' },
   { view: 'formatos', path: '/convertir-formatos', icon: '⇄', es: 'Convertidor', en: 'Converter' },
   { view: 'capas', path: '/capas', icon: '▰', es: 'Capas', en: 'Layers' },
-  { view: 'geoportal', path: '/geoportal', icon: '▱', es: 'Geoportal', en: 'Geoportal' },
   { view: 'proyectos', path: '/proyectos', icon: '◫', es: 'Proyectos', en: 'Projects' },
 ];
 
@@ -106,6 +106,16 @@ function App() {
   useEffect(() => {
     window.localStorage.setItem('ctm-language', language);
     document.documentElement.lang = language;
+    window.dispatchEvent(new CustomEvent('ctm-language-change', { detail: { language } }));
+  }, [language]);
+
+  useEffect(() => {
+    const syncLanguage = (event) => {
+      const next = event.detail?.language;
+      if ((next === 'es' || next === 'en') && next !== language) setLanguage(next);
+    };
+    window.addEventListener('ctm-language-change', syncLanguage);
+    return () => window.removeEventListener('ctm-language-change', syncLanguage);
   }, [language]);
 
   const selectedCountry = catalog?.countries.find((country) => country.code === pais) || null;
@@ -453,11 +463,11 @@ function App() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
-      <header className="sticky top-0 z-[1200] flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-5">
+      <header className="sticky top-0 z-[1200] flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-3 sm:h-16 sm:px-5">
         <a href="/" onClick={(event) => handleNav(event, '/')} className="flex items-center gap-3">
-          <div className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-600 text-xs font-black text-white">CTM</div>
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-indigo-600 text-[10px] font-black text-white sm:h-9 sm:w-9 sm:text-xs">CTM</div>
           <div className="flex min-w-0 items-baseline gap-2">
-            <span className="text-lg font-bold tracking-tight text-slate-900">ConvertToMap</span>
+            <span className="truncate text-base font-bold tracking-tight text-slate-900 sm:text-lg">ConvertToMap</span>
             <span className="hidden text-xs font-black uppercase tracking-[0.15em] text-indigo-600 sm:inline">
               {language === 'en' ? currentNavItem.en : currentNavItem.es}
             </span>
@@ -490,7 +500,7 @@ function App() {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <nav className="sticky top-16 z-[1100] flex shrink-0 border-b border-slate-200 bg-white lg:h-[calc(100vh-64px)] lg:w-[88px] lg:flex-col lg:border-b-0 lg:border-r">
+        <nav className="fixed inset-x-0 bottom-0 z-[1300] flex h-[68px] shrink-0 border-t border-slate-200 bg-white/95 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur lg:sticky lg:top-16 lg:h-[calc(100vh-64px)] lg:w-[88px] lg:flex-col lg:border-r lg:border-t-0 lg:shadow-none">
           {APP_NAV_ITEMS.map((item) => {
             const activeItem = view === item.view;
             return (
@@ -498,16 +508,16 @@ function App() {
                 key={item.view}
                 href={item.path}
                 onClick={(event) => handleNav(event, item.path)}
-                className={`flex min-h-[62px] flex-1 flex-col items-center justify-center gap-1 border-indigo-600 px-2 py-2 text-center transition lg:min-h-[88px] lg:flex-none ${activeItem ? 'border-b-2 bg-indigo-50 text-indigo-700 lg:border-b-0 lg:border-l-4' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+                className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-1 border-indigo-600 px-1 py-1.5 text-center transition lg:min-h-[88px] lg:flex-none lg:px-2 lg:py-2 ${activeItem ? 'border-t-2 bg-indigo-50 text-indigo-700 lg:border-l-4 lg:border-t-0' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
               >
-                <span className="text-xl leading-none">{item.icon}</span>
-                <span className="text-[10px] font-bold leading-tight">{language === 'en' ? item.en : item.es}</span>
+                <span className="text-lg leading-none sm:text-xl">{item.icon}</span>
+                <span className="max-w-full truncate text-[9px] font-bold leading-tight sm:text-[10px]">{language === 'en' ? item.en : item.es}</span>
               </a>
             );
           })}
         </nav>
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 pb-[68px] lg:pb-0">
           {view === 'convertir' && renderConvert()}
           {view === 'crear-capa' && <CrearCapaPuntos language={language} />}
           {view === 'formatos' && <ConvertirFormatos language={language} />}
