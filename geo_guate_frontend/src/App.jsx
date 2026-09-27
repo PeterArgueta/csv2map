@@ -61,6 +61,7 @@ const PROJECTS = [
 ];
 
 const exampleFor = (pais, nivel) => {
+  if (pais === 'MEX') return 'codigo_estado,valor,nombre\n01,120,Aguascalientes\n09,85,Ciudad de México\n14,64,Jalisco\n';
   if (pais === 'SLV') return 'codigo_departamento,valor,nombre\n01,120,Ahuachapán\n06,85,San Salvador\n12,64,San Miguel\n';
   if (nivel === 'municipios') return 'codigo_municipio,valor,nombre\n0101,120,Guatemala\n0301,85,Antigua Guatemala\n0901,64,Quetzaltenango\n';
   return 'codigo_departamento,valor,nombre\n01,120,Guatemala\n03,85,Sacatepéquez\n09,64,Quetzaltenango\n17,98,Petén\n';
@@ -314,9 +315,9 @@ function App() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{country.name}</span>
-                  <h3 className="mt-4 text-xl font-bold">{layer.name}</h3>
+                  <h3 className="mt-4 text-xl font-bold">{language === 'en' && layer.name_en ? layer.name_en : layer.name}</h3>
                   <p className="mt-1 text-sm font-semibold text-slate-400">{layer.count} territorios</p>
-                  <p className="mt-3 max-w-lg text-sm leading-6 text-slate-600">Límites de {layer.name.toLowerCase()} preparados para mapas, análisis y conversiones GIS.</p>
+                  <p className="mt-3 max-w-lg text-sm leading-6 text-slate-600">{language === 'en' ? `Boundaries of ${(layer.name_en || layer.name).toLowerCase()} prepared for maps, analysis and GIS conversions.` : `Límites de ${layer.name.toLowerCase()} preparados para mapas, análisis y conversiones GIS.`}</p>
                   <p className="mt-3 text-xs text-slate-500">
                     Fuente:{' '}
                     {Object.prototype.hasOwnProperty.call(layer, 'source_url') && !layer.source_url ? (
