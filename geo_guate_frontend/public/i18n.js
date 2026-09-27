@@ -159,11 +159,11 @@
     let node;
     while ((node = walker.nextNode())) {
       const parent = node.parentElement;
-      if (parent && !['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(parent.tagName) && !parent.closest('#ctm-language-switcher')) processTextNode(node);
+      if (parent && !['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(parent.tagName) && !parent.closest('[data-ctm-react-i18n="true"]')) processTextNode(node);
     }
     if (root instanceof Element) processElement(root);
     root.querySelectorAll?.('*').forEach((el) => {
-      if (!el.closest('#ctm-language-switcher')) processElement(el);
+      if (!el.closest('[data-ctm-react-i18n="true"]')) processElement(el);
     });
     document.documentElement.lang = language;
     document.title = language === 'en'
