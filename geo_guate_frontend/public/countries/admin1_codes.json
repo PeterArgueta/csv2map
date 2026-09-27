@@ -118,7 +118,14 @@
     "heredia": "04",
     "guanacaste": "05",
     "puntarenas": "06",
-    "limon": "07"
+    "limon": "07",
+    "provincia san jose": "01",
+    "provincia alajuela": "02",
+    "provincia cartago": "03",
+    "provincia heredia": "04",
+    "provincia guanacaste": "05",
+    "provincia puntarenas": "06",
+    "provincia limon": "07"
   },
   "PAN": {
     "bocas del toro": "01",
