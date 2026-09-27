@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import gzip
 import json
 import shutil
 import subprocess
@@ -100,6 +101,14 @@ def transform_remote_geojson(source: Path, target: Path, code_map_name: str, cod
 
 def canonical_source(country: dict, layer: dict, code_maps: dict) -> Path:
     api = layer.get("api") or {}
+    if api.get("gzip_path"):
+        source_gzip = resolve_local_path(api["gzip_path"])
+        target = PUBLIC_DIR / "countries" / country["code"] / f"{layer['id']}.geojson"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with gzip.open(source_gzip, "rb") as compressed:
+            target.write_bytes(compressed.read())
+        return target
+
     if api.get("url"):
         raw = TMP_DIR / f"{country['code']}_{layer['id']}_source.geojson"
         download(api["url"], raw)
