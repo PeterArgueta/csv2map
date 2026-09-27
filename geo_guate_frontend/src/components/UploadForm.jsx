@@ -40,7 +40,7 @@ const buildSafeColumnHeaders = (columns) => {
   const used = new Map();
   return columns.map((column, index) => {
     let base = normalizeHeader(column.name) || `dato_${index + 1}`;
-    if (base === 'codigo_departamento' || base === 'departamento') base = `${base}_dato`;
+    if (['codigo_departamento', 'departamento', 'codigo_estado', 'estado'].includes(base)) base = `${base}_dato`;
     const count = used.get(base) || 0;
     used.set(base, count + 1);
     return { ...column, header: count ? `${base}_${count + 1}` : base };
