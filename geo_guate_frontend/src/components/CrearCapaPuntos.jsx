@@ -16,11 +16,6 @@ const BASEMAPS = {
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; OpenStreetMap contributors',
   },
-  topografico: {
-    label: 'Topográfico',
-    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; OpenStreetMap &copy; OpenTopoMap',
-  },
 };
 
 const FIELD_TYPES = [
