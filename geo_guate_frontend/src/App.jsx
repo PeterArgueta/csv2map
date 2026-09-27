@@ -440,6 +440,10 @@ function App() {
     </main>
   );
 
+  if (view === 'geoportal') {
+    return <Geoportal language={language} onLanguageChange={setLanguage} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="sticky top-0 z-[1000] border-b border-slate-200 bg-white/95 backdrop-blur">
@@ -471,7 +475,6 @@ function App() {
       {view === 'convertir' && renderConvert()}
       {view === 'crear-capa' && <CrearCapaPuntos language={language} />}
       {view === 'formatos' && <ConvertirFormatos language={language} />}
-      {view === 'geoportal' && <Geoportal language={language} />}
       {view === 'capas' && renderLayers()}
       {view === 'proyectos' && renderProjects()}
 
