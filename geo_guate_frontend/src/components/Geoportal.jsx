@@ -412,7 +412,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
               </div>
             </section>
           ))}
-        </div>        </div>
+        </div>
       </div>
     </>
   );
