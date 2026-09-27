@@ -6,6 +6,7 @@ import os
 import shutil
 import tempfile
 import zipfile
+import unicodedata
 import csv
 from functools import lru_cache
 from pathlib import Path
@@ -34,19 +35,86 @@ def load_layer_catalog() -> dict[str, dict[str, dict[str, object]]]:
             api = level.get("api")
             if not api:
                 continue
+            source_path = api.get("url") or str(BASE_DIR / api["path"])
             country_layers[level["id"]] = {
-                "path": BASE_DIR / api["path"],
+                "path": source_path,
                 "code_field": api["code_field"],
                 "code_width": int(level["code_width"]),
                 "basename": api["basename"],
                 "country_name": country["name"],
-                "source": country["source_label"],
+                "source": level.get("source_label") or country["source_label"],
+                "transform": api.get("transform"),
             }
         layers[country["code"]] = country_layers
     return layers
 
 
 LAYERS = load_layer_catalog()
+
+MEXICO_STATE_CODES = {
+    "aguascalientes": "01",
+    "baja california": "02",
+    "baja california sur": "03",
+    "campeche": "04",
+    "coahuila": "05",
+    "coahuila de zaragoza": "05",
+    "colima": "06",
+    "chiapas": "07",
+    "chihuahua": "08",
+    "ciudad de mexico": "09",
+    "distrito federal": "09",
+    "durango": "10",
+    "guanajuato": "11",
+    "guerrero": "12",
+    "hidalgo": "13",
+    "jalisco": "14",
+    "mexico": "15",
+    "estado de mexico": "15",
+    "michoacan": "16",
+    "michoacan de ocampo": "16",
+    "morelos": "17",
+    "nayarit": "18",
+    "nuevo leon": "19",
+    "oaxaca": "20",
+    "puebla": "21",
+    "queretaro": "22",
+    "queretaro de arteaga": "22",
+    "quintana roo": "23",
+    "san luis potosi": "24",
+    "sinaloa": "25",
+    "sonora": "26",
+    "tabasco": "27",
+    "tamaulipas": "28",
+    "tlaxcala": "29",
+    "veracruz": "30",
+    "veracruz de ignacio de la llave": "30",
+    "yucatan": "31",
+    "zacatecas": "32",
+}
+
+
+def normalize_text_key(value: object) -> str:
+    text = unicodedata.normalize("NFKD", str(value or ""))
+    return " ".join(
+        "".join(char for char in text if not unicodedata.combining(char))
+        .lower()
+        .replace("-", " ")
+        .split()
+    )
+
+
+def transform_configured_layer(gdf: gpd.GeoDataFrame, transform: str | None) -> gpd.GeoDataFrame:
+    if transform != "mexico_adm1":
+        return gdf
+    name_field = "shapeName" if "shapeName" in gdf.columns else "name"
+    transformed = gdf.copy()
+    transformed["name"] = transformed[name_field].astype(str)
+    transformed["admin_code"] = transformed["name"].map(
+        lambda value: MEXICO_STATE_CODES.get(normalize_text_key(value), "")
+    )
+    transformed = transformed[transformed["admin_code"] != ""].copy()
+    return transformed
+
 
 
 def configured_origins() -> list[str]:
@@ -80,7 +148,9 @@ def load_layer(pais: str, nivel: str | None = None) -> gpd.GeoDataFrame:
         pais, nivel = "GTM", pais
     if pais not in LAYERS or nivel not in LAYERS[pais]:
         raise ValueError("País o nivel geográfico no válido.")
-    return gpd.read_file(LAYERS[pais][nivel]["path"])
+    config = LAYERS[pais][nivel]
+    frame = gpd.read_file(config["path"])
+    return transform_configured_layer(frame, config.get("transform"))
 
 
 def parse_csv(content: bytes) -> tuple[pd.DataFrame, str]:
