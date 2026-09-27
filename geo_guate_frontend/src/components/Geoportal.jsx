@@ -139,6 +139,7 @@ export function Geoportal({ language = 'es' }) {
     setActive((current) => ({ ...current, [layer.key]: !current[layer.key] }));
   };
 
+  const layerLabel = (layer) => (en && layer.name_en ? layer.name_en : layer.name);
   const sourceLabel = (layer) => layer.source_label || layer.countrySourceLabel;
   const sourceUrl = (layer) =>
     Object.prototype.hasOwnProperty.call(layer, 'source_url') ? layer.source_url : layer.countrySourceUrl;
@@ -209,7 +210,7 @@ export function Geoportal({ language = 'es' }) {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="h-3 w-3 rounded-full" style={{ background: layer.color }} />
-                        <h3 className="truncate text-sm font-bold text-slate-800">{layer.name}</h3>
+                        <h3 className="truncate text-sm font-bold text-slate-800">{layerLabel(layer)}</h3>
                       </div>
                       <p className="mt-1 text-xs text-slate-500">{layer.countryName} · {layer.count} {en ? 'features' : 'entidades'}</p>
                       {loading[layer.key] && <p className="mt-1 text-xs font-semibold text-indigo-600">{en ? 'Loading…' : 'Cargando…'}</p>}
