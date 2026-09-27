@@ -258,9 +258,9 @@ export function CrearCapaPuntos() {
     const point = { id, ...attributes, ...custom };
     setPoints((current) => [...current, point]);
     setSelectedId(id);
-    const fields = territorialFieldNames(selectedLayer);
+    const territorialFields = territorialFieldNames(selectedLayer);
     setMessage(territory
-      ? `Punto agregado en ${attributes[fields.name] || selectedCountry?.name}.`
+      ? `Punto agregado en ${attributes[territorialFields.name] || selectedCountry?.name}.`
       : `Punto agregado fuera de los límites disponibles para ${selectedCountry?.name || 'el país seleccionado'}.`);
   };
 
