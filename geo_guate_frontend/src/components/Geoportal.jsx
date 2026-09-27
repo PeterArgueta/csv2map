@@ -532,7 +532,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
   );
 
   return (
-    <div className={embedded ? "flex min-h-[calc(100vh-64px)] flex-col bg-slate-100 text-slate-900" : "flex min-h-screen flex-col bg-slate-100 text-slate-900"}>
+    <div className={embedded ? "flex min-h-[calc(100dvh-122px)] flex-col bg-slate-100 text-slate-900 lg:min-h-[calc(100vh-64px)]" : "flex min-h-screen flex-col bg-slate-100 text-slate-900"}>
       {!embedded && <header className="z-[1100] flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-5">
         <a href="/" className="flex items-center gap-3">
           <div className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-600 text-xs font-black text-white">CTM</div>
@@ -566,7 +566,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
       </header>}
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <nav className="z-[1050] flex shrink-0 border-b border-slate-200 bg-white lg:w-[76px] lg:flex-col lg:border-b-0 lg:border-r">
+        <nav className="z-[1050] flex shrink-0 border-b border-slate-200 bg-white lg:w-[72px] lg:flex-col lg:border-b-0 lg:border-r">
           {(embedded ? [
             { id: 'layers', icon: '▱', es: 'Capas', en: 'Layers' },
             { id: 'selected', icon: '★', es: 'Selecc.', en: 'Selected' },
@@ -592,20 +592,20 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
           ))}
         </nav>
 
-        <aside className="flex max-h-[42vh] shrink-0 flex-col border-b border-slate-200 bg-slate-50 lg:max-h-none lg:w-[320px] lg:border-b-0 lg:border-r">
+        <aside className="flex max-h-[36dvh] shrink-0 flex-col border-b border-slate-200 bg-slate-50 sm:max-h-[40dvh] lg:max-h-none lg:w-[320px] lg:border-b-0 lg:border-r">
           {panel === 'layers' && renderLayersPanel()}
           {panel === 'selected' && renderSelectedPanel()}
           {!embedded && panel === 'tools' && renderToolsPanel()}
         </aside>
 
-        <main className="relative min-h-[58vh] flex-1 bg-slate-200 lg:min-h-0">
+        <main className="relative min-h-[48dvh] flex-1 bg-slate-200 sm:min-h-[52dvh] lg:min-h-0">
           <MapContainer
             center={[15.4, -90.4]}
             zoom={7}
             minZoom={3}
             maxZoom={18}
             zoomControl={false}
-            className="h-full min-h-[58vh] w-full lg:min-h-0"
+            className="h-full min-h-[48dvh] w-full sm:min-h-[52dvh] lg:min-h-0"
             style={{ background: '#f8fafc' }}
           >
             <ZoomControl position="bottomright" />
