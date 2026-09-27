@@ -55,6 +55,36 @@ const displayValue = (value) => {
   return String(value);
 };
 
+
+const pointInRing = ([lng, lat], ring = []) => {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    const intersects = ((yi > lat) !== (yj > lat))
+      && (lng < ((xj - xi) * (lat - yi)) / ((yj - yi) || Number.EPSILON) + xi);
+    if (intersects) inside = !inside;
+  }
+  return inside;
+};
+
+const pointInPolygon = (point, polygon = []) => {
+  if (!polygon.length || !pointInRing(point, polygon[0])) return false;
+  return !polygon.slice(1).some((hole) => pointInRing(point, hole));
+};
+
+const geometryContainsPoint = (geometry, point) => {
+  if (!geometry) return false;
+  if (geometry.type === 'Polygon') return pointInPolygon(point, geometry.coordinates);
+  if (geometry.type === 'MultiPolygon') {
+    return geometry.coordinates.some((polygon) => pointInPolygon(point, polygon));
+  }
+  return false;
+};
+
+const geojsonContainsPoint = (data, point) =>
+  (data?.features || []).some((feature) => geometryContainsPoint(feature.geometry, point));
+
 export function Geoportal({ language = 'es', onLanguageChange, embedded = false }) {
   const en = language === 'en';
   const [panel, setPanel] = useState('layers');
@@ -96,6 +126,61 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
         setActive(initial);
         setOpacity(initialOpacity);
         setFormat(initialFormat);
+
+        const applyCountryDefault = async (countryCode, cachedData = null) => {
+          const country = data.countries.find((item) => item.code === countryCode)
+            || data.countries.find((item) => item.code === 'GTM');
+          const layer = country?.levels?.[0];
+          if (!country || !layer) return;
+
+          const key = `${country.code}-${layer.id}`;
+          setExpandedCountries({ [country.code]: true });
+          setActive((current) => Object.fromEntries(
+            Object.keys(current).map((itemKey) => [itemKey, itemKey === key]),
+          ));
+
+          if (cachedData) {
+            setDatasets((current) => ({ ...current, [key]: cachedData }));
+            setFocusedData(cachedData);
+            setFocusToken((value) => value + 1);
+          }
+        };
+
+        const fallbackToGuatemala = () => applyCountryDefault('GTM');
+
+        if (!navigator.geolocation) {
+          fallbackToGuatemala();
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          async ({ coords }) => {
+            const point = [coords.longitude, coords.latitude];
+            const candidates = data.countries
+              .map((country) => ({ country, layer: country.levels?.[0] }))
+              .filter(({ layer }) => layer?.map_url);
+
+            const results = await Promise.all(candidates.map(async ({ country, layer }) => {
+              try {
+                const response = await fetch(layer.map_url);
+                if (!response.ok) return null;
+                const geojson = await response.json();
+                return geojsonContainsPoint(geojson, point) ? { country, layer, geojson } : null;
+              } catch {
+                return null;
+              }
+            }));
+
+            const detected = results.find(Boolean);
+            if (detected) {
+              await applyCountryDefault(detected.country.code, detected.geojson);
+            } else {
+              fallbackToGuatemala();
+            }
+          },
+          fallbackToGuatemala,
+          { enableHighAccuracy: false, timeout: 7000, maximumAge: 900000 },
+        );
       })
       .catch(() => setErrors((current) => ({
         ...current,
