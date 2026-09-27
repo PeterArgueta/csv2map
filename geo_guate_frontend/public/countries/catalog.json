@@ -106,6 +106,40 @@
           "metadata_url": "/countries/SLV/metadata.json"
         }
       ]
+    },
+    {
+      "code": "MEX",
+      "name": "México",
+      "source_label": "geoBoundaries · INEGI",
+      "source_url": "https://www.geoboundaries.org/api/current/gbOpen/MEX/ADM1/",
+      "levels": [
+        {
+          "id": "estados",
+          "admin_level": "admin1",
+          "name": "Estados",
+          "name_en": "States",
+          "singular": "estado",
+          "singular_en": "state",
+          "count": 32,
+          "code_property": "admin_code",
+          "name_property": "name",
+          "code_width": 2,
+          "map_url": "/countries/MEX/admin1.optimized.geojson",
+          "api": {
+            "url": "https://github.com/wmgeolab/geoBoundaries/raw/90a1d52/releaseData/gbOpen/MEX/ADM1/geoBoundaries-MEX-ADM1_simplified.geojson",
+            "transform": "mexico_adm1",
+            "code_field": "admin_code",
+            "basename": "converttomap_mex_estados"
+          },
+          "downloads": {
+            "geojson": "/downloads/estados_mexico.geojson",
+            "shp": "/downloads/estados_mexico_shapefile.zip",
+            "gpkg": "/downloads/estados_mexico.gpkg",
+            "kml": "/downloads/estados_mexico.kml"
+          },
+          "metadata_url": "/countries/MEX/metadata.json"
+        }
+      ]
     }
   ]
 }
