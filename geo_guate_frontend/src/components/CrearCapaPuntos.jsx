@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import L from 'leaflet';
 import Papa from 'papaparse';
-import { CircleMarker, GeoJSON, MapContainer, TileLayer, Tooltip, ZoomControl, useMapEvents } from 'react-leaflet';
+import { CircleMarker, GeoJSON, MapContainer, TileLayer, Tooltip, ZoomControl, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const BASEMAPS = {
@@ -34,7 +35,13 @@ const EXPORT_FORMATS = [
 ];
 
 const RESERVED_FIELDS = new Set([
-  'id', 'latitud', 'longitud', 'codigo_departamento', 'departamento', 'codigo_municipio', 'municipio',
+  'id', 'latitud', 'longitud',
+  'codigo_departamento', 'departamento',
+  'codigo_municipio', 'municipio',
+  'codigo_estado', 'estado',
+  'codigo_provincia', 'provincia',
+  'codigo_distrito', 'distrito',
+  'codigo_territorial', 'territorio',
 ]);
 
 const normalizeFieldName = (value) => String(value || '')
@@ -75,17 +82,36 @@ const pointInFeature = (point, feature) => {
   return false;
 };
 
-const territorialAttributes = (feature, lat, lng) => {
+const territorialFieldNames = (layer) => {
+  const id = layer?.id || '';
+  if (id === 'municipios') return { code: 'codigo_municipio', name: 'municipio' };
+  if (id === 'departamentos') return { code: 'codigo_departamento', name: 'departamento' };
+  if (id === 'estados') return { code: 'codigo_estado', name: 'estado' };
+  if (id === 'provincias') return { code: 'codigo_provincia', name: 'provincia' };
+  if (id === 'distritos') return { code: 'codigo_distrito', name: 'distrito' };
+  return { code: 'codigo_territorial', name: 'territorio' };
+};
+
+const territorialAttributes = (feature, lat, lng, layer) => {
   const props = feature?.properties || {};
-  const municipioCode = String(props.cod_muni_1 ?? '').replace(/\.0$/, '').padStart(4, '0');
-  return {
+  const fields = territorialFieldNames(layer);
+  const code = String(props[layer?.code_property] ?? props.admin_code ?? '').replace(/\.0$/, '');
+  const name = props[layer?.name_property] ?? props.name ?? '';
+  const parentName = props[layer?.parent_name_property] ?? props.parent_name ?? '';
+
+  const result = {
     latitud: Number(lat.toFixed(6)),
     longitud: Number(lng.toFixed(6)),
-    codigo_departamento: municipioCode ? municipioCode.slice(0, 2) : '',
-    departamento: props.depto_1 || props.departamen || '',
-    codigo_municipio: municipioCode,
-    municipio: props.nombre_1 || props.municipio || '',
+    [fields.code]: code,
+    [fields.name]: name,
   };
+
+  if (layer?.id === 'municipios') {
+    result.codigo_departamento = code ? code.slice(0, 2) : '';
+    result.departamento = parentName;
+  }
+
+  return result;
 };
 
 const toFeatureCollection = (points) => ({
@@ -112,8 +138,23 @@ function ClickCapture({ enabled, onPoint }) {
   return null;
 }
 
+function MapViewUpdater({ data }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!data?.features?.length) return;
+    const bounds = L.geoJSON(data).getBounds();
+    if (bounds.isValid()) map.fitBounds(bounds, { padding: [24, 24], maxZoom: 9 });
+  }, [data, map]);
+
+  return null;
+}
+
 export function CrearCapaPuntos() {
-  const [municipios, setMunicipios] = useState(null);
+  const [catalog, setCatalog] = useState(null);
+  const [countryCode, setCountryCode] = useState('GTM');
+  const [layerId, setLayerId] = useState('municipios');
+  const [territories, setTerritories] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [basemap, setBasemap] = useState('gris');
   const [drawing, setDrawing] = useState(true);
@@ -128,17 +169,80 @@ export function CrearCapaPuntos() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch('/Municipios/municipios.geojson', { signal: controller.signal })
+    fetch('/countries/catalog.json', { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       })
-      .then(setMunicipios)
+      .then((data) => {
+        setCatalog(data);
+        const guatemala = data.countries.find((country) => country.code === 'GTM');
+        const preferred = guatemala?.levels.find((layer) => layer.id === 'municipios')
+          || guatemala?.levels.find((layer) => !layer.download_only)
+          || guatemala?.levels[0];
+        if (preferred) setLayerId(preferred.id);
+      })
       .catch((error) => {
-        if (error.name !== 'AbortError') setLoadError('No fue posible cargar la capa de municipios.');
+        if (error.name !== 'AbortError') setLoadError('No fue posible cargar el catálogo territorial.');
       });
     return () => controller.abort();
   }, []);
+
+  const selectedCountry = useMemo(
+    () => catalog?.countries.find((country) => country.code === countryCode) || null,
+    [catalog, countryCode],
+  );
+
+  const availableLayers = useMemo(
+    () => (selectedCountry?.levels || []).filter((layer) => !layer.download_only && layer.map_url),
+    [selectedCountry],
+  );
+
+  const selectedLayer = useMemo(
+    () => availableLayers.find((layer) => layer.id === layerId) || availableLayers[0] || null,
+    [availableLayers, layerId],
+  );
+
+  useEffect(() => {
+    if (!selectedCountry || !availableLayers.length) return;
+    if (!availableLayers.some((layer) => layer.id === layerId)) {
+      setLayerId(availableLayers[0].id);
+    }
+  }, [selectedCountry, availableLayers, layerId]);
+
+  useEffect(() => {
+    if (!selectedLayer?.map_url) return undefined;
+    const controller = new AbortController();
+    setTerritories(null);
+    setLoadError('');
+    fetch(selectedLayer.map_url, { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then(setTerritories)
+      .catch((error) => {
+        if (error.name !== 'AbortError') setLoadError('No fue posible cargar la capa territorial seleccionada.');
+      });
+    return () => controller.abort();
+  }, [selectedLayer?.map_url]);
+
+  const changeCountry = (nextCode) => {
+    const country = catalog?.countries.find((item) => item.code === nextCode);
+    const nextLayer = country?.levels.find((layer) => !layer.download_only && layer.map_url);
+    setCountryCode(nextCode);
+    if (nextLayer) setLayerId(nextLayer.id);
+    setPoints([]);
+    setSelectedId(null);
+    setMessage('');
+  };
+
+  const changeLayer = (nextLayerId) => {
+    setLayerId(nextLayerId);
+    setPoints([]);
+    setSelectedId(null);
+    setMessage('');
+  };
 
   const selectedPoint = useMemo(
     () => points.find((point) => point.id === selectedId) || null,
@@ -146,17 +250,18 @@ export function CrearCapaPuntos() {
   );
 
   const addPoint = (lat, lng) => {
-    if (!municipios) return;
-    const municipality = municipios.features.find((feature) => pointInFeature([lng, lat], feature));
-    const attributes = territorialAttributes(municipality, lat, lng);
+    if (!territories || !selectedLayer) return;
+    const territory = territories.features.find((feature) => pointInFeature([lng, lat], feature));
+    const attributes = territorialAttributes(territory, lat, lng, selectedLayer);
     const custom = Object.fromEntries(fields.map((field) => [field.name, field.type === 'boolean' ? false : '']));
     const id = `P${String(points.length + 1).padStart(3, '0')}_${Date.now()}`;
     const point = { id, ...attributes, ...custom };
     setPoints((current) => [...current, point]);
     setSelectedId(id);
-    setMessage(municipality
-      ? `Punto agregado en ${attributes.municipio}, ${attributes.departamento}.`
-      : 'Punto agregado fuera de los límites municipales disponibles.');
+    const fields = territorialFieldNames(selectedLayer);
+    setMessage(territory
+      ? `Punto agregado en ${attributes[fields.name] || selectedCountry?.name}.`
+      : `Punto agregado fuera de los límites disponibles para ${selectedCountry?.name || 'el país seleccionado'}.`);
   };
 
   const addField = () => {
@@ -261,7 +366,7 @@ export function CrearCapaPuntos() {
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">Captura GIS</p>
           <h2 className="mt-2 text-3xl font-bold tracking-tight">Crear capa geográfica</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
-            Haz clic en el mapa para crear puntos. ConvertToMap asigna automáticamente municipio, departamento, códigos y coordenadas; tú agregas los campos que necesites.
+            Haz clic en el mapa para crear puntos. Elige país y nivel territorial; ConvertToMap asigna automáticamente códigos, territorio y coordenadas según la capa seleccionada.
           </p>
         </div>
         <span className="w-fit rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700">Puntos · V1</span>
@@ -270,9 +375,33 @@ export function CrearCapaPuntos() {
       <div className="grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
         <aside className="space-y-4">
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 className="font-bold">1. Selecciona territorio</h3>
+            <p className="mt-1 text-xs leading-5 text-slate-500">Elige el país y la capa administrativa que se usará para asignar atributos a cada punto.</p>
+            <label className="mt-4 block">
+              <span className="field-label">País</span>
+              <select value={countryCode} onChange={(event) => changeCountry(event.target.value)} className="field-control">
+                {(catalog?.countries || []).map((country) => (
+                  <option key={country.code} value={country.code}>{country.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="mt-3 block">
+              <span className="field-label">Nivel territorial</span>
+              <select value={selectedLayer?.id || ''} onChange={(event) => changeLayer(event.target.value)} className="field-control" disabled={!availableLayers.length}>
+                {availableLayers.map((layer) => (
+                  <option key={layer.id} value={layer.id}>{layer.name}</option>
+                ))}
+              </select>
+            </label>
+            <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+              {selectedLayer ? `${selectedLayer.name} · ${selectedLayer.count} entidades` : 'Sin capas disponibles'}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h3 className="font-bold">1. Define los campos</h3>
+                <h3 className="font-bold">2. Define los campos</h3>
                 <p className="mt-1 text-xs leading-5 text-slate-500">Los datos territoriales se agregan automáticamente.</p>
               </div>
             </div>
@@ -306,7 +435,7 @@ export function CrearCapaPuntos() {
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 className="font-bold">2. Crea puntos</h3>
+            <h3 className="font-bold">3. Crea puntos</h3>
             <p className="mt-1 text-xs leading-5 text-slate-500">Activa el modo de captura y haz clic sobre el mapa.</p>
             <button
               type="button"
@@ -325,7 +454,7 @@ export function CrearCapaPuntos() {
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 className="font-bold">3. Descargar capa</h3>
+            <h3 className="font-bold">4. Descargar capa</h3>
             <select value={format} onChange={(event) => setFormat(event.target.value)} className="field-control mt-3">
               {EXPORT_FORMATS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
@@ -346,7 +475,7 @@ export function CrearCapaPuntos() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
               <div>
                 <h3 className="font-bold">Mapa de captura</h3>
-                <p className="mt-1 text-xs text-slate-500">Fuente territorial: IDEG · SEGEPLAN</p>
+                <p className="mt-1 text-xs text-slate-500">Fuente territorial: {selectedCountry?.source_label || 'Catálogo ConvertToMap'} · {selectedLayer?.name || ''}</p>
               </div>
               <select value={basemap} onChange={(event) => setBasemap(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
                 {Object.entries(BASEMAPS).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}
@@ -356,13 +485,15 @@ export function CrearCapaPuntos() {
               {loadError ? (
                 <div className="grid h-full place-items-center text-sm text-red-600">{loadError}</div>
               ) : (
-                <MapContainer center={[15.5, -90.5]} zoom={7} minZoom={5} maxZoom={18} zoomControl={false} className="h-full w-full" style={{ background: '#f8fafc' }}>
+                <MapContainer center={[15.5, -90.5]} zoom={7} minZoom={3} maxZoom={18} zoomControl={false} className="h-full w-full" style={{ background: '#f8fafc' }}>
                   <ZoomControl position="bottomright" />
+                  <MapViewUpdater data={territories} />
                   <TileLayer key={basemap} attribution={BASEMAPS[basemap].attribution} url={BASEMAPS[basemap].url} className={BASEMAPS[basemap].className || ''} />
                   <ClickCapture enabled={drawing} onPoint={addPoint} />
-                  {municipios && (
+                  {territories && (
                     <GeoJSON
-                      data={municipios}
+                      key={`${countryCode}-${selectedLayer?.id || 'territory'}`}
+                      data={territories}
                       style={{ color: '#64748b', weight: 0.7, fillColor: '#ffffff', fillOpacity: 0.03 }}
                     />
                   )}
@@ -374,7 +505,10 @@ export function CrearCapaPuntos() {
                       pathOptions={{ color: selectedId === point.id ? '#312e81' : '#4f46e5', fillColor: '#4f46e5', fillOpacity: 0.9, weight: 2 }}
                       eventHandlers={{ click: (event) => { event.originalEvent?.stopPropagation?.(); setSelectedId(point.id); } }}
                     >
-                      <Tooltip direction="top"><strong>{point.municipio || 'Punto'}</strong><br />{point.departamento || 'Fuera de límite'}</Tooltip>
+                      <Tooltip direction="top">
+                        <strong>{point[territorialFieldNames(selectedLayer).name] || 'Punto'}</strong>
+                        <br />{selectedCountry?.name || 'Fuera de límite'}
+                      </Tooltip>
                     </CircleMarker>
                   ))}
                 </MapContainer>
@@ -389,8 +523,8 @@ export function CrearCapaPuntos() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">Punto seleccionado</p>
-                  <h3 className="mt-1 text-lg font-bold">{selectedPoint.municipio || 'Fuera de límites municipales'}</h3>
-                  <p className="text-sm text-slate-500">{selectedPoint.departamento || 'Sin departamento asignado'} · {selectedPoint.latitud}, {selectedPoint.longitud}</p>
+                  <h3 className="mt-1 text-lg font-bold">{selectedPoint[territorialFieldNames(selectedLayer).name] || 'Fuera de límites territoriales'}</h3>
+                  <p className="text-sm text-slate-500">{selectedCountry?.name || 'Sin país asignado'} · {selectedPoint.latitud}, {selectedPoint.longitud}</p>
                 </div>
                 <button type="button" onClick={() => removePoint(selectedPoint.id)} className="text-xs font-bold text-red-500 hover:text-red-700">Eliminar punto</button>
               </div>
@@ -430,7 +564,7 @@ export function CrearCapaPuntos() {
                 <table className="min-w-full divide-y divide-slate-200 text-sm">
                   <thead className="bg-slate-50">
                     <tr>
-                      {['ID', 'Municipio', 'Departamento', 'Latitud', 'Longitud', ...fields.map((field) => field.label)].map((header) => (
+                      {['ID', selectedLayer?.name || 'Territorio', ...(selectedLayer?.id === 'municipios' ? ['Departamento'] : []), 'Latitud', 'Longitud', ...fields.map((field) => field.label)].map((header) => (
                         <th key={header} className="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">{header}</th>
                       ))}
                     </tr>
@@ -439,8 +573,10 @@ export function CrearCapaPuntos() {
                     {points.map((point) => (
                       <tr key={point.id} onClick={() => setSelectedId(point.id)} className={`cursor-pointer ${selectedId === point.id ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
                         <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">{point.id.split('_')[0]}</td>
-                        <td className="whitespace-nowrap px-4 py-3 text-slate-600">{point.municipio || '—'}</td>
-                        <td className="whitespace-nowrap px-4 py-3 text-slate-600">{point.departamento || '—'}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-slate-600">{point[territorialFieldNames(selectedLayer).name] || '—'}</td>
+                        {selectedLayer?.id === 'municipios' && (
+                          <td className="whitespace-nowrap px-4 py-3 text-slate-600">{point.departamento || '—'}</td>
+                        )}
                         <td className="whitespace-nowrap px-4 py-3 text-slate-500">{point.latitud}</td>
                         <td className="whitespace-nowrap px-4 py-3 text-slate-500">{point.longitud}</td>
                         {fields.map((field) => <td key={field.name} className="max-w-[180px] truncate px-4 py-3 text-slate-600">{String(point[field.name] ?? '')}</td>)}
