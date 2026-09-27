@@ -105,6 +105,54 @@
           "category": "reference",
           "category_es": "Diferendo territorial",
           "category_en": "Territorial dispute"
+        },
+        {
+          "id": "rutas_registradas_dgc",
+          "admin_level": "transport",
+          "geometry_type": "line",
+          "style_mode": "road_category",
+          "name": "Red vial registrada",
+          "name_en": "Registered road network",
+          "singular": "tramo vial",
+          "singular_en": "road segment",
+          "count": 1246,
+          "name_property": "nombre",
+          "map_url": "/countries/GTM/rutas_registradas_dgc.geojson",
+          "source_label": "Dirección General de Caminos (DGC) · CIV",
+          "source_url": "https://www.caminos.gob.gt/red-vial.html",
+          "api": {
+            "gzip_path": "geo_guate_frontend/data/rutas_registradas_dgc.geojson.gz",
+            "basename": "converttomap_gtm_red_vial_registrada"
+          },
+          "downloads": {
+            "geojson": "/downloads/red_vial_registrada_dgc.geojson",
+            "gpkg": "/downloads/red_vial_registrada_dgc.gpkg"
+          },
+          "category": "transport",
+          "category_es": "Infraestructura vial",
+          "category_en": "Road infrastructure",
+          "categories": [
+            {
+              "value": "Carreteras Pavimentadas",
+              "count": 596
+            },
+            {
+              "value": "Carreteras Terraceria",
+              "count": 312
+            },
+            {
+              "value": "Carreteras Dirección General de Caminos",
+              "count": 144
+            },
+            {
+              "value": "Caminos Rurales",
+              "count": 155
+            },
+            {
+              "value": "Carreteras Fondo Social de Solidaridad",
+              "count": 39
+            }
+          ]
         }
       ],
       "region": "Central America",
