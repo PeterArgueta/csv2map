@@ -108,7 +108,7 @@ function App() {
         const initialCountry = data.countries.find((country) => country.code === data.default_country) || data.countries[0];
         if (initialCountry) {
           setPais(initialCountry.code);
-          setNivel(initialCountry.levels[0]?.id || 'departamentos');
+          setNivel(initialCountry.levels.find((level) => !level.download_only)?.id || 'departamentos');
         }
       })
       .catch((error) => {
@@ -169,7 +169,7 @@ function App() {
   const handleCountryChange = (value) => {
     const country = catalog?.countries.find((item) => item.code === value);
     setPais(value);
-    setNivel(country?.levels[0]?.id || 'departamentos');
+    setNivel(country?.levels.find((level) => !level.download_only)?.id || 'departamentos');
     setCodigosCsv([]);
     setCsvPreview([]);
     setCsvHeaders([]);
@@ -313,7 +313,21 @@ function App() {
                   <h3 className="mt-4 text-xl font-bold">{layer.name}</h3>
                   <p className="mt-1 text-sm font-semibold text-slate-400">{layer.count} territorios</p>
                   <p className="mt-3 max-w-lg text-sm leading-6 text-slate-600">Límites de {layer.name.toLowerCase()} preparados para mapas, análisis y conversiones GIS.</p>
-                  <p className="mt-3 text-xs text-slate-500">Fuente: <a href={country.source_url} target="_blank" rel="noreferrer" className="font-semibold text-indigo-600 hover:underline">{country.source_label}</a></p>
+                  <p className="mt-3 text-xs text-slate-500">
+                    Fuente:{' '}
+                    {Object.prototype.hasOwnProperty.call(layer, 'source_url') && !layer.source_url ? (
+                      <span className="font-semibold text-slate-600">{layer.source_label || country.source_label}</span>
+                    ) : (
+                      <a
+                        href={Object.prototype.hasOwnProperty.call(layer, 'source_url') ? layer.source_url : country.source_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-semibold text-indigo-600 hover:underline"
+                      >
+                        {layer.source_label || country.source_label}
+                      </a>
+                    )}
+                  </p>
                 </div>
                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-slate-100 text-2xl" aria-hidden="true">⌖</div>
               </div>
@@ -339,9 +353,11 @@ function App() {
                 <a href={layer.downloads?.[selectedFormat]} download className="rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-bold text-white transition hover:bg-indigo-700">
                   Descargar {format.label}
                 </a>
-                <button type="button" onClick={() => useLayer(country.code, layer.id)} className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-bold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700">
-                  Usar en ConvertToMap
-                </button>
+                {!layer.download_only && (
+                  <button type="button" onClick={() => useLayer(country.code, layer.id)} className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-bold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700">
+                    Usar en ConvertToMap
+                  </button>
+                )}
               </div>
             </article>
           );
