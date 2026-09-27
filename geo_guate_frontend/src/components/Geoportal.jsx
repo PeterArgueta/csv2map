@@ -61,7 +61,7 @@ const displayValue = (value) => {
   return String(value);
 };
 
-export function Geoportal({ language = 'es', onLanguageChange }) {
+export function Geoportal({ language = 'es', onLanguageChange, embedded = false }) {
   const en = language === 'en';
   const [panel, setPanel] = useState('layers');
   const [catalog, setCatalog] = useState(null);
@@ -532,8 +532,8 @@ export function Geoportal({ language = 'es', onLanguageChange }) {
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-100 text-slate-900">
-      <header className="z-[1100] flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-5">
+    <div className={embedded ? "flex min-h-[calc(100vh-64px)] flex-col bg-slate-100 text-slate-900" : "flex min-h-screen flex-col bg-slate-100 text-slate-900"}>
+      {!embedded && <header className="z-[1100] flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-5">
         <a href="/" className="flex items-center gap-3">
           <div className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-600 text-xs font-black text-white">CTM</div>
           <div className="flex items-baseline gap-2">
@@ -563,15 +563,18 @@ export function Geoportal({ language = 'es', onLanguageChange }) {
             </button>
           </div>
         </div>
-      </header>
+      </header>}
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <nav className="z-[1050] flex shrink-0 border-b border-slate-200 bg-white lg:w-[76px] lg:flex-col lg:border-b-0 lg:border-r">
-          {[
+          {(embedded ? [
+            { id: 'layers', icon: '▱', es: 'Capas', en: 'Layers' },
+            { id: 'selected', icon: '★', es: 'Selecc.', en: 'Selected' },
+          ] : [
             { id: 'layers', icon: '▱', es: 'Capas', en: 'Layers' },
             { id: 'selected', icon: '★', es: 'Selecc.', en: 'Selected' },
             { id: 'tools', icon: '⚙', es: 'Herram.', en: 'Tools' },
-          ].map((item) => (
+          ]).map((item) => (
             <button
               key={item.id}
               type="button"
@@ -592,7 +595,7 @@ export function Geoportal({ language = 'es', onLanguageChange }) {
         <aside className="flex max-h-[42vh] shrink-0 flex-col border-b border-slate-200 bg-slate-50 lg:max-h-none lg:w-[320px] lg:border-b-0 lg:border-r">
           {panel === 'layers' && renderLayersPanel()}
           {panel === 'selected' && renderSelectedPanel()}
-          {panel === 'tools' && renderToolsPanel()}
+          {!embedded && panel === 'tools' && renderToolsPanel()}
         </aside>
 
         <main className="relative min-h-[58vh] flex-1 bg-slate-200 lg:min-h-0">
