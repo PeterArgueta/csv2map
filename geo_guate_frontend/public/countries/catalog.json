@@ -90,6 +90,46 @@
       "region_es": "Centroamérica"
     },
     {
+      "code": "BLZ",
+      "name": "Belice",
+      "region": "Central America",
+      "region_es": "Centroamérica",
+      "source_label": "geoBoundaries · Wikimedia Commons",
+      "source_url": "https://www.geoboundaries.org/api/current/gbOpen/BLZ/ADM1/",
+      "levels": [
+        {
+          "id": "distritos",
+          "admin_level": "admin1",
+          "name": "Distritos",
+          "name_en": "Districts",
+          "singular": "distrito",
+          "singular_en": "district",
+          "count": 6,
+          "category": "administrative",
+          "category_es": "Límites administrativos",
+          "category_en": "Administrative boundaries",
+          "code_property": "admin_code",
+          "name_property": "name",
+          "code_width": 2,
+          "map_url": "/countries/BLZ/admin1.optimized.geojson",
+          "api": {
+            "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/BLZ/ADM1/geoBoundaries-BLZ-ADM1_simplified.geojson",
+            "transform": "admin1_codes",
+            "code_map": "BLZ",
+            "code_field": "admin_code",
+            "basename": "converttomap_blz_distritos"
+          },
+          "downloads": {
+            "geojson": "/downloads/distritos_belice.geojson",
+            "shp": "/downloads/distritos_belice_shapefile.zip",
+            "gpkg": "/downloads/distritos_belice.gpkg",
+            "kml": "/downloads/distritos_belice.kml"
+          },
+          "metadata_url": "/countries/BLZ/metadata.json"
+        }
+      ]
+    },
+    {
       "code": "SLV",
       "name": "El Salvador",
       "source_label": "geoBoundaries · OpenStreetMap",
@@ -160,6 +200,126 @@
             "kml": "/downloads/departamentos_honduras.kml"
           },
           "metadata_url": "/countries/HND/metadata.json"
+        }
+      ]
+    },
+    {
+      "code": "NIC",
+      "name": "Nicaragua",
+      "region": "Central America",
+      "region_es": "Centroamérica",
+      "source_label": "geoBoundaries · OpenStreetMap",
+      "source_url": "https://www.geoboundaries.org/api/current/gbOpen/NIC/ADM1/",
+      "levels": [
+        {
+          "id": "departamentos_regiones",
+          "admin_level": "admin1",
+          "name": "Departamentos y regiones autónomas",
+          "name_en": "Departments and autonomous regions",
+          "singular": "departamento o región",
+          "singular_en": "department or autonomous region",
+          "count": 17,
+          "category": "administrative",
+          "category_es": "Límites administrativos",
+          "category_en": "Administrative boundaries",
+          "code_property": "admin_code",
+          "name_property": "name",
+          "code_width": 2,
+          "map_url": "/countries/NIC/admin1.optimized.geojson",
+          "api": {
+            "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/NIC/ADM1/geoBoundaries-NIC-ADM1_simplified.geojson",
+            "transform": "admin1_codes",
+            "code_map": "NIC",
+            "code_field": "admin_code",
+            "basename": "converttomap_nic_departamentos_regiones"
+          },
+          "downloads": {
+            "geojson": "/downloads/departamentos_regiones_nicaragua.geojson",
+            "shp": "/downloads/departamentos_regiones_nicaragua_shapefile.zip",
+            "gpkg": "/downloads/departamentos_regiones_nicaragua.gpkg",
+            "kml": "/downloads/departamentos_regiones_nicaragua.kml"
+          },
+          "metadata_url": "/countries/NIC/metadata.json"
+        }
+      ]
+    },
+    {
+      "code": "CRI",
+      "name": "Costa Rica",
+      "region": "Central America",
+      "region_es": "Centroamérica",
+      "source_label": "geoBoundaries · UN SALB · IGN Costa Rica",
+      "source_url": "https://www.geoboundaries.org/api/current/gbAuthoritative/CRI/ADM1/",
+      "levels": [
+        {
+          "id": "provincias",
+          "admin_level": "admin1",
+          "name": "Provincias",
+          "name_en": "Provinces",
+          "singular": "provincia",
+          "singular_en": "province",
+          "count": 7,
+          "category": "administrative",
+          "category_es": "Límites administrativos",
+          "category_en": "Administrative boundaries",
+          "code_property": "admin_code",
+          "name_property": "name",
+          "code_width": 2,
+          "map_url": "/countries/CRI/admin1.optimized.geojson",
+          "api": {
+            "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbAuthoritative/CRI/ADM1/geoBoundaries-CRI-ADM1_simplified.geojson",
+            "transform": "admin1_codes",
+            "code_map": "CRI",
+            "code_field": "admin_code",
+            "basename": "converttomap_cri_provincias"
+          },
+          "downloads": {
+            "geojson": "/downloads/provincias_costa_rica.geojson",
+            "shp": "/downloads/provincias_costa_rica_shapefile.zip",
+            "gpkg": "/downloads/provincias_costa_rica.gpkg",
+            "kml": "/downloads/provincias_costa_rica.kml"
+          },
+          "metadata_url": "/countries/CRI/metadata.json"
+        }
+      ]
+    },
+    {
+      "code": "PAN",
+      "name": "Panamá",
+      "region": "Central America",
+      "region_es": "Centroamérica",
+      "source_label": "geoBoundaries · OpenStreetMap",
+      "source_url": "https://www.geoboundaries.org/api/current/gbOpen/PAN/ADM1/",
+      "levels": [
+        {
+          "id": "provincias_comarcas",
+          "admin_level": "admin1",
+          "name": "Provincias y comarcas",
+          "name_en": "Provinces and comarcas",
+          "singular": "provincia o comarca",
+          "singular_en": "province or comarca",
+          "count": 13,
+          "category": "administrative",
+          "category_es": "Límites administrativos",
+          "category_en": "Administrative boundaries",
+          "code_property": "admin_code",
+          "name_property": "name",
+          "code_width": 2,
+          "map_url": "/countries/PAN/admin1.optimized.geojson",
+          "api": {
+            "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/PAN/ADM1/geoBoundaries-PAN-ADM1_simplified.geojson",
+            "transform": "admin1_codes",
+            "code_map": "PAN",
+            "code_field": "admin_code",
+            "basename": "converttomap_pan_provincias_comarcas"
+          },
+          "downloads": {
+            "geojson": "/downloads/provincias_comarcas_panama.geojson",
+            "shp": "/downloads/provincias_comarcas_panama_shapefile.zip",
+            "gpkg": "/downloads/provincias_comarcas_panama.gpkg",
+            "kml": "/downloads/provincias_comarcas_panama.kml"
+          },
+          "metadata_url": "/countries/PAN/metadata.json"
         }
       ]
     },
