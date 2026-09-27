@@ -34,7 +34,14 @@ def load_layer_catalog() -> dict[str, dict[str, dict[str, object]]]:
         country_layers: dict[str, dict[str, object]] = {}
         for level in country["levels"]:
             api = level.get("api")
-            if not api:
+            if (
+                not api
+                or not (api.get("url") or api.get("path"))
+                or not api.get("code_field")
+                or level.get("code_width") is None
+            ):
+                # Static/reference layers can live in the frontend catalog without
+                # participating in CSV georeferencing through the API.
                 continue
             source_path = api.get("url") or str(BASE_DIR / api["path"])
             country_layers[level["id"]] = {
