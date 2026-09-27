@@ -1,0 +1,20 @@
+{
+  "country": "Belice",
+  "country_code": "BLZ",
+  "layer": "Distritos",
+  "layer_en": "Districts",
+  "admin_level": "ADM1",
+  "count": 6,
+  "source_label": "geoBoundaries · Wikimedia Commons",
+  "source_url": "https://www.geoboundaries.org/api/current/gbOpen/BLZ/ADM1/",
+  "boundary_year_represented": "2006",
+  "license": "Creative Commons Attribution 2.5 Generic",
+  "public_fields": [
+    "admin_code",
+    "name"
+  ],
+  "notes": [
+    "ConvertToMap distribuye una geometría simplificada para visualización y conversión GIS.",
+    "Los códigos admin_code de dos dígitos son claves internas de ConvertToMap para facilitar el uso con CSV."
+  ]
+}
