@@ -24,6 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent
 MAX_FILE_SIZE = 10 * 1024 * 1024
 ALLOWED_FORMATS = {"shp", "kml", "geojson", "gpkg"}
 CATALOG_PATH = BASE_DIR / "geo_guate_frontend" / "public" / "countries" / "catalog.json"
+ADMIN_CODES_PATH = BASE_DIR / "geo_guate_frontend" / "public" / "countries" / "admin1_codes.json"
 
 
 def load_layer_catalog() -> dict[str, dict[str, dict[str, object]]]:
@@ -44,6 +45,7 @@ def load_layer_catalog() -> dict[str, dict[str, dict[str, object]]]:
                 "country_name": country["name"],
                 "source": level.get("source_label") or country["source_label"],
                 "transform": api.get("transform"),
+                "code_map": api.get("code_map"),
             }
         layers[country["code"]] = country_layers
     return layers
@@ -51,48 +53,7 @@ def load_layer_catalog() -> dict[str, dict[str, dict[str, object]]]:
 
 LAYERS = load_layer_catalog()
 
-MEXICO_STATE_CODES = {
-    "aguascalientes": "01",
-    "baja california": "02",
-    "baja california sur": "03",
-    "campeche": "04",
-    "coahuila": "05",
-    "coahuila de zaragoza": "05",
-    "colima": "06",
-    "chiapas": "07",
-    "chihuahua": "08",
-    "ciudad de mexico": "09",
-    "distrito federal": "09",
-    "durango": "10",
-    "guanajuato": "11",
-    "guerrero": "12",
-    "hidalgo": "13",
-    "jalisco": "14",
-    "mexico": "15",
-    "estado de mexico": "15",
-    "michoacan": "16",
-    "michoacan de ocampo": "16",
-    "morelos": "17",
-    "nayarit": "18",
-    "nuevo leon": "19",
-    "oaxaca": "20",
-    "puebla": "21",
-    "queretaro": "22",
-    "queretaro de arteaga": "22",
-    "quintana roo": "23",
-    "san luis potosi": "24",
-    "sinaloa": "25",
-    "sonora": "26",
-    "tabasco": "27",
-    "tamaulipas": "28",
-    "tlaxcala": "29",
-    "veracruz": "30",
-    "veracruz de ignacio de la llave": "30",
-    "yucatan": "31",
-    "zacatecas": "32",
-}
-
-
+ADMIN1_CODE_MAPS = json.loads(ADMIN_CODES_PATH.read_text(encoding="utf-8"))
 def normalize_text_key(value: object) -> str:
     text = unicodedata.normalize("NFKD", str(value or ""))
     return " ".join(
@@ -103,16 +64,29 @@ def normalize_text_key(value: object) -> str:
     )
 
 
-def transform_configured_layer(gdf: gpd.GeoDataFrame, transform: str | None) -> gpd.GeoDataFrame:
-    if transform != "mexico_adm1":
+def transform_configured_layer(
+    gdf: gpd.GeoDataFrame,
+    transform: str | None,
+    code_map: str | None = None,
+) -> gpd.GeoDataFrame:
+    if transform != "admin1_codes":
         return gdf
+
+    mapping = ADMIN1_CODE_MAPS.get(code_map or "", {})
+    if not mapping:
+        raise ValueError(f"No hay mapa de códigos configurado para {code_map!r}.")
+
     name_field = "shapeName" if "shapeName" in gdf.columns else "name"
     transformed = gdf.copy()
     transformed["name"] = transformed[name_field].astype(str)
     transformed["admin_code"] = transformed["name"].map(
-        lambda value: MEXICO_STATE_CODES.get(normalize_text_key(value), "")
+        lambda value: mapping.get(normalize_text_key(value), "")
     )
-    transformed = transformed[transformed["admin_code"] != ""].copy()
+    missing = transformed.loc[transformed["admin_code"] == "", "name"].tolist()
+    if missing:
+        raise ValueError(
+            "No se pudieron asignar códigos administrativos a: " + ", ".join(missing[:10])
+        )
     return transformed
 
 
@@ -150,7 +124,7 @@ def load_layer(pais: str, nivel: str | None = None) -> gpd.GeoDataFrame:
         raise ValueError("País o nivel geográfico no válido.")
     config = LAYERS[pais][nivel]
     frame = gpd.read_file(config["path"])
-    return transform_configured_layer(frame, config.get("transform"))
+    return transform_configured_layer(frame, config.get("transform"), config.get("code_map"))
 
 
 def parse_csv(content: bytes) -> tuple[pd.DataFrame, str]:
