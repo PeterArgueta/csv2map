@@ -516,7 +516,7 @@ function App() {
                 className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-1 border-indigo-600 px-1 py-1.5 text-center transition lg:min-h-[88px] lg:flex-none lg:px-2 lg:py-2 ${activeItem ? 'border-t-2 bg-indigo-50 text-indigo-700 lg:border-l-4 lg:border-t-0' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
               >
                 <span className="text-lg leading-none sm:text-xl">{item.icon}</span>
-                <span className="max-w-full truncate text-[9px] font-bold leading-tight sm:text-[10px]">{language === 'en' ? item.en : item.es}</span>
+                <span className="max-w-[72px] whitespace-normal break-words text-center text-[9px] font-bold leading-[1.05] sm:max-w-[78px] sm:text-[10px]">{language === 'en' ? item.en : item.es}</span>
               </a>
             );
           })}
