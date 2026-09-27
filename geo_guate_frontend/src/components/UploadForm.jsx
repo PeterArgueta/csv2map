@@ -13,6 +13,7 @@ const FORMAT_OPTIONS = [
 const COLUMN_HINTS = {
   departamentos: ['codigo_departamento', 'cod_departamento', 'cod_dep', 'departamento_codigo', 'codigo'],
   municipios: ['codigo_municipio', 'cod_municipio', 'cod_muni', 'codigo_ine', 'municipio_codigo', 'codigo'],
+  estados: ['codigo_estado', 'cod_estado', 'cve_ent', 'clave_entidad', 'estado_codigo', 'codigo'],
 };
 
 const normalizeHeader = (value) => String(value ?? '')
@@ -123,7 +124,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
       setFileError(selected ? '' : 'Selecciona la columna que contiene el código territorial.');
       emitPreview(rows, headers, selected, fileData);
     }
-    if (nivel !== 'departamentos') setShowCsvBuilder(false);
+    if (!['departamentos', 'estados'].includes(nivel)) setShowCsvBuilder(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     setSelectedDepartments([]);
     setDepartmentValues({});
@@ -205,9 +206,8 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
   };
 
   const downloadSample = () => {
-    const content = nivel === 'municipios'
-      ? 'codigo_municipio,valor,nombre\n0101,120,Guatemala\n0301,85,Antigua Guatemala\n'
-      : `codigo_departamento,valor,nombre\n${territories.slice(0, 2).map(([code, name], index) => `${code},${index ? 85 : 120},${name}`).join('\n')}\n`;
+    const codeHeader = nivel === 'municipios' ? 'codigo_municipio' : nivel === 'estados' ? 'codigo_estado' : 'codigo_departamento';
+    const content = `${codeHeader},valor,nombre\n${territories.slice(0, 2).map(([code, name], index) => `${code},${index ? 85 : 120},${name}`).join('\n')}\n`;
     const url = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8' }));
     const anchor = document.createElement('a');
     anchor.href = url;
@@ -262,10 +262,9 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
     const rowsToExport = territories
       .filter(([code]) => selectedDepartments.includes(code))
       .map(([code, name]) => {
-        const row = {
-          codigo_departamento: code,
-          departamento: name,
-        };
+        const row = nivel === 'estados'
+          ? { codigo_estado: code, estado: name }
+          : { codigo_departamento: code, departamento: name };
         outputColumns.forEach((column) => {
           row[column.header] = departmentValues[code]?.[column.id] ?? '';
         });
@@ -277,7 +276,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
   const useCreatedCsv = () => {
     if (!selectedDepartments.length) return;
     const csv = buildDepartmentCsv();
-    const file = new File([csv], `${pais.toLowerCase()}_departamentos_personalizado.csv`, { type: 'text/csv;charset=utf-8' });
+    const file = new File([csv], `${pais.toLowerCase()}_${nivel}_personalizado.csv`, { type: 'text/csv;charset=utf-8' });
     parseFile(file);
     setShowCsvBuilder(false);
   };
@@ -315,7 +314,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <label className="field-label mb-0">Archivo CSV</label>
           <div className="flex items-center gap-3">
-            {nivel === 'departamentos' && (
+            {['departamentos', 'estados'].includes(nivel) && (
               <button type="button" onClick={() => setShowCsvBuilder((value) => !value)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">
                 {showCsvBuilder ? 'Cerrar creador' : 'Crear CSV'}
               </button>
@@ -324,11 +323,11 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
           </div>
         </div>
 
-        {showCsvBuilder && nivel === 'departamentos' && (
+        {showCsvBuilder && ['departamentos', 'estados'].includes(nivel) && (
           <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-sm font-bold text-slate-800">Crear CSV de departamentos</p>
+                <p className="text-sm font-bold text-slate-800">{nivel === 'estados' ? 'Crear CSV de estados' : 'Crear CSV de departamentos'}</p>
                 <p className="text-xs text-slate-500">Selecciona territorios y agrega las variables que necesites.</p>
               </div>
               <div className="flex gap-2 text-xs font-bold">
@@ -354,7 +353,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
               </div>
 
               {customColumns.length === 0 ? (
-                <p className="rounded-lg bg-slate-50 p-2 text-xs text-slate-500">El CSV contendrá únicamente código y departamento.</p>
+                <p className="rounded-lg bg-slate-50 p-2 text-xs text-slate-500">{nivel === 'estados' ? 'El CSV contendrá únicamente código y estado.' : 'El CSV contendrá únicamente código y departamento.'}</p>
               ) : (
                 <div className="space-y-2">
                   {customColumns.map((column, index) => (
