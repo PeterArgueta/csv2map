@@ -54,6 +54,27 @@
             "kml": "/downloads/municipios_guatemala.kml"
           },
           "metadata_url": "/countries/GTM/metadata.json"
+        },
+        {
+          "id": "zonas_ciudad_guatemala",
+          "admin_level": "local_zone",
+          "name": "Zonas de Ciudad de Guatemala",
+          "singular": "zona",
+          "count": 22,
+          "code_property": "admin_code",
+          "name_property": "name",
+          "code_width": 2,
+          "download_only": true,
+          "map_url": "/ZonasGuatemala/zonas_ciudad_guatemala.geojson",
+          "source_label": "Fuente no identificada en la metadata original",
+          "source_url": null,
+          "downloads": {
+            "geojson": "/downloads/zonas_ciudad_guatemala.geojson",
+            "shp": "/downloads/zonas_ciudad_guatemala_shapefile.zip",
+            "gpkg": "/downloads/zonas_ciudad_guatemala.gpkg",
+            "kml": "/downloads/zonas_ciudad_guatemala.kml"
+          },
+          "metadata_url": "/ZonasGuatemala/metadata.json"
         }
       ]
     },
