@@ -31,6 +31,36 @@ COLUMN_CANDIDATES = {
         "estado_codigo",
         "codigo",
     ],
+    "distritos": [
+        "codigo_distrito",
+        "codigo distrito",
+        "cod_distrito",
+        "distrito_codigo",
+        "codigo_territorial",
+        "codigo",
+    ],
+    "departamentos_regiones": [
+        "codigo_departamento",
+        "codigo_region",
+        "codigo_territorial",
+        "admin_code",
+        "codigo",
+    ],
+    "provincias": [
+        "codigo_provincia",
+        "codigo provincia",
+        "cod_provincia",
+        "provincia_codigo",
+        "codigo_territorial",
+        "codigo",
+    ],
+    "provincias_comarcas": [
+        "codigo_provincia",
+        "codigo_comarca",
+        "codigo_territorial",
+        "admin_code",
+        "codigo",
+    ],
 }
 
 
