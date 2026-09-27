@@ -307,7 +307,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
       <div>
         <label htmlFor="nivel" className="field-label">Nivel geográfico</label>
         <select id="nivel" value={nivel} onChange={(event) => onLevelChange(event.target.value)} className="field-control">
-          {selectedCountry.levels.map((level) => <option key={level.id} value={level.id}>{level.name} ({level.count})</option>)}
+          {selectedCountry.levels.filter((level) => !level.download_only).map((level) => <option key={level.id} value={level.id}>{level.name} ({level.count})</option>)}
         </select>
       </div>
 
