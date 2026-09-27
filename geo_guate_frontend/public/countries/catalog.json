@@ -84,6 +84,27 @@
           "category": "local",
           "category_es": "Local",
           "category_en": "Local"
+        },
+        {
+          "id": "belice_diferendo",
+          "admin_level": "reference",
+          "name": "Belice · Diferendo Territorial",
+          "name_en": "Belize · Territorial dispute",
+          "singular": "referencia",
+          "singular_en": "reference",
+          "count": 1,
+          "code_property": null,
+          "name_property": "name",
+          "map_url": "/countries/GTM/belice_diferendo.geojson",
+          "download_only": true,
+          "source_label": "Referencia cartográfica del diferendo",
+          "source_url": null,
+          "downloads": {
+            "geojson": "/countries/GTM/belice_diferendo.geojson"
+          },
+          "category": "reference",
+          "category_es": "Diferendo territorial",
+          "category_en": "Territorial dispute"
         }
       ],
       "region": "Central America",
