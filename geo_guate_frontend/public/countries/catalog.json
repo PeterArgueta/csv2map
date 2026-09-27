@@ -248,8 +248,8 @@
       "name": "Costa Rica",
       "region": "Central America",
       "region_es": "Centroamérica",
-      "source_label": "geoBoundaries · UN SALB · IGN Costa Rica",
-      "source_url": "https://www.geoboundaries.org/api/current/gbAuthoritative/CRI/ADM1/",
+      "source_label": "geoBoundaries · gbOpen",
+      "source_url": "https://www.geoboundaries.org/",
       "levels": [
         {
           "id": "provincias",
@@ -267,7 +267,7 @@
           "code_width": 2,
           "map_url": "/countries/CRI/admin1.optimized.geojson",
           "api": {
-            "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbAuthoritative/CRI/ADM1/geoBoundaries-CRI-ADM1_simplified.geojson",
+            "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/CRI/ADM1/geoBoundaries-CRI-ADM1_simplified.geojson",
             "transform": "admin1_codes",
             "code_map": "CRI",
             "code_field": "admin_code",
