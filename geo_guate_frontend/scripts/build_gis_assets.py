@@ -149,6 +149,8 @@ def build_downloads(source: Path, country: dict, layer: dict) -> None:
         target.parent.mkdir(parents=True, exist_ok=True)
 
         if fmt == "geojson":
+            if target.resolve() == source.resolve():
+                continue
             run("ogr2ogr", "-f", "GeoJSON", str(target), str(source), "-t_srs", "EPSG:4326")
         elif fmt == "gpkg":
             run("ogr2ogr", "-f", "GPKG", str(target), str(source), "-nln", basename)
