@@ -1,0 +1,20 @@
+{
+  "country": "Nicaragua",
+  "country_code": "NIC",
+  "layer": "Departamentos y regiones autónomas",
+  "layer_en": "Departments and autonomous regions",
+  "admin_level": "ADM1",
+  "count": 17,
+  "source_label": "geoBoundaries · OpenStreetMap",
+  "source_url": "https://www.geoboundaries.org/api/current/gbOpen/NIC/ADM1/",
+  "boundary_year_represented": "2017",
+  "license": "Open Data Commons Open Database License 1.0",
+  "public_fields": [
+    "admin_code",
+    "name"
+  ],
+  "notes": [
+    "La capa ADM1 incluye departamentos y las dos regiones autónomas de la Costa Caribe.",
+    "ConvertToMap distribuye una geometría simplificada para visualización y conversión GIS."
+  ]
+}
