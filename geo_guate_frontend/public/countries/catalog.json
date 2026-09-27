@@ -29,7 +29,10 @@
             "gpkg": "/downloads/departamentos_guatemala.gpkg",
             "kml": "/downloads/departamentos_guatemala.kml"
           },
-          "metadata_url": "/countries/GTM/metadata.json"
+          "metadata_url": "/countries/GTM/metadata.json",
+          "category": "administrative",
+          "category_es": "Límites administrativos",
+          "category_en": "Administrative boundaries"
         },
         {
           "id": "municipios",
@@ -53,7 +56,10 @@
             "gpkg": "/downloads/municipios_guatemala.gpkg",
             "kml": "/downloads/municipios_guatemala.kml"
           },
-          "metadata_url": "/countries/GTM/metadata.json"
+          "metadata_url": "/countries/GTM/metadata.json",
+          "category": "administrative",
+          "category_es": "Límites administrativos",
+          "category_en": "Administrative boundaries"
         },
         {
           "id": "zonas_ciudad_guatemala",
@@ -74,9 +80,14 @@
             "gpkg": "/downloads/zonas_ciudad_guatemala.gpkg",
             "kml": "/downloads/zonas_ciudad_guatemala.kml"
           },
-          "metadata_url": "/ZonasGuatemala/metadata.json"
+          "metadata_url": "/ZonasGuatemala/metadata.json",
+          "category": "local",
+          "category_es": "Local",
+          "category_en": "Local"
         }
-      ]
+      ],
+      "region": "Central America",
+      "region_es": "Centroamérica"
     },
     {
       "code": "SLV",
@@ -103,7 +114,52 @@
           "downloads": {
             "geojson": "/countries/SLV/admin1.geojson"
           },
-          "metadata_url": "/countries/SLV/metadata.json"
+          "metadata_url": "/countries/SLV/metadata.json",
+          "category": "administrative",
+          "category_es": "Límites administrativos",
+          "category_en": "Administrative boundaries"
+        }
+      ],
+      "region": "Central America",
+      "region_es": "Centroamérica"
+    },
+    {
+      "code": "HND",
+      "name": "Honduras",
+      "region": "Central America",
+      "region_es": "Centroamérica",
+      "source_label": "geoBoundaries · OpenStreetMap",
+      "source_url": "https://www.geoboundaries.org/api/current/gbOpen/HND/ADM1/",
+      "levels": [
+        {
+          "id": "departamentos",
+          "admin_level": "admin1",
+          "name": "Departamentos",
+          "name_en": "Departments",
+          "singular": "departamento",
+          "singular_en": "department",
+          "count": 18,
+          "category": "administrative",
+          "category_es": "Límites administrativos",
+          "category_en": "Administrative boundaries",
+          "code_property": "admin_code",
+          "name_property": "name",
+          "code_width": 2,
+          "map_url": "/countries/HND/admin1.optimized.geojson",
+          "api": {
+            "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/HND/ADM1/geoBoundaries-HND-ADM1_simplified.geojson",
+            "transform": "admin1_codes",
+            "code_map": "HND",
+            "code_field": "admin_code",
+            "basename": "converttomap_hnd_departamentos"
+          },
+          "downloads": {
+            "geojson": "/downloads/departamentos_honduras.geojson",
+            "shp": "/downloads/departamentos_honduras_shapefile.zip",
+            "gpkg": "/downloads/departamentos_honduras.gpkg",
+            "kml": "/downloads/departamentos_honduras.kml"
+          },
+          "metadata_url": "/countries/HND/metadata.json"
         }
       ]
     },
@@ -127,9 +183,10 @@
           "map_url": "/countries/MEX/admin1.optimized.geojson",
           "api": {
             "url": "https://github.com/wmgeolab/geoBoundaries/raw/90a1d52/releaseData/gbOpen/MEX/ADM1/geoBoundaries-MEX-ADM1_simplified.geojson",
-            "transform": "mexico_adm1",
+            "transform": "admin1_codes",
             "code_field": "admin_code",
-            "basename": "converttomap_mex_estados"
+            "basename": "converttomap_mex_estados",
+            "code_map": "MEX"
           },
           "downloads": {
             "geojson": "/downloads/estados_mexico.geojson",
@@ -137,9 +194,14 @@
             "gpkg": "/downloads/estados_mexico.gpkg",
             "kml": "/downloads/estados_mexico.kml"
           },
-          "metadata_url": "/countries/MEX/metadata.json"
+          "metadata_url": "/countries/MEX/metadata.json",
+          "category": "administrative",
+          "category_es": "Límites administrativos",
+          "category_en": "Administrative boundaries"
         }
-      ]
+      ],
+      "region": "North America",
+      "region_es": "Norteamérica"
     }
   ]
 }
