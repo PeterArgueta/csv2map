@@ -137,20 +137,25 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
     );
   }, [layers, query]);
 
-  const groupedCountries = useMemo(() => {
+  const groupedRegions = useMemo(() => {
     if (!catalog) return [];
-    return catalog.countries
-      .map((country) => {
-        const countryLayers = visibleLayers.filter((layer) => layer.countryCode === country.code);
-        const categories = countryLayers.reduce((acc, layer) => {
-          const label = categoryLabel(layer);
-          if (!acc[label]) acc[label] = [];
-          acc[label].push(layer);
-          return acc;
-        }, {});
-        return { country, categories, count: countryLayers.length };
-      })
-      .filter((group) => group.count > 0);
+    const regions = new Map();
+
+    catalog.countries.forEach((country) => {
+      const countryLayers = visibleLayers.filter((layer) => layer.countryCode === country.code);
+      if (!countryLayers.length) return;
+
+      const regionLabel = en ? country.region : country.region_es;
+      if (!regions.has(regionLabel)) {
+        regions.set(regionLabel, { region: regionLabel, countries: [], count: 0 });
+      }
+
+      const group = regions.get(regionLabel);
+      group.countries.push({ country, layers: countryLayers, count: countryLayers.length });
+      group.count += countryLayers.length;
+    });
+
+    return Array.from(regions.values());
   }, [catalog, visibleLayers, en]);
 
   const selectedLayers = useMemo(
@@ -291,119 +296,123 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
       <div className="flex-1 overflow-y-auto p-3">
         {errors.catalog && <div className="rounded-lg bg-red-50 p-3 text-xs text-red-700">{errors.catalog}</div>}
 
-        <div className="space-y-2">
-          {groupedCountries.map(({ country, categories, count }) => {
-            const open = Boolean(expandedCountries[country.code]) || Boolean(query.trim());
-            return (
-              <section key={country.code} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                <button
-                  type="button"
-                  onClick={() => toggleCountry(country.code)}
-                  className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-slate-50"
-                >
-                  <span className={`text-xs text-slate-400 transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-bold text-slate-800">{country.name}</div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                      {en ? country.region : country.region_es}
-                    </div>
-                  </div>
-                  <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500">{count}</span>
-                </button>
+        <div className="space-y-5">
+          {groupedRegions.map(({ region, countries, count: regionCount }) => (
+            <section key={region}>
+              <div className="mb-1.5 flex items-center gap-2 px-1">
+                <p className="min-w-0 flex-1 truncate text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
+                  {region}
+                </p>
+                <span className="text-[10px] font-bold text-slate-400">
+                  {regionCount} {en ? (regionCount === 1 ? 'layer' : 'layers') : (regionCount === 1 ? 'capa' : 'capas')}
+                </span>
+              </div>
+              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                {countries.map(({ country, layers: countryLayers, count }, countryIndex) => {
+                  const open = Boolean(expandedCountries[country.code]) || Boolean(query.trim());
+                  return (
+                    <div key={country.code} className={countryIndex ? 'border-t border-slate-100' : ''}>
+                      <button
+                        type="button"
+                        onClick={() => toggleCountry(country.code)}
+                        className="flex min-h-[46px] w-full items-center gap-2.5 px-3 py-2 text-left transition hover:bg-slate-50"
+                      >
+                        <span className={`text-[10px] text-slate-400 transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
+                        <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-800">{country.name}</span>
+                        <span className="grid h-6 min-w-6 place-items-center rounded-full bg-slate-100 px-1.5 text-[10px] font-bold text-slate-500">{count}</span>
+                      </button>
 
-                {open && (
-                  <div className="border-t border-slate-100 px-3 pb-3">
-                    {Object.entries(categories).map(([category, categoryLayers]) => (
-                      <div key={category} className="pt-3">
-                        <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.13em] text-slate-400">{category}</p>
-                        <div className="space-y-1">
-                          {categoryLayers.map((layer) => {
-                            const enabled = Boolean(active[layer.key]);
-                            const detailsOpen = expandedLayer === layer.key;
-                            return (
-                              <div key={layer.key} className={`rounded-lg border transition ${enabled ? 'border-indigo-200 bg-indigo-50/50' : 'border-transparent hover:bg-slate-50'}`}>
-                                <div className="flex items-center gap-2 px-2 py-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={enabled}
-                                    onChange={() => toggleLayer(layer)}
-                                    className="h-4 w-4 shrink-0 accent-indigo-600"
-                                    aria-label={`${en ? 'Show' : 'Mostrar'} ${layerLabel(layer)}`}
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleLayer(layer)}
-                                    className="min-w-0 flex-1 text-left"
-                                  >
-                                    <span className="flex items-center gap-2">
-                                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: layer.color }} />
-                                      <span className="truncate text-sm font-semibold text-slate-700">{layerLabel(layer)}</span>
-                                    </span>
-                                    <span className="ml-[18px] block text-[10px] text-slate-400">
-                                      {layer.count} {en ? 'features' : 'entidades'}
-                                    </span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setExpandedLayer(detailsOpen ? null : layer.key)}
-                                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-lg font-bold text-slate-400 hover:bg-white hover:text-indigo-600"
-                                    aria-label={en ? 'Layer options' : 'Opciones de capa'}
-                                  >
-                                    ⋮
-                                  </button>
-                                </div>
-
-                                {loading[layer.key] && <p className="px-3 pb-2 text-[10px] font-semibold text-indigo-600">{en ? 'Loading…' : 'Cargando…'}</p>}
-                                {errors[layer.key] && <p className="px-3 pb-2 text-[10px] text-red-600">{errors[layer.key]}</p>}
-
-                                {detailsOpen && (
-                                  <div className="space-y-3 border-t border-slate-200/70 bg-white px-3 py-3">
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => toggleLayer(layer)}
-                                        className="rounded-lg border border-slate-300 px-2 py-2 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700"
-                                      >
-                                        {enabled ? (en ? 'Hide' : 'Ocultar') : (en ? 'View on map' : 'Ver en mapa')}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => zoomLayer(layer)}
-                                        className="rounded-lg border border-slate-300 px-2 py-2 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700"
-                                      >
-                                        {en ? 'Zoom to layer' : 'Zoom a capa'}
-                                      </button>
-                                    </div>
-
-                                    <div>
-                                      <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-slate-400">{en ? 'Download' : 'Descargar'}</p>
-                                      {renderDownload(layer, true)}
-                                    </div>
-
-                                    <div className="text-[10px] leading-4 text-slate-500">
-                                      <span className="font-bold">{en ? 'Source:' : 'Fuente:'}</span>{' '}
-                                      {sourceUrl(layer) ? (
-                                        <a href={sourceUrl(layer)} target="_blank" rel="noreferrer" className="font-semibold text-indigo-600 hover:underline">
-                                          {sourceLabel(layer)}
-                                        </a>
-                                      ) : (
-                                        <span>{sourceLabel(layer)}</span>
-                                      )}
-                                    </div>
+                      {open && (
+                        <div className="border-t border-slate-100 bg-slate-50/60 px-2 py-1.5">
+                          <div className="space-y-1">
+                            {countryLayers.map((layer) => {
+                              const enabled = Boolean(active[layer.key]);
+                              const detailsOpen = expandedLayer === layer.key;
+                              return (
+                                <div key={layer.key} className={`rounded-lg border transition ${enabled ? 'border-indigo-200 bg-indigo-50/70' : 'border-transparent hover:bg-white'}`}>
+                                  <div className="flex min-h-[42px] items-center gap-2 px-2 py-1.5">
+                                    <input
+                                      type="checkbox"
+                                      checked={enabled}
+                                      onChange={() => toggleLayer(layer)}
+                                      className="h-4 w-4 shrink-0 accent-indigo-600"
+                                      aria-label={`${en ? 'Show' : 'Mostrar'} ${layerLabel(layer)}`}
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleLayer(layer)}
+                                      className="min-w-0 flex-1 text-left"
+                                    >
+                                      <span className="flex items-center gap-2">
+                                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: layer.color }} />
+                                        <span className="truncate text-[13px] font-semibold text-slate-700">{layerLabel(layer)}</span>
+                                      </span>
+                                      <span className="ml-[18px] block text-[9px] text-slate-400">
+                                        {layer.count} {en ? 'features' : 'entidades'}
+                                      </span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setExpandedLayer(detailsOpen ? null : layer.key)}
+                                      className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-lg font-bold text-slate-400 hover:bg-white hover:text-indigo-600"
+                                      aria-label={en ? 'Layer options' : 'Opciones de capa'}
+                                    >
+                                      ⋮
+                                    </button>
                                   </div>
-                                )}
-                              </div>
-                            );
-                          })}
+
+                                  {loading[layer.key] && <p className="px-3 pb-2 text-[10px] font-semibold text-indigo-600">{en ? 'Loading…' : 'Cargando…'}</p>}
+                                  {errors[layer.key] && <p className="px-3 pb-2 text-[10px] text-red-600">{errors[layer.key]}</p>}
+
+                                  {detailsOpen && (
+                                    <div className="space-y-3 border-t border-slate-200/70 bg-white px-3 py-3">
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => toggleLayer(layer)}
+                                          className="rounded-lg border border-slate-300 px-2 py-2 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700"
+                                        >
+                                          {enabled ? (en ? 'Hide' : 'Ocultar') : (en ? 'View on map' : 'Ver en mapa')}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => zoomLayer(layer)}
+                                          className="rounded-lg border border-slate-300 px-2 py-2 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700"
+                                        >
+                                          {en ? 'Zoom to layer' : 'Zoom a capa'}
+                                        </button>
+                                      </div>
+
+                                      <div>
+                                        <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-slate-400">{en ? 'Download' : 'Descargar'}</p>
+                                        {renderDownload(layer, true)}
+                                      </div>
+
+                                      <div className="text-[10px] leading-4 text-slate-500">
+                                        <span className="font-bold">{en ? 'Source:' : 'Fuente:'}</span>{' '}
+                                        {sourceUrl(layer) ? (
+                                          <a href={sourceUrl(layer)} target="_blank" rel="noreferrer" className="font-semibold text-indigo-600 hover:underline">
+                                            {sourceLabel(layer)}
+                                          </a>
+                                        ) : (
+                                          <span>{sourceLabel(layer)}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-            );
-          })}
-        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </div>        </div>
       </div>
     </>
   );
