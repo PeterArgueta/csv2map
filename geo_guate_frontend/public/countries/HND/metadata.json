@@ -1,0 +1,21 @@
+{
+  "country": "Honduras",
+  "country_code": "HND",
+  "layer": "Departamentos",
+  "layer_en": "Departments",
+  "admin_level": "ADM1",
+  "count": 18,
+  "source_label": "geoBoundaries · OpenStreetMap",
+  "source_url": "https://www.geoboundaries.org/api/current/gbOpen/HND/ADM1/",
+  "boundary_source": "OpenStreetMap, Wambacher",
+  "boundary_year_represented": "2017",
+  "source_data_update_date": "2023-01-19",
+  "license": "Open Data Commons Open Database License 1.0",
+  "public_fields": ["admin_code", "name"],
+  "code_reference": "INE Honduras / división político-administrativa",
+  "notes": [
+    "Las claves admin_code usan dos dígitos (01–18).",
+    "Honduras está dividido administrativamente en 18 departamentos.",
+    "Para análisis oficiales se recomienda contrastar la geometría con la cartografía vigente de las instituciones hondureñas competentes."
+  ]
+}
