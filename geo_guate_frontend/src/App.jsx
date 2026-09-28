@@ -15,6 +15,15 @@ const DOWNLOAD_FORMATS = {
 
 const CATALOG_URL = '/countries/catalog.json';
 
+const isGeoreferenceLayer = (layer) => Boolean(
+  layer
+  && !layer.download_only
+  && ['admin1', 'admin2'].includes(layer.admin_level)
+  && layer.code_property
+  && Number.isInteger(layer.code_width)
+  && layer.api?.code_field
+);
+
 
 const NAV_LABELS = {
   es: {
@@ -142,7 +151,7 @@ function App() {
         const initialCountry = data.countries.find((country) => country.code === data.default_country) || data.countries[0];
         if (initialCountry) {
           setPais(initialCountry.code);
-          setNivel(initialCountry.levels.find((level) => !level.download_only)?.id || 'departamentos');
+          setNivel(initialCountry.levels.find(isGeoreferenceLayer)?.id || 'departamentos');
         }
       })
       .catch((error) => {
@@ -203,7 +212,7 @@ function App() {
   const handleCountryChange = (value) => {
     const country = catalog?.countries.find((item) => item.code === value);
     setPais(value);
-    setNivel(country?.levels.find((level) => !level.download_only)?.id || 'departamentos');
+    setNivel(country?.levels.find(isGeoreferenceLayer)?.id || 'departamentos');
     setCodigosCsv([]);
     setCsvPreview([]);
     setCsvHeaders([]);
@@ -371,9 +380,17 @@ function App() {
                           {layer.count} {language === 'en' ? 'features' : 'entidades'}
                         </p>
                         <p className="mt-3 max-w-lg text-sm leading-6 text-slate-600">
-                          {language === 'en'
-                            ? `Boundaries of ${layerName.toLowerCase()} prepared for maps, analysis and GIS conversions.`
-                            : `Límites de ${layer.name.toLowerCase()} preparados para mapas, análisis y conversiones GIS.`}
+                          {layer.category === 'transport'
+                            ? (language === 'en'
+                              ? `${layerName} prepared for visualization, analysis and GIS downloads.`
+                              : `${layer.name} preparada para visualización, análisis y descargas GIS.`)
+                            : layer.category === 'reference'
+                              ? (language === 'en'
+                                ? `Reference layer prepared for cartographic visualization and download.`
+                                : 'Capa de referencia preparada para visualización cartográfica y descarga.')
+                              : (language === 'en'
+                                ? `Boundaries of ${layerName.toLowerCase()} prepared for maps, analysis and GIS conversions.`
+                                : `Límites de ${layer.name.toLowerCase()} preparados para mapas, análisis y conversiones GIS.`)}
                         </p>
                         <p className="mt-3 text-xs text-slate-500">
                           {language === 'en' ? 'Source:' : 'Fuente:'}{' '}
@@ -415,7 +432,7 @@ function App() {
                       <a href={layer.downloads?.[selectedFormat]} download className="rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-bold text-white transition hover:bg-indigo-700">
                         {language === 'en' ? 'Download' : 'Descargar'} {formatInfo.label}
                       </a>
-                      {!layer.download_only && (
+                      {isGeoreferenceLayer(layer) && (
                         <button type="button" onClick={() => useLayer(country.code, layer.id)} className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-bold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700">
                           {language === 'en' ? 'Use in Georeference' : 'Usar en Georeferenciar'}
                         </button>
