@@ -241,3 +241,153 @@ def test_smoke_create_layer_export_all_supported_countries():
             assert metadata["pais_codigo"] == pais
             assert metadata["nivel"] == nivel
             assert metadata["features"] == 1
+
+def _xlsx_bytes(rows, sheet_name="Datos"):
+    import pandas as pd
+
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+        pd.DataFrame(rows).to_excel(writer, index=False, sheet_name=sheet_name)
+    return buffer.getvalue()
+
+
+def test_inspect_excel_returns_headers_preview_and_sheets():
+    content = _xlsx_bytes(
+        [
+            {"departamento": "Guatemala", "valor": 10},
+            {"departamento": "Sacatepéquez", "valor": 20},
+        ],
+        sheet_name="Mapa",
+    )
+    response = client.post(
+        "/inspeccionar_tabla/",
+        files={
+            "file": (
+                "datos.xlsx",
+                content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["format"] == "xlsx"
+    assert payload["sheet_name"] == "Mapa"
+    assert payload["sheet_names"] == ["Mapa"]
+    assert payload["headers"] == ["departamento", "valor"]
+    assert payload["rows"][0]["departamento"] == "Guatemala"
+
+
+def test_excel_department_names_are_georeferenced():
+    content = _xlsx_bytes(
+        [
+            {"departamento": "Guatemala", "valor": 10},
+            {"departamento": "Sacatepequez", "valor": 20},
+        ]
+    )
+    response = client.post(
+        "/procesar_csv/",
+        files={
+            "file": (
+                "departamentos.xlsx",
+                content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+        data={
+            "pais": "GTM",
+            "nivel": "departamentos",
+            "columna_codigo": "departamento",
+            "formatos": "geojson",
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.headers["x-matched-count"] == "2"
+    assert response.headers["x-unmatched-count"] == "0"
+    assert response.headers["x-match-mode"] == "nombre"
+
+
+def test_excel_municipality_names_are_georeferenced():
+    content = _xlsx_bytes(
+        [
+            {"municipio": "Cobán", "valor": 10},
+            {"municipio": "Ixcán", "valor": 20},
+        ]
+    )
+    response = client.post(
+        "/procesar_csv/",
+        files={
+            "file": (
+                "municipios.xlsx",
+                content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+        data={
+            "pais": "GTM",
+            "nivel": "municipios",
+            "columna_codigo": "municipio",
+            "formatos": "geojson",
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.headers["x-matched-count"] == "2"
+    assert response.headers["x-unmatched-count"] == "0"
+    assert response.headers["x-match-mode"] == "nombre"
+
+
+def test_excel_department_ids_are_georeferenced():
+    content = _xlsx_bytes(
+        [
+            {"id_departamento": "01", "valor": 10},
+            {"id_departamento": "03", "valor": 20},
+        ]
+    )
+    response = client.post(
+        "/procesar_csv/",
+        files={
+            "file": (
+                "departamentos_ids.xlsx",
+                content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+        data={
+            "pais": "GTM",
+            "nivel": "departamentos",
+            "columna_codigo": "id_departamento",
+            "formatos": "geojson",
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.headers["x-matched-count"] == "2"
+    assert response.headers["x-match-mode"] == "codigo"
+
+
+def test_excel_municipality_ids_are_georeferenced():
+    content = _xlsx_bytes(
+        [
+            {"id_municipio": "1601", "valor": 10},
+            {"id_municipio": "1420", "valor": 20},
+        ]
+    )
+    response = client.post(
+        "/procesar_csv/",
+        files={
+            "file": (
+                "municipios_ids.xlsx",
+                content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+        data={
+            "pais": "GTM",
+            "nivel": "municipios",
+            "columna_codigo": "id_municipio",
+            "formatos": "geojson",
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.headers["x-matched-count"] == "2"
+    assert response.headers["x-match-mode"] == "codigo"
+
