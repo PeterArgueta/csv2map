@@ -1,4 +1,5 @@
 import io
+import json
 import zipfile
 
 from fastapi.testclient import TestClient
@@ -89,3 +90,54 @@ def test_el_salvador_department_csv_exports_geojson():
         report_name = next(name for name in archive.namelist() if name.endswith(".json") and "reporte" in name)
         report = archive.read(report_name).decode("utf-8")
         assert '"pais_codigo": "SLV"' in report
+
+
+def test_catalog_exposes_only_supported_georeference_layers_to_api():
+    from main import LAYERS
+
+    assert set(LAYERS["GTM"]) == {"departamentos", "municipios"}
+    assert "rutas_registradas_dgc" not in LAYERS["GTM"]
+    assert "belice_diferendo" not in LAYERS["GTM"]
+
+
+def test_create_layer_export_preserves_territorial_source():
+    geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [-90.5, 14.63]},
+                "properties": {"codigo_departamento": "01", "departamento": "Guatemala"},
+            }
+        ],
+    }
+    response = client.post(
+        "/exportar_geojson/",
+        files={"file": ("puntos.geojson", json.dumps(geojson).encode("utf-8"), "application/geo+json")},
+        data={"formatos": "geojson", "pais": "GTM", "nivel": "departamentos"},
+    )
+    assert response.status_code == 200
+
+    with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+        metadata = json.loads(archive.read("metadata.json").decode("utf-8"))
+        assert metadata["pais_codigo"] == "GTM"
+        assert metadata["nivel"] == "departamentos"
+        assert metadata["territorial_source"] == "IDEG · SEGEPLAN"
+
+
+def test_universal_converter_csv_to_geojson():
+    csv = b"latitud,longitud,nombre\n14.6349,-90.5069,Guatemala\n"
+    response = client.post(
+        "/convertir_formato/",
+        files={"file": ("puntos.csv", csv, "text/csv")},
+        data={
+            "formato_salida": "geojson",
+            "columna_latitud": "latitud",
+            "columna_longitud": "longitud",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["x-source-format"] == "csv"
+    assert response.headers["x-feature-count"] == "1"
+    payload = json.loads(response.content.decode("utf-8"))
+    assert len(payload["features"]) == 1
