@@ -61,7 +61,7 @@ def test_rejects_unknown_codes():
         },
     )
     assert response.status_code == 422
-    assert "Ningún código" in response.json()["detail"]
+    assert "Ningún nombre o ID" in response.json()["detail"]
 
 
 def test_el_salvador_department_csv_exports_geojson():
