@@ -4,7 +4,7 @@ import zipfile
 
 from fastapi.testclient import TestClient
 
-from main import app, load_layer
+from main import LAYERS, app, load_layer
 
 
 client = TestClient(app)
@@ -141,3 +141,103 @@ def test_universal_converter_csv_to_geojson():
     assert response.headers["x-feature-count"] == "1"
     payload = json.loads(response.content.decode("utf-8"))
     assert len(payload["features"]) == 1
+
+
+def _first_valid_code(pais: str, nivel: str) -> str:
+    config = LAYERS[pais][nivel]
+    layer = load_layer(pais, nivel)
+    values = layer[config["code_field"]].astype(str).tolist()
+    for value in values:
+        digits = "".join(char for char in value if char.isdigit())
+        if digits:
+            return digits.zfill(config["code_width"])
+    raise AssertionError(f"No valid administrative code found for {pais}/{nivel}")
+
+
+def test_smoke_georeference_all_supported_countries():
+    cases = [
+        ("GTM", "departamentos"),
+        ("GTM", "municipios"),
+        ("BLZ", "distritos"),
+        ("SLV", "departamentos"),
+        ("HND", "departamentos"),
+        ("NIC", "departamentos_regiones"),
+        ("CRI", "provincias"),
+        ("PAN", "provincias_comarcas"),
+        ("MEX", "estados"),
+    ]
+
+    for pais, nivel in cases:
+        code = _first_valid_code(pais, nivel)
+        csv = f"codigo,valor\n{code},1\n".encode("utf-8")
+        response = client.post(
+            "/procesar_csv/",
+            files={"file": ("smoke.csv", csv, "text/csv")},
+            data={
+                "pais": pais,
+                "nivel": nivel,
+                "columna_codigo": "codigo",
+                "formatos": "geojson",
+            },
+        )
+        assert response.status_code == 200, (
+            pais,
+            nivel,
+            response.text,
+        )
+        assert response.headers["x-matched-count"] == "1"
+
+        with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+            names = archive.namelist()
+            assert any(name.endswith(".geojson") for name in names)
+            report_name = next(name for name in names if "reporte" in name and name.endswith(".json"))
+            report = json.loads(archive.read(report_name).decode("utf-8"))
+            assert report["pais_codigo"] == pais
+            assert report["nivel"] == nivel
+
+
+def test_smoke_create_layer_export_all_supported_countries():
+    cases = [
+        ("GTM", "departamentos"),
+        ("GTM", "municipios"),
+        ("BLZ", "distritos"),
+        ("SLV", "departamentos"),
+        ("HND", "departamentos"),
+        ("NIC", "departamentos_regiones"),
+        ("CRI", "provincias"),
+        ("PAN", "provincias_comarcas"),
+        ("MEX", "estados"),
+    ]
+    geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [-90.5, 14.63]},
+                "properties": {"nombre": "Punto de prueba"},
+            }
+        ],
+    }
+
+    for pais, nivel in cases:
+        response = client.post(
+            "/exportar_geojson/",
+            files={
+                "file": (
+                    "puntos.geojson",
+                    json.dumps(geojson).encode("utf-8"),
+                    "application/geo+json",
+                )
+            },
+            data={
+                "formatos": "geojson",
+                "pais": pais,
+                "nivel": nivel,
+            },
+        )
+        assert response.status_code == 200, (pais, nivel, response.text)
+        with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+            metadata = json.loads(archive.read("metadata.json").decode("utf-8"))
+            assert metadata["pais_codigo"] == pais
+            assert metadata["nivel"] == nivel
+            assert metadata["features"] == 1
