@@ -407,6 +407,8 @@ export function CrearCapaPuntos() {
       const geojson = new Blob([JSON.stringify(toFeatureCollection(points))], { type: 'application/geo+json' });
       formData.append('file', geojson, 'puntos.geojson');
       formData.append('formatos', format);
+      formData.append('pais', countryCode);
+      formData.append('nivel', selectedLayer?.id || '');
       const response = await axios.post(`${apiUrl}/exportar_geojson/`, formData, { responseType: 'blob' });
       const url = URL.createObjectURL(response.data);
       const anchor = document.createElement('a');
