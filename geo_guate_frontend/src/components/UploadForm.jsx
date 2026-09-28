@@ -11,13 +11,13 @@ const FORMAT_OPTIONS = [
 ];
 
 const COLUMN_HINTS = {
-  departamentos: ['codigo_departamento', 'cod_departamento', 'cod_dep', 'departamento_codigo', 'codigo'],
-  municipios: ['codigo_municipio', 'cod_municipio', 'cod_muni', 'codigo_ine', 'municipio_codigo', 'codigo'],
-  estados: ['codigo_estado', 'cod_estado', 'cve_ent', 'clave_entidad', 'estado_codigo', 'codigo'],
-  distritos: ['codigo_distrito', 'cod_distrito', 'distrito_codigo', 'codigo_territorial', 'codigo'],
-  departamentos_regiones: ['codigo_departamento', 'codigo_region', 'codigo_territorial', 'admin_code', 'codigo'],
-  provincias: ['codigo_provincia', 'cod_provincia', 'provincia_codigo', 'codigo_territorial', 'codigo'],
-  provincias_comarcas: ['codigo_provincia', 'codigo_comarca', 'codigo_territorial', 'admin_code', 'codigo'],
+  departamentos: ['codigo_departamento', 'id_departamento', 'cod_departamento', 'cod_dep', 'departamento_codigo', 'departamento', 'depto', 'nombre_departamento', 'codigo'],
+  municipios: ['codigo_municipio', 'id_municipio', 'cod_municipio', 'cod_muni', 'codigo_ine', 'municipio_codigo', 'municipio', 'nombre_municipio', 'codigo'],
+  estados: ['codigo_estado', 'id_estado', 'cod_estado', 'cve_ent', 'clave_entidad', 'estado_codigo', 'estado', 'nombre_estado', 'codigo'],
+  distritos: ['codigo_distrito', 'id_distrito', 'cod_distrito', 'distrito_codigo', 'distrito', 'nombre_distrito', 'codigo_territorial', 'codigo'],
+  departamentos_regiones: ['codigo_departamento', 'codigo_region', 'id_departamento', 'id_region', 'departamento', 'region', 'nombre_departamento', 'nombre_region', 'codigo_territorial', 'admin_code', 'codigo'],
+  provincias: ['codigo_provincia', 'id_provincia', 'cod_provincia', 'provincia_codigo', 'provincia', 'nombre_provincia', 'codigo_territorial', 'codigo'],
+  provincias_comarcas: ['codigo_provincia', 'codigo_comarca', 'id_provincia', 'id_comarca', 'provincia', 'comarca', 'nombre_provincia', 'nombre_comarca', 'codigo_territorial', 'admin_code', 'codigo'],
 };
 
 const isGeoreferenceLayer = (layer) => Boolean(
@@ -43,6 +43,14 @@ const normalizeCode = (value, width) => {
   return digits ? digits.padStart(width, '0') : null;
 };
 
+const normalizeTerritoryName = (value) => String(value ?? '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .trim()
+  .replace(/[^a-z0-9]+/g, ' ')
+  .replace(/\s+/g, ' ');
+
 const detectCodeColumn = (fields, nivel) => {
   const normalized = new Map(fields.map((field) => [normalizeHeader(field), field]));
   const hints = COLUMN_HINTS[nivel] || ['codigo', 'codigo_territorial', 'admin_code'];
@@ -66,6 +74,8 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
   const [rows, setRows] = useState([]);
   const [headers, setHeaders] = useState([]);
   const [codeColumn, setCodeColumn] = useState('');
+  const [sheetNames, setSheetNames] = useState([]);
+  const [sheetName, setSheetName] = useState('');
   const [formats, setFormats] = useState(['shp', 'kml']);
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState('');
@@ -109,18 +119,61 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
 
   const emitPreview = (dataRows, fields, selectedColumn, currentFile = fileData) => {
     const width = layerConfig.code_width;
+    const validCodes = new Set(territories.map(([code]) => code));
+    const names = new Map();
+    territories.forEach(([code, name]) => {
+      const key = normalizeTerritoryName(name);
+      if (!key) return;
+      const current = names.get(key) || [];
+      current.push(code);
+      names.set(key, current);
+    });
+
     const codes = selectedColumn
-      ? [...new Set(dataRows.map((row) => normalizeCode(row[selectedColumn], width)).filter(Boolean))]
+      ? [...new Set(dataRows.map((row) => {
+        const raw = row[selectedColumn];
+        const code = normalizeCode(raw, width);
+        if (code && validCodes.has(code)) return code;
+        const matches = names.get(normalizeTerritoryName(raw)) || [];
+        return matches.length === 1 ? matches[0] : null;
+      }).filter(Boolean))]
       : [];
     onUpload(codes, dataRows.slice(0, 10), fields, currentFile?.name || '');
+  };
+
+  const inspectExcel = async (file, requestedSheet = '') => {
+    const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+    const formData = new FormData();
+    formData.append('file', file);
+    if (requestedSheet) formData.append('hoja', requestedSheet);
+
+    try {
+      const response = await axios.post(`${apiUrl}/inspeccionar_tabla/`, formData);
+      const { headers: fields = [], rows: data = [], sheet_names: availableSheets = [], sheet_name: activeSheet = '' } = response.data || {};
+      if (!data.length || !fields.length) {
+        setFileError('El archivo no contiene encabezados y filas de datos.');
+        return;
+      }
+      const selected = detectCodeColumn(fields, nivel);
+      setRows(data);
+      setHeaders(fields);
+      setCodeColumn(selected);
+      setSheetNames(availableSheets);
+      setSheetName(activeSheet || '');
+      if (!selected) setFileError('Selecciona la columna que contiene el nombre o ID territorial.');
+      emitPreview(data, fields, selected, file);
+    } catch (error) {
+      setFileError(await readApiError(error));
+    }
   };
 
   const parseFile = (file) => {
     if (!file) return;
     setFileError('');
     setSuccessMessage('');
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      setFileError('Selecciona un archivo con extensión .csv.');
+    const lowerName = file.name.toLowerCase();
+    if (!lowerName.endsWith('.csv') && !lowerName.endsWith('.xlsx')) {
+      setFileError('Selecciona un archivo CSV o Excel .xlsx.');
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
@@ -129,6 +182,14 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
     }
 
     setFileData(file);
+    setSheetNames([]);
+    setSheetName('');
+
+    if (lowerName.endsWith('.xlsx')) {
+      inspectExcel(file);
+      return;
+    }
+
     Papa.parse(file, {
       header: true,
       skipEmptyLines: 'greedy',
@@ -147,7 +208,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
         setRows(data);
         setHeaders(meta.fields);
         setCodeColumn(selected);
-        if (!selected) setFileError('Selecciona la columna que contiene el código territorial.');
+        if (!selected) setFileError('Selecciona la columna que contiene el nombre o ID territorial.');
         emitPreview(data, meta.fields, selected, file);
       },
       error: () => setFileError('No fue posible leer el archivo seleccionado.'),
@@ -158,7 +219,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
     if (fileData && rows.length) {
       const selected = detectCodeColumn(headers, nivel);
       setCodeColumn(selected);
-      setFileError(selected ? '' : 'Selecciona la columna que contiene el código territorial.');
+      setFileError(selected ? '' : 'Selecciona la columna que contiene el nombre o ID territorial.');
       emitPreview(rows, headers, selected, fileData);
     }
     if (!isAdmin1) setShowCsvBuilder(false);
@@ -172,6 +233,8 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
     setRows([]);
     setHeaders([]);
     setCodeColumn('');
+    setSheetNames([]);
+    setSheetName('');
     setFileError('');
     setSuccessMessage('');
   }, [pais]);
@@ -219,6 +282,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
     formData.append('nivel', nivel);
     formData.append('columna_codigo', codeColumn);
     formData.append('formatos', formats.join(','));
+    if (sheetName) formData.append('hoja', sheetName);
 
     try {
       const response = await axios.post(`${apiUrl}/procesar_csv/`, formData, { responseType: 'blob' });
@@ -234,7 +298,9 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
       window.URL.revokeObjectURL(url);
       const matched = response.headers['x-matched-count'];
       const unmatched = response.headers['x-unmatched-count'];
-      setSuccessMessage(`ZIP generado: ${matched || 'varios'} códigos encontrados${unmatched && unmatched !== '0' ? ` y ${unmatched} no encontrados` : ''}.`);
+      const mode = response.headers['x-match-mode'];
+      const matchLabel = mode === 'nombre' ? 'territorios encontrados por nombre' : mode === 'mixto' ? 'territorios encontrados por nombre/ID' : 'IDs encontrados';
+      setSuccessMessage(`ZIP generado: ${matched || 'varios'} ${matchLabel}${unmatched && unmatched !== '0' ? ` y ${unmatched} no encontrados o ambiguos` : ''}.`);
     } catch (error) {
       setFileError(await readApiError(error));
     } finally {
@@ -346,7 +412,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
 
       <div>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <label className="field-label mb-0">Archivo CSV</label>
+          <label className="field-label mb-0">Archivo CSV o Excel</label>
           <div className="flex items-center gap-3">
             {isAdmin1 && (
               <button type="button" onClick={() => setShowCsvBuilder((value) => !value)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">
@@ -461,14 +527,33 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
         >
           <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-indigo-50 text-xl text-indigo-600">↑</div>
           <p className="mt-3 text-sm font-semibold text-slate-700">{fileData ? fileData.name : 'Selecciona o arrastra tu archivo'}</p>
-          <p className="mt-1 text-xs text-slate-500">CSV de hasta 10 MB</p>
-          <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(event) => parseFile(event.target.files?.[0])} />
+          <p className="mt-1 text-xs text-slate-500">CSV o Excel .xlsx de hasta 10 MB</p>
+          <input ref={fileInputRef} type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={(event) => parseFile(event.target.files?.[0])} />
         </div>
       </div>
 
+      {sheetNames.length > 1 && fileData?.name?.toLowerCase().endsWith('.xlsx') && (
+        <div>
+          <label htmlFor="sheet-name" className="field-label">Hoja de Excel</label>
+          <select
+            id="sheet-name"
+            value={sheetName}
+            onChange={(event) => {
+              const nextSheet = event.target.value;
+              setSheetName(nextSheet);
+              setFileError('');
+              inspectExcel(fileData, nextSheet);
+            }}
+            className="field-control"
+          >
+            {sheetNames.map((sheet) => <option key={sheet} value={sheet}>{sheet}</option>)}
+          </select>
+        </div>
+      )}
+
       {headers.length > 0 && (
         <div>
-          <label htmlFor="code-column" className="field-label">Columna que contiene el código</label>
+          <label htmlFor="code-column" className="field-label">Columna territorial (nombre o ID)</label>
           <select id="code-column" value={codeColumn} onChange={(event) => handleColumnChange(event.target.value)} className="field-control">
             <option value="">Seleccionar columna…</option>
             {headers.map((header) => <option key={header} value={header}>{header}</option>)}
