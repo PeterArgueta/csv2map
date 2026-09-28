@@ -44,6 +44,10 @@ def load_layer_catalog() -> dict[str, dict[str, dict[str, object]]]:
                 # participating in CSV georeferencing through the API.
                 continue
             source_path = api.get("url") or str(BASE_DIR / api["path"])
+            map_url = level.get("map_url")
+            match_path = None
+            if map_url and str(map_url).startswith("/"):
+                match_path = str(BASE_DIR / "geo_guate_frontend" / "public" / str(map_url).lstrip("/"))
             country_layers[level["id"]] = {
                 "path": source_path,
                 "code_field": api["code_field"],
@@ -53,6 +57,10 @@ def load_layer_catalog() -> dict[str, dict[str, dict[str, object]]]:
                 "source": level.get("source_label") or country["source_label"],
                 "transform": api.get("transform"),
                 "code_map": api.get("code_map"),
+                "match_path": match_path,
+                "match_code_field": level.get("code_property") or api["code_field"],
+                "match_name_field": level.get("name_property") or "name",
+                "match_parent_name_field": level.get("parent_name_property"),
             }
         layers[country["code"]] = country_layers
     return layers
@@ -155,6 +163,69 @@ def parse_csv(content: bytes) -> tuple[pd.DataFrame, str]:
         except (UnicodeDecodeError, pd.errors.ParserError, ValueError) as exc:
             last_error = exc
     raise ValueError(f"No fue posible leer el CSV: {last_error}")
+
+
+def parse_table(
+    content: bytes,
+    filename: str,
+    sheet_name: str | None = None,
+) -> tuple[pd.DataFrame, dict[str, object]]:
+    lower_name = filename.lower()
+    if lower_name.endswith(".csv"):
+        frame, encoding = parse_csv(content)
+        return frame, {
+            "format": "csv",
+            "encoding": encoding,
+            "sheet_name": None,
+            "sheet_names": [],
+        }
+
+    if lower_name.endswith(".xlsx"):
+        try:
+            excel = pd.ExcelFile(io.BytesIO(content), engine="openpyxl")
+        except Exception as exc:
+            raise ValueError("No fue posible abrir el archivo Excel.") from exc
+
+        if not excel.sheet_names:
+            raise ValueError("El archivo Excel no contiene hojas.")
+
+        selected_sheet = sheet_name if sheet_name in excel.sheet_names else excel.sheet_names[0]
+        try:
+            frame = pd.read_excel(
+                io.BytesIO(content),
+                sheet_name=selected_sheet,
+                dtype=str,
+                keep_default_na=False,
+                engine="openpyxl",
+            )
+        except Exception as exc:
+            raise ValueError(f"No fue posible leer la hoja '{selected_sheet}'.") from exc
+
+        frame.columns = [str(column).strip() for column in frame.columns]
+        frame = frame.loc[
+            ~frame.apply(lambda row: all(str(value).strip() == "" for value in row), axis=1)
+        ].copy()
+        if frame.empty or not len(frame.columns):
+            raise ValueError(f"La hoja '{selected_sheet}' no contiene datos.")
+
+        return frame, {
+            "format": "xlsx",
+            "encoding": None,
+            "sheet_name": selected_sheet,
+            "sheet_names": excel.sheet_names,
+        }
+
+    raise ValueError("Formato no compatible. Usa CSV o Excel .xlsx.")
+
+
+@lru_cache(maxsize=16)
+def load_match_reference(pais: str, nivel: str) -> gpd.GeoDataFrame:
+    config = LAYERS[pais][nivel]
+    match_path = config.get("match_path")
+    if not match_path:
+        raise ValueError("No hay una capa de referencia configurada para validar nombres.")
+    reference = gpd.read_file(match_path)
+    return reference
 
 
 def clean_properties_for_kml(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
@@ -502,6 +573,32 @@ async def convertir_formato(
         ) from exc
 
 
+@app.post("/inspeccionar_tabla/")
+async def inspeccionar_tabla(
+    file: UploadFile = File(...),
+    hoja: str | None = Form(None),
+):
+    if not file.filename or not file.filename.lower().endswith((".csv", ".xlsx")):
+        raise HTTPException(status_code=400, detail="Debes cargar un archivo CSV o Excel .xlsx.")
+
+    content = await file.read(MAX_FILE_SIZE + 1)
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="El archivo supera el límite de 10 MB.")
+    if not content:
+        raise HTTPException(status_code=400, detail="El archivo está vacío.")
+
+    try:
+        frame, info = parse_table(content, file.filename, hoja)
+        preview = frame.head(10).fillna("").astype(str).to_dict(orient="records")
+        return {
+            "headers": [str(column) for column in frame.columns],
+            "rows": preview,
+            **info,
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 @app.post("/procesar_csv/")
 async def procesar_csv(
     background_tasks: BackgroundTasks,
@@ -510,12 +607,13 @@ async def procesar_csv(
     nivel: str = Form("departamentos"),
     columna_codigo: str | None = Form(None),
     formatos: str = Form("shp,kml"),
+    hoja: str | None = Form(None),
 ):
     pais = pais.upper().strip()
     if pais not in LAYERS or nivel not in LAYERS[pais]:
         raise HTTPException(status_code=400, detail="País o nivel geográfico no válido.")
-    if not file.filename or not file.filename.lower().endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Debes cargar un archivo CSV.")
+    if not file.filename or not file.filename.lower().endswith((".csv", ".xlsx")):
+        raise HTTPException(status_code=400, detail="Debes cargar un archivo CSV o Excel .xlsx.")
 
     content = await file.read(MAX_FILE_SIZE + 1)
     if len(content) > MAX_FILE_SIZE:
@@ -531,8 +629,9 @@ async def procesar_csv(
 
     config = LAYERS[pais][nivel]
     try:
-        df_csv, encoding = parse_csv(content)
+        df_csv, table_info = parse_table(content, file.filename, hoja)
         base = load_layer(pais, nivel).copy()
+        reference = load_match_reference(pais, nivel)
         df_csv, summary = normalizar_csv(
             df_csv,
             base,
@@ -540,9 +639,18 @@ async def procesar_csv(
             col_join_shape=config["code_field"],
             code_width=config["code_width"],
             col_join_csv=columna_codigo or None,
+            reference=reference,
+            reference_code_field=config["match_code_field"],
+            reference_name_field=config["match_name_field"],
+            reference_parent_name_field=config.get("match_parent_name_field"),
         )
         if df_csv.empty:
-            raise ValueError("Ningún código del archivo coincide con la capa seleccionada.")
+            extra = ""
+            if summary.get("ambiguous_values"):
+                extra = " Hay nombres ambiguos que requieren identificar también el departamento."
+            raise ValueError(
+                "Ningún nombre o ID del archivo coincide con la capa seleccionada." + extra
+            )
 
         join_column = summary["join_column"]
         base[join_column] = base[config["code_field"]].map(
@@ -568,7 +676,9 @@ async def procesar_csv(
             "pais": config["country_name"],
             "nivel": nivel,
             "source": config["source"],
-            "encoding": encoding,
+            "file_format": table_info["format"],
+            "encoding": table_info["encoding"],
+            "sheet_name": table_info["sheet_name"],
             "formats": sorted(selected_formats),
             **{key: value for key, value in summary.items() if key != "join_column"},
         }
@@ -583,7 +693,10 @@ async def procesar_csv(
             config["basename"],
             headers={
                 "X-Matched-Count": str(len(summary["matched_codes"])),
-                "X-Unmatched-Count": str(len(summary["unmatched_codes"])),
+                "X-Unmatched-Count": str(
+                    len(summary["unmatched_codes"]) + len(summary.get("ambiguous_values", []))
+                ),
+                "X-Match-Mode": str(summary.get("match_mode") or ""),
             },
         )
     except ValueError as exc:
