@@ -82,6 +82,24 @@ const pointInFeature = (point, feature) => {
   return false;
 };
 
+const featureBoundsContainPoint = ([lng, lat], feature) => {
+  try {
+    return L.geoJSON(feature).getBounds().contains([lat, lng]);
+  } catch {
+    return false;
+  }
+};
+
+const findContainingFeature = (point, features = []) => {
+  const exact = features.find((feature) => pointInFeature(point, feature));
+  if (exact) return exact;
+
+  // Fallback only for small simplification gaps in administrative polygons.
+  const candidates = features.filter((feature) => featureBoundsContainPoint(point, feature));
+  if (candidates.length === 1) return candidates[0];
+  return null;
+};
+
 const territorialFieldNames = (layer) => {
   const id = layer?.id || '';
   if (id === 'municipios') return { code: 'codigo_municipio', name: 'municipio' };
@@ -104,6 +122,9 @@ const territorialAttributes = (feature, lat, lng, layer) => {
     longitud: Number(lng.toFixed(6)),
     [fields.code]: code,
     [fields.name]: name,
+    __territoryName: name,
+    __territoryCode: code,
+    __territoryLayer: layer?.name || '',
   };
 
   if (layer?.id === 'municipios') {
@@ -119,7 +140,9 @@ const toFeatureCollection = (points) => ({
   features: points.map((point) => ({
     type: 'Feature',
     geometry: { type: 'Point', coordinates: [point.longitud, point.latitud] },
-    properties: Object.fromEntries(Object.entries(point).filter(([key]) => !['latitud', 'longitud'].includes(key))),
+    properties: Object.fromEntries(Object.entries(point).filter(([key]) =>
+      !['latitud', 'longitud'].includes(key) && !key.startsWith('__'),
+    )),
   })),
 });
 
@@ -255,16 +278,15 @@ export function CrearCapaPuntos() {
 
   const addPoint = (lat, lng) => {
     if (!territories || !selectedLayer) return;
-    const territory = territories.features.find((feature) => pointInFeature([lng, lat], feature));
+    const territory = findContainingFeature([lng, lat], territories.features);
     const attributes = territorialAttributes(territory, lat, lng, selectedLayer);
     const custom = Object.fromEntries(fields.map((field) => [field.name, field.type === 'boolean' ? false : '']));
     const id = `P${String(points.length + 1).padStart(3, '0')}_${Date.now()}`;
     const point = { id, ...attributes, ...custom };
     setPoints((current) => [...current, point]);
     setSelectedId(id);
-    const territorialFields = territorialFieldNames(selectedLayer);
     setMessage(territory
-      ? `Punto agregado en ${attributes[territorialFields.name] || selectedCountry?.name}.`
+      ? `Punto agregado en ${attributes.__territoryName || selectedCountry?.name}.`
       : `Punto agregado fuera de los límites disponibles para ${selectedCountry?.name || 'el país seleccionado'}.`);
   };
 
@@ -510,8 +532,8 @@ export function CrearCapaPuntos() {
                       eventHandlers={{ click: (event) => { event.originalEvent?.stopPropagation?.(); setSelectedId(point.id); } }}
                     >
                       <Tooltip direction="top">
-                        <strong>{point[territorialFieldNames(selectedLayer).name] || 'Fuera de límite'}</strong>
-                        <br />{selectedLayer?.name || 'Territorio'}
+                        <strong>{point.__territoryName || 'Fuera de límite'}</strong>
+                        <br />{point.__territoryLayer || selectedLayer?.name || 'Territorio'}
                       </Tooltip>
                     </CircleMarker>
                   ))}
@@ -527,8 +549,8 @@ export function CrearCapaPuntos() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">Punto seleccionado</p>
-                  <h3 className="mt-1 text-lg font-bold">{selectedPoint[territorialFieldNames(selectedLayer).name] || 'Fuera de límites territoriales'}</h3>
-                  <p className="text-sm text-slate-500">{selectedLayer?.name || 'Territorio'} · {selectedPoint.latitud}, {selectedPoint.longitud}</p>
+                  <h3 className="mt-1 text-lg font-bold">{selectedPoint.__territoryName || 'Fuera de límites territoriales'}</h3>
+                  <p className="text-sm text-slate-500">{selectedPoint.__territoryLayer || selectedLayer?.name || 'Territorio'} · {selectedPoint.latitud}, {selectedPoint.longitud}</p>
                 </div>
                 <button type="button" onClick={() => removePoint(selectedPoint.id)} className="text-xs font-bold text-red-500 hover:text-red-700">Eliminar punto</button>
               </div>
@@ -577,7 +599,7 @@ export function CrearCapaPuntos() {
                     {points.map((point) => (
                       <tr key={point.id} onClick={() => setSelectedId(point.id)} className={`cursor-pointer ${selectedId === point.id ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
                         <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-700">{point.id.split('_')[0]}</td>
-                        <td className="whitespace-nowrap px-4 py-3 text-slate-600">{point[territorialFieldNames(selectedLayer).name] || '—'}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-slate-600">{point.__territoryName || '—'}</td>
                         {selectedLayer?.id === 'municipios' && (
                           <td className="whitespace-nowrap px-4 py-3 text-slate-600">{point.departamento || '—'}</td>
                         )}
