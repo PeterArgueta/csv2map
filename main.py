@@ -229,6 +229,8 @@ async def exportar_geojson(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     formatos: str = Form("shp"),
+    pais: str = Form(""),
+    nivel: str = Form(""),
 ):
     if not file.filename or not file.filename.lower().endswith((".geojson", ".json")):
         raise HTTPException(status_code=400, detail="Debes cargar una capa GeoJSON.")
@@ -262,12 +264,23 @@ async def exportar_geojson(
         basename = "converttomap_puntos"
         export_formats(gdf, output_dir, basename, selected_formats)
 
+        pais_norm = pais.upper().strip()
+        nivel_norm = nivel.strip()
+        territorial_source = "ConvertToMap"
+        territorial_country = pais_norm or None
+        territorial_level = nivel_norm or None
+        if pais_norm in LAYERS and nivel_norm in LAYERS[pais_norm]:
+            layer_config = LAYERS[pais_norm][nivel_norm]
+            territorial_source = str(layer_config.get("source") or territorial_source)
+
         metadata = {
             "converttomap_version": "2.1.0",
             "geometry": "Point",
             "features": int(len(gdf)),
             "formats": sorted(selected_formats),
-            "territorial_source": "IDEG - SEGEPLAN",
+            "territorial_source": territorial_source,
+            "pais_codigo": territorial_country,
+            "nivel": territorial_level,
         }
         (output_dir / "metadata.json").write_text(
             json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
