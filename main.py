@@ -90,12 +90,16 @@ def transform_configured_layer(
     mapping = ADMIN1_CODE_MAPS.get(code_map or "", {})
     if not mapping:
         raise ValueError(f"No hay mapa de códigos configurado para {code_map!r}.")
+    normalized_mapping = {
+        normalize_text_key(key): value
+        for key, value in mapping.items()
+    }
 
     name_field = "shapeName" if "shapeName" in gdf.columns else "name"
     transformed = gdf.copy()
     transformed["name"] = transformed[name_field].astype(str)
     transformed["admin_code"] = transformed["name"].map(
-        lambda value: mapping.get(normalize_text_key(value), "")
+        lambda value: normalized_mapping.get(normalize_text_key(value), "")
     )
     missing = transformed.loc[transformed["admin_code"] == "", "name"].tolist()
     if missing:
