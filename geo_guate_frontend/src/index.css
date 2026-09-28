@@ -68,3 +68,33 @@
   50% { transform: translateX(85%); }
   100% { transform: translateX(270%); }
 }
+
+.map-style-light {
+  filter: saturate(0.72) brightness(1.06) contrast(0.92);
+}
+
+.map-style-gray {
+  filter: grayscale(1) saturate(0) brightness(1.08) contrast(0.88);
+}
+
+.map-style-dark {
+  filter: grayscale(1) invert(0.88) hue-rotate(180deg) brightness(0.72) contrast(1.18);
+}
+
+.map-style-minimal {
+  filter: grayscale(1) saturate(0) brightness(1.28) contrast(0.58);
+}
+
+.map-designer-label {
+  border: 0;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: none;
+  color: #334155;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 5px;
+}
+
+.map-designer-label::before {
+  display: none;
+}
