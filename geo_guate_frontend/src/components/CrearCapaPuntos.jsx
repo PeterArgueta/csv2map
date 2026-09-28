@@ -194,7 +194,11 @@ export function CrearCapaPuntos() {
   );
 
   const availableLayers = useMemo(
-    () => (selectedCountry?.levels || []).filter((layer) => !layer.download_only && layer.map_url),
+    () => (selectedCountry?.levels || []).filter((layer) =>
+      !layer.download_only
+      && layer.map_url
+      && ['admin1', 'admin2', 'local_zone'].includes(layer.admin_level),
+    ),
     [selectedCountry],
   );
 
@@ -506,8 +510,8 @@ export function CrearCapaPuntos() {
                       eventHandlers={{ click: (event) => { event.originalEvent?.stopPropagation?.(); setSelectedId(point.id); } }}
                     >
                       <Tooltip direction="top">
-                        <strong>{point[territorialFieldNames(selectedLayer).name] || 'Punto'}</strong>
-                        <br />{selectedCountry?.name || 'Fuera de límite'}
+                        <strong>{point[territorialFieldNames(selectedLayer).name] || 'Fuera de límite'}</strong>
+                        <br />{selectedLayer?.name || 'Territorio'}
                       </Tooltip>
                     </CircleMarker>
                   ))}
@@ -524,7 +528,7 @@ export function CrearCapaPuntos() {
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">Punto seleccionado</p>
                   <h3 className="mt-1 text-lg font-bold">{selectedPoint[territorialFieldNames(selectedLayer).name] || 'Fuera de límites territoriales'}</h3>
-                  <p className="text-sm text-slate-500">{selectedCountry?.name || 'Sin país asignado'} · {selectedPoint.latitud}, {selectedPoint.longitud}</p>
+                  <p className="text-sm text-slate-500">{selectedLayer?.name || 'Territorio'} · {selectedPoint.latitud}, {selectedPoint.longitud}</p>
                 </div>
                 <button type="button" onClick={() => removePoint(selectedPoint.id)} className="text-xs font-bold text-red-500 hover:text-red-700">Eliminar punto</button>
               </div>
