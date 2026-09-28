@@ -20,6 +20,15 @@ const COLUMN_HINTS = {
   provincias_comarcas: ['codigo_provincia', 'codigo_comarca', 'codigo_territorial', 'admin_code', 'codigo'],
 };
 
+const isGeoreferenceLayer = (layer) => Boolean(
+  layer
+  && !layer.download_only
+  && ['admin1', 'admin2'].includes(layer.admin_level)
+  && layer.code_property
+  && Number.isInteger(layer.code_width)
+  && layer.api?.code_field
+);
+
 const normalizeHeader = (value) => String(value ?? '')
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
@@ -331,7 +340,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
       <div>
         <label htmlFor="nivel" className="field-label">Nivel geográfico</label>
         <select id="nivel" value={nivel} onChange={(event) => onLevelChange(event.target.value)} className="field-control">
-          {selectedCountry.levels.filter((level) => !level.download_only).map((level) => <option key={level.id} value={level.id}>{level.name} ({level.count})</option>)}
+          {selectedCountry.levels.filter(isGeoreferenceLayer).map((level) => <option key={level.id} value={level.id}>{level.name} ({level.count})</option>)}
         </select>
       </div>
 
