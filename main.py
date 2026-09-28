@@ -222,9 +222,15 @@ def parse_table(
 def load_match_reference(pais: str, nivel: str) -> gpd.GeoDataFrame:
     config = LAYERS[pais][nivel]
     match_path = config.get("match_path")
-    if not match_path:
-        raise ValueError("No hay una capa de referencia configurada para validar nombres.")
-    reference = gpd.read_file(match_path)
+    if match_path and Path(str(match_path)).exists():
+        return gpd.read_file(match_path)
+
+    # Some countries use a remote source and normalize name/admin_code at load time.
+    # Reuse that already-normalized base instead of requiring a duplicated local file.
+    reference = load_layer(pais, nivel).copy()
+    required = {config["match_code_field"], config["match_name_field"]}
+    if not required.issubset(reference.columns):
+        raise ValueError("No hay una capa de referencia compatible para validar nombres.")
     return reference
 
 
