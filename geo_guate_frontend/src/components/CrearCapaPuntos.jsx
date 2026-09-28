@@ -113,9 +113,52 @@ const territorialFieldNames = (layer) => {
 const territorialAttributes = (feature, lat, lng, layer) => {
   const props = feature?.properties || {};
   const fields = territorialFieldNames(layer);
-  const code = String(props[layer?.code_property] ?? props.admin_code ?? '').replace(/\.0$/, '');
-  const name = props[layer?.name_property] ?? props.name ?? '';
-  const parentName = props[layer?.parent_name_property] ?? props.parent_name ?? '';
+
+  const firstValue = (...keys) => {
+    for (const key of keys) {
+      if (!key) continue;
+      const value = props[key];
+      if (value !== undefined && value !== null && String(value).trim() !== '') return value;
+    }
+    return '';
+  };
+
+  // Some Guatemala assets are regenerated from the original SEGEPLAN
+  // shapefiles during deploy, so their source field names differ from the
+  // normalized admin_code/name schema used by the catalog.
+  const code = String(firstValue(
+    layer?.code_property,
+    'admin_code',
+    'cod_dep',
+    'COD_DEP',
+    'cod_muni_1',
+    'codigo_mun',
+    'CODIGO_MUN',
+    'codigo',
+    'CODIGO',
+  )).replace(/\.0$/, '');
+
+  const name = firstValue(
+    layer?.name_property,
+    'name',
+    'departamen',
+    'departamento',
+    'DEPTO',
+    'nombre_1',
+    'municipio',
+    'MUNICIPIO',
+    'nombre',
+    'NOMBRE',
+  );
+
+  const parentName = firstValue(
+    layer?.parent_name_property,
+    'parent_name',
+    'depto_1',
+    'departamen',
+    'departamento',
+    'DEPTO',
+  );
 
   const result = {
     latitud: Number(lat.toFixed(6)),
