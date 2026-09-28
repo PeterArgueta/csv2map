@@ -28,6 +28,10 @@ jobs:
           cache: npm
           cache-dependency-path: geo_guate_frontend/package-lock.json
 
+      - name: Validar catálogo GIS
+        working-directory: geo_guate_frontend
+        run: python scripts/validate_catalog.py
+
       - name: Compilar frontend
         working-directory: geo_guate_frontend
         run: npm ci && npm run build
