@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
-import { GeoJSON, MapContainer, TileLayer, Tooltip, useMap } from 'react-leaflet';
+import { GeoJSON, MapContainer, Marker, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const PRESETS = {
@@ -58,7 +58,7 @@ function FitLayer({ data }) {
 
 function LayerLabels({ data, nameProperty, visible }) {
   if (!visible || !data?.features?.length) return null;
-  return data.features.map((feature, index) => {
+  return data.features.slice(0, 500).map((feature, index) => {
     const name = feature.properties?.[nameProperty] || feature.properties?.name;
     if (!name) return null;
     let center;
@@ -67,18 +67,12 @@ function LayerLabels({ data, nameProperty, visible }) {
     } catch {
       return null;
     }
-    return (
-      <Tooltip
-        key={`${name}-${index}`}
-        permanent
-        direction="center"
-        position={center}
-        opacity={1}
-        className="map-designer-label"
-      >
-        {name}
-      </Tooltip>
-    );
+    const icon = L.divIcon({
+      className: 'map-designer-label-wrapper',
+      html: `<span class="map-designer-label">${String(name).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]))}</span>`,
+      iconSize: null,
+    });
+    return <Marker key={`${name}-${index}`} position={center} icon={icon} interactive={false} />;
   });
 }
 
