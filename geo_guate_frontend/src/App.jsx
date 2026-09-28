@@ -4,6 +4,7 @@ import { MapaDepartamentos } from './components/MapaDepartamentos';
 import { CrearCapaPuntos } from './components/CrearCapaPuntos';
 import { ConvertirFormatos } from './components/ConvertirFormatos';
 import { Geoportal } from './components/Geoportal';
+import { CrearMapa } from './components/CrearMapa';
 import './index.css';
 
 const DOWNLOAD_FORMATS = {
@@ -34,6 +35,7 @@ const NAV_LABELS = {
     layers: 'Capas',
     projects: 'Proyectos',
     geoportal: 'Geoportal',
+    createMap: 'Crear mapa',
   },
   en: {
     subtitle: 'Data converter',
@@ -43,6 +45,7 @@ const NAV_LABELS = {
     layers: 'Layers',
     projects: 'Projects',
     geoportal: 'Geoportal',
+    createMap: 'Create map',
   },
 };
 
@@ -84,6 +87,7 @@ const exampleFor = (pais, nivel) => {
 const pathToView = (pathname) => {
   if (pathname === '/' || pathname === '/geoportal' || pathname.startsWith('/geoportal/')) return 'geoportal';
   if (pathname === '/georeferenciar' || pathname.startsWith('/georeferenciar/')) return 'convertir';
+  if (pathname === '/crear-mapa' || pathname.startsWith('/crear-mapa/')) return 'crear-mapa';
   if (pathname === '/crear-capa' || pathname.startsWith('/crear-capa/')) return 'crear-capa';
   if (pathname === '/convertir-formatos' || pathname.startsWith('/convertir-formatos/')) return 'formatos';
   if (pathname === '/capas' || pathname.startsWith('/capas/')) return 'capas';
@@ -93,6 +97,7 @@ const pathToView = (pathname) => {
 
 const APP_NAV_ITEMS = [
   { view: 'geoportal', path: '/geoportal', icon: '▱', es: 'Geoportal', en: 'Geoportal' },
+  { view: 'crear-mapa', path: '/crear-mapa', icon: '✦', es: 'Crear mapa', en: 'Create map' },
   { view: 'convertir', path: '/georeferenciar', icon: '◎', es: 'Georeferenciar', en: 'Georeference' },
   { view: 'crear-capa', path: '/crear-capa', icon: '+', es: 'Crear capa', en: 'Create layer' },
   { view: 'formatos', path: '/convertir-formatos', icon: '⇄', es: 'Convertidor', en: 'Converter' },
@@ -545,6 +550,7 @@ function App() {
 
         <div className="min-w-0 flex-1 pb-[68px] lg:pb-0">
           {view === 'convertir' && renderConvert()}
+          {view === 'crear-mapa' && <CrearMapa language={language} />}
           {view === 'crear-capa' && <CrearCapaPuntos language={language} />}
           {view === 'formatos' && <ConvertirFormatos language={language} />}
           {view === 'capas' && renderLayers()}
