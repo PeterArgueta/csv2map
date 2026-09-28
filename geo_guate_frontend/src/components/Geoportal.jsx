@@ -65,10 +65,17 @@ function MapController({ activeDatasets, fitToken, focusedData, focusToken }) {
   return null;
 }
 
+const escapeHtml = (value) => String(value)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#039;');
+
 const displayValue = (value) => {
   if (value === null || value === undefined || value === '') return '—';
-  if (typeof value === 'object') return JSON.stringify(value);
-  return String(value);
+  if (typeof value === 'object') return escapeHtml(JSON.stringify(value));
+  return escapeHtml(value);
 };
 
 
@@ -202,7 +209,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
         ...current,
         catalog: en ? 'Could not load the layer catalog.' : 'No fue posible cargar el catálogo de capas.',
       })));
-  }, [en]);
+  }, []);
 
   const layers = useMemo(() => {
     if (!catalog) return [];
@@ -332,13 +339,13 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
     const keys = [...preferred, ...remaining];
     const rows = keys.map((key) =>
       `<div style="display:grid;grid-template-columns:100px 1fr;gap:8px;padding:4px 0;border-top:1px solid #f1f5f9">
-        <strong style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">${key}</strong>
+        <strong style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">${escapeHtml(key)}</strong>
         <span style="font-size:12px;color:#0f172a;word-break:break-word">${displayValue(props[key])}</span>
       </div>`,
     ).join('');
     leafletLayer.bindPopup(
       `<div style="min-width:220px">
-        <div style="font-weight:800;font-size:14px;color:#0f172a;margin-bottom:8px">${title}</div>
+        <div style="font-weight:800;font-size:14px;color:#0f172a;margin-bottom:8px">${escapeHtml(title)}</div>
         ${rows || `<span style="font-size:12px;color:#64748b">${en ? 'No attributes' : 'Sin atributos'}</span>`}
       </div>`,
     );
@@ -810,7 +817,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
                   style={{ color: '#475569', weight: 2.2, opacity: 1, dashArray: '7 7', fillOpacity: 0 }}
                   onEachFeature={(feature, leafletLayer) => {
                     leafletLayer.bindPopup(
-                      `<div style="min-width:220px"><div style="font-weight:800;font-size:14px;color:#0f172a;margin-bottom:8px">${feature.properties?.name || 'Línea de Adyacencia'}</div><div style="font-size:12px;line-height:1.5;color:#475569">${feature.properties?.note || BELIZE_DISPUTE_NOTE}</div></div>`,
+                      `<div style="min-width:220px"><div style="font-weight:800;font-size:14px;color:#0f172a;margin-bottom:8px">${escapeHtml(feature.properties?.name || 'Línea de Adyacencia')}</div><div style="font-size:12px;line-height:1.5;color:#475569">${escapeHtml(feature.properties?.note || BELIZE_DISPUTE_NOTE)}</div></div>`,
                     );
                   }}
                 />
