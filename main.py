@@ -485,7 +485,7 @@ def polygon_from_vertices(points: gpd.GeoDataFrame, order_column: str = "") -> g
     selected_column = order_column
     if not selected_column:
         for column in points.columns:
-            if normalize_text_key(column) in {"vertice", "vertex", "orden", "order", "punto", "point"}:
+            if normalize_text_key(column) in {"vertice", "vertex", "orden", "order", "punto", "point", "id"}:
                 selected_column = column
                 break
     if selected_column:
@@ -550,7 +550,8 @@ def read_convertible_layer(
             geometry=gpd.points_from_xy(parsed["lon"], parsed["lat"]),
             crs="EPSG:4326",
         )
-        output = polygon_from_vertices(gdf, columna_orden) if tipo_geometria == "poligono" else enrich_municipal_points(gdf)
+        output = (polygon_from_vertices(gdf, columna_orden) if tipo_geometria == "poligono"
+                  else gdf if tipo_geometria == "puntos_poligono" else enrich_municipal_points(gdf))
         return output, "xlsx" if lower_name.endswith(".xlsx") else "csv"
 
     if lower_name.endswith(".zip"):
@@ -592,8 +593,8 @@ def export_single_format(
     gdf: gpd.GeoDataFrame,
     workspace: Path,
     formato: str,
+    basename: str = "converttomap_conversion",
 ) -> tuple[Path, str]:
-    basename = "converttomap_conversion"
 
     if formato == "geojson":
         output = workspace / f"{basename}.geojson"
@@ -639,6 +640,43 @@ def export_single_format(
     raise ValueError("Formato de salida no válido.")
 
 
+def export_vertices_and_polygon(points: gpd.GeoDataFrame, workspace: Path,
+                                formato: str, order_column: str) -> tuple[Path, str]:
+    polygon = polygon_from_vertices(points, order_column)
+    archive_path = workspace / "converttomap_vertices_y_poligono.zip"
+    with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for name, layer in (("vertices", points), ("poligono", polygon)):
+            layer_dir = workspace / name
+            layer_dir.mkdir()
+            output, _ = export_single_format(layer, layer_dir, formato, basename=name)
+            if formato == "shp":
+                # Include both complete shapefiles in the same ZIP.
+                with zipfile.ZipFile(output) as parts:
+                    for member in parts.namelist():
+                        archive.writestr(member, parts.read(member))
+            else:
+                archive.write(output, arcname=output.name)
+    return archive_path, "application/zip"
+
+
+def suggest_table_geometry(frame: pd.DataFrame, filename: str) -> str:
+    """Recognize explicit vertex tables and closed coordinate rings."""
+    headers = {normalize_text_key(str(column)) for column in frame.columns}
+    if headers & {"vertice", "vertex"} or any(word in normalize_text_key(filename) for word in ("poligono", "polygon", "vertices")):
+        return "puntos_poligono"
+    if len(frame) >= 4:
+        try:
+            lat = resolve_csv_coordinate_column(frame, "", ("lat", "latitud", "latitude", "y", "norte"))
+            lon = resolve_csv_coordinate_column(frame, "", ("lon", "lng", "longitud", "longitude", "x", "oeste"))
+            start = (parse_coordinate(frame.iloc[0][lat], "lat", lat), parse_coordinate(frame.iloc[0][lon], "lon", lon))
+            end = (parse_coordinate(frame.iloc[-1][lat], "lat", lat), parse_coordinate(frame.iloc[-1][lon], "lon", lon))
+            if start == end:
+                return "puntos_poligono"
+        except ValueError:
+            pass
+    return "puntos"
+
+
 @app.post("/convertir_formato/")
 async def convertir_formato(
     background_tasks: BackgroundTasks,
@@ -652,9 +690,9 @@ async def convertir_formato(
 ):
     if not file.filename:
         raise HTTPException(status_code=400, detail="Debes cargar un archivo.")
-    if tipo_geometria not in {"puntos", "poligono"}:
+    if tipo_geometria not in {"puntos", "poligono", "puntos_poligono"}:
         raise HTTPException(status_code=400, detail="Tipo de geometría no válido.")
-    if tipo_geometria == "poligono" and not file.filename.lower().endswith((".csv", ".xlsx")):
+    if tipo_geometria in {"poligono", "puntos_poligono"} and not file.filename.lower().endswith((".csv", ".xlsx")):
         raise HTTPException(status_code=400, detail="Para crear un polígono, carga sus vértices en CSV o Excel .xlsx.")
 
     formato_salida = formato_salida.strip().lower()
@@ -688,10 +726,13 @@ async def convertir_formato(
         if gdf.crs is None:
             gdf = gdf.set_crs("EPSG:4326")
 
-        if source_format == formato_salida and tipo_geometria != "poligono":
+        if source_format == formato_salida and tipo_geometria == "puntos":
             raise ValueError("El formato de salida es igual al formato de entrada.")
 
-        output_path, media_type = export_single_format(gdf, workspace, formato_salida)
+        if tipo_geometria == "puntos_poligono":
+            output_path, media_type = export_vertices_and_polygon(gdf, workspace, formato_salida, columna_orden)
+        else:
+            output_path, media_type = export_single_format(gdf, workspace, formato_salida)
         background_tasks.add_task(remove_workspace, str(workspace))
         return FileResponse(
             output_path,
@@ -736,6 +777,7 @@ async def inspeccionar_tabla(
         return {
             "headers": [str(column) for column in frame.columns],
             "rows": preview,
+            "suggested_geometry": suggest_table_geometry(frame, file.filename),
             **info,
         }
     except ValueError as exc:

@@ -50,7 +50,8 @@ export function ConvertirFormatos({ language = 'es' }) {
   const [inspecting, setInspecting] = useState(false);
   const inspectionId = useRef(0);
   const isTable = ['csv', 'xlsx'].includes(inputFormat);
-  const isPolygon = isTable && geometryType === 'poligono';
+  const isPolygon = isTable && geometryType !== 'puntos';
+  const includeVertices = isTable && geometryType === 'puntos_poligono';
   const [isDragging, setIsDragging] = useState(false);
   const [converting, setConverting] = useState(false);
   const [message, setMessage] = useState('');
@@ -87,7 +88,7 @@ export function ConvertirFormatos({ language = 'es' }) {
     }
     setFile(selected);
     setInputFormat(detected);
-    if (detected === 'xlsx') {
+    if (['csv', 'xlsx'].includes(detected)) {
       setInspecting(true);
       const form = new FormData();
       form.append('file', selected);
@@ -96,8 +97,9 @@ export function ConvertirFormatos({ language = 'es' }) {
         if (requestId !== inspectionId.current) return;
         setSheetNames(data.sheet_names || []);
         setSheetName(data.sheet_name || '');
+        setGeometryType(data.suggested_geometry || 'puntos');
       }).catch(() => {
-        if (requestId === inspectionId.current) setError(en ? 'Could not inspect the Excel workbook. Please upload it again.' : 'No fue posible leer las hojas del Excel. Vuelve a cargarlo.');
+        if (requestId === inspectionId.current) setError(en ? 'Could not inspect the file. Please upload it again.' : 'No fue posible leer el archivo. Vuelve a cargarlo.');
       }).finally(() => {
         if (requestId === inspectionId.current) setInspecting(false);
       });
@@ -138,12 +140,14 @@ export function ConvertirFormatos({ language = 'es' }) {
       const url = URL.createObjectURL(response.data);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `converttomap_${stamp()}${outputInfo?.ext || ''}`;
+      anchor.download = `converttomap_${stamp()}${includeVertices ? '.zip' : outputInfo?.ext || ''}`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
-      setMessage(`${en ? 'Conversion completed' : 'Conversión completada'}: ${INPUT_LABELS[inputFormat]} → ${outputInfo?.label}.`);
+      setMessage(includeVertices
+        ? (en ? `Conversion completed: vertices and polygon in ${outputInfo?.label}, together in a ZIP.` : `Conversión completada: vértices y polígono en ${outputInfo?.label}, juntos en un ZIP.`)
+        : `${en ? 'Conversion completed' : 'Conversión completada'}: ${INPUT_LABELS[inputFormat]} → ${outputInfo?.label}.`);
     } catch (requestError) {
       let detail = `${en ? 'The file could not be converted.' : 'No fue posible convertir el archivo.'}`;
       if (requestError.response?.data instanceof Blob) {
@@ -212,6 +216,7 @@ export function ConvertirFormatos({ language = 'es' }) {
                 <span className="field-label">{en ? 'Create geometry' : 'Crear geometría'}</span>
                 <select value={geometryType} onChange={(event) => { setGeometryType(event.target.value); setError(''); setMessage(''); }} className="field-control">
                   <option value="puntos">{en ? 'Points with municipal attributes' : 'Puntos con atributos municipales'}</option>
+                  <option value="puntos_poligono">{en ? 'Vertices and polygon' : 'Vértices y polígono'}</option>
                   <option value="poligono">{en ? 'Polygon from vertices' : 'Polígono desde vértices'}</option>
                 </select>
               </label>
@@ -228,13 +233,15 @@ export function ConvertirFormatos({ language = 'es' }) {
                 </label>
               )}
               <p className="mt-2 text-xs leading-5 text-slate-600">{isPolygon
-                ? (en ? 'Creates one polygon without municipal or per-vertex attributes. It connects vertices in order and closes the ring automatically.' : 'Crea un polígono sin atributos municipales ni columnas de cada vértice. Une los vértices en orden y cierra la figura automáticamente.')
+                ? (includeVertices
+                  ? (en ? 'Downloads two layers together in a ZIP: original vertices and the closed polygon they form. No municipal attributes are added.' : 'Descarga dos capas juntas en un ZIP: los vértices originales y el polígono cerrado que forman. No agrega atributos municipales.')
+                  : (en ? 'Creates one polygon without municipal or per-vertex attributes. It connects vertices in order and closes the ring automatically.' : 'Crea un polígono sin atributos municipales ni columnas de cada vértice. Une los vértices en orden y cierra la figura automáticamente.'))
                 : (en ? 'Original columns are preserved. Municipal attributes apply to Guatemala. Points outside the layer or on shared boundaries are flagged in estado_territorial.' : 'Se conservan las columnas originales. Los atributos municipales corresponden a Guatemala. Los puntos fuera de la capa o en límites compartidos se señalan en estado_territorial.')}</p>
               {isPolygon && (
                 <label className="mt-3 block">
                   <span className="field-label">{en ? 'Vertex order column (optional)' : 'Columna de orden de vértices (opcional)'}</span>
-                  <input value={orderColumn} onChange={(event) => setOrderColumn(event.target.value)} className="field-control" placeholder={en ? 'Vertex, order or row order' : 'Vértice, orden o el orden de las filas'} />
-                  <span className="mt-1 block text-xs leading-5 text-slate-500">{en ? 'Detects Vértice, vertex, orden, order, punto or point. Values must be unique numbers; without a column, uses row order. At least 3 distinct vertices. Correct the order if segments cross.' : 'Detecta Vértice, vertex, orden, order, punto o point. Deben ser números únicos; si no hay columna, usa el orden de las filas. Mínimo 3 vértices distintos. Revisa el orden si los segmentos se cruzan.'}</span>
+                  <input value={orderColumn} onChange={(event) => setOrderColumn(event.target.value)} className="field-control" placeholder={en ? 'Vertex, ID, order or row order' : 'Vértice, ID, orden o el orden de las filas'} />
+                  <span className="mt-1 block text-xs leading-5 text-slate-500">{en ? 'Detects Vértice, vertex, ID, orden, order, punto or point. Values must be unique numbers; without a column, uses row order. At least 3 distinct vertices. Correct the order if segments cross.' : 'Detecta Vértice, vertex, ID, orden, order, punto o point. Deben ser números únicos; si no hay columna, usa el orden de las filas. Mínimo 3 vértices distintos. Revisa el orden si los segmentos se cruzan.'}</span>
                 </label>
               )}
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
