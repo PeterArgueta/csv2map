@@ -8,11 +8,15 @@ import tempfile
 import zipfile
 import unicodedata
 import csv
+import math
+import re
 from functools import lru_cache
 from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
+from shapely.geometry import Polygon
+from shapely.validation import explain_validity
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -427,6 +431,84 @@ def enrich_municipal_points(points: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return result
 
 
+def parse_coordinate(value: object, axis: str, column: str) -> float:
+    """Read decimal degrees or DMS; Norte/Oeste headers supply hemisphere."""
+    text = str(value).strip().upper().replace(",", ".")
+    hemisphere = None
+    prefix = re.match(r"^([NSEWO])\s*", text)
+    suffix = re.search(r"\s*([NSEWO])$", text)
+    if prefix:
+        hemisphere = prefix.group(1)
+        text = text[prefix.end():].strip()
+    if suffix:
+        if hemisphere and hemisphere != suffix.group(1):
+            raise ValueError("Hemisferios contradictorios.")
+        hemisphere = suffix.group(1)
+        text = re.sub(r"\s*[NSEWO]$", "", text).strip()
+    if hemisphere and hemisphere not in ("NS" if axis == "lat" else "EWO"):
+        raise ValueError("Hemisferio incompatible con la columna.")
+    explicit_hemisphere = hemisphere is not None
+    if hemisphere is None:
+        heading = normalize_text_key(column)
+        hemisphere = {"norte": "N", "north": "N", "sur": "S", "south": "S",
+                      "oeste": "W", "west": "W", "este": "E", "east": "E"}.get(heading)
+        if hemisphere and hemisphere not in ("NS" if axis == "lat" else "EWO"):
+            raise ValueError("Encabezado incompatible con la coordenada.")
+    try:
+        number = float(text)
+    except ValueError:
+        dms = re.fullmatch(
+            r"([+-]?\d+(?:\.\d+)?)\s*[°º˚]\s*(\d+(?:\.\d+)?)\s*['′’´]\s*(\d+(?:\.\d+)?)\s*(?:[\"″”]|'')?", text)
+        if not dms:
+            raise ValueError("Usa grados decimales o grados, minutos y segundos.")
+        degree_text, minutes_text, seconds_text = dms.groups()
+        degrees, minutes, seconds = map(float, (degree_text, minutes_text, seconds_text))
+        if not degrees.is_integer() or not minutes.is_integer() or minutes >= 60 or seconds >= 60:
+            raise ValueError("Grados y minutos deben ser enteros; minutos y segundos menores que 60.")
+        number = abs(degrees) + minutes / 60 + seconds / 3600
+        if degree_text.startswith("-"):
+            number = -number
+    if hemisphere:
+        if number < 0 and hemisphere in "NE" and explicit_hemisphere:
+            raise ValueError("El signo contradice el hemisferio.")
+        # Preserve an explicit negative sign when hemisphere only came from
+        # the header (e.g. an existing custom 'este' column with -90.5).
+        if number >= 0 or explicit_hemisphere:
+            number = abs(number) * (-1 if hemisphere in "SWO" else 1)
+    limit = 90 if axis == "lat" else 180
+    if not math.isfinite(number) or abs(number) > limit:
+        raise ValueError("Coordenada fuera del rango WGS84.")
+    return number
+
+
+def polygon_from_vertices(points: gpd.GeoDataFrame, order_column: str = "") -> gpd.GeoDataFrame:
+    selected_column = order_column
+    if not selected_column:
+        for column in points.columns:
+            if normalize_text_key(column) in {"vertice", "vertex", "orden", "order", "punto", "point"}:
+                selected_column = column
+                break
+    if selected_column:
+        selected_column = resolve_csv_coordinate_column(points, selected_column, ())
+        order = pd.to_numeric(points[selected_column], errors="coerce")
+        if order.isna().any() or not order.map(math.isfinite).all() or order.duplicated().any():
+            raise ValueError("La columna de vértices debe contener números únicos y válidos.")
+        points = points.iloc[order.argsort(kind="stable")]
+    coordinates = [(point.x, point.y) for point in points.geometry]
+    if coordinates and coordinates[0] == coordinates[-1]:
+        coordinates.pop()
+    if len(set(coordinates)) < 3:
+        raise ValueError("El polígono necesita al menos tres vértices distintos.")
+    if len(set(coordinates)) != len(coordinates):
+        raise ValueError("Hay vértices repetidos dentro de la secuencia. Revisa el orden.")
+    polygon = Polygon(coordinates)
+    if polygon.is_empty or polygon.area == 0 or not polygon.is_valid:
+        raise ValueError("Los vértices no forman un polígono válido. Revisa el orden y los cruces entre segmentos. "
+                         + explain_validity(polygon))
+    # A single geometry; no per-vertex columns or administrative attributes.
+    return gpd.GeoDataFrame(geometry=[polygon], crs="EPSG:4326")
+
+
 def read_convertible_layer(
     workspace: Path,
     filename: str,
@@ -434,6 +516,8 @@ def read_convertible_layer(
     columna_latitud: str,
     columna_longitud: str,
     hoja: str | None = None,
+    tipo_geometria: str = "puntos",
+    columna_orden: str = "",
 ) -> tuple[gpd.GeoDataFrame, str]:
     lower_name = filename.lower()
 
@@ -443,28 +527,31 @@ def read_convertible_layer(
         lat_col = resolve_csv_coordinate_column(
             frame,
             columna_latitud,
-            ("latitud", "latitude", "lat", "y", "coord_lat", "coordenada_latitud", "lat_dd", "decimal_latitude"),
+            ("latitud", "latitude", "lat", "y", "coord_lat", "coordenada_latitud", "lat_dd", "decimal_latitude", "norte", "north", "sur", "south"),
         )
         lon_col = resolve_csv_coordinate_column(
             frame,
             columna_longitud,
-            ("longitud", "longitude", "lon", "lng", "long", "x", "coord_lon", "coordenada_longitud", "lon_dd", "decimal_longitude"),
+            ("longitud", "longitude", "lon", "lng", "long", "x", "coord_lon", "coordenada_longitud", "lon_dd", "decimal_longitude", "oeste", "west", "este", "east"),
         )
         if lat_col == lon_col:
             raise ValueError("La latitud y la longitud deben usar columnas distintas.")
-        lat = pd.to_numeric(frame[lat_col].astype(str).str.strip().str.replace(",", ".", regex=False), errors="coerce")
-        lon = pd.to_numeric(frame[lon_col].astype(str).str.strip().str.replace(",", ".", regex=False), errors="coerce")
-        invalid = int((~lat.between(-90, 90) | ~lon.between(-180, 180)).sum())
-        if invalid:
-            raise ValueError(
-                f"El archivo contiene {invalid} fila(s) con coordenadas vacías, no numéricas o fuera del rango WGS84."
-            )
+        parsed = {}
+        for column, axis in ((lat_col, "lat"), (lon_col, "lon")):
+            values = []
+            for index, value in frame[column].items():
+                try:
+                    values.append(parse_coordinate(value, axis, column))
+                except ValueError as exc:
+                    raise ValueError(f"Coordenada inválida en fila {index + 2}, columna '{column}': {exc}") from exc
+            parsed[axis] = values
         gdf = gpd.GeoDataFrame(
             frame.copy(),
-            geometry=gpd.points_from_xy(lon, lat),
+            geometry=gpd.points_from_xy(parsed["lon"], parsed["lat"]),
             crs="EPSG:4326",
         )
-        return enrich_municipal_points(gdf), "xlsx" if lower_name.endswith(".xlsx") else "csv"
+        output = polygon_from_vertices(gdf, columna_orden) if tipo_geometria == "poligono" else enrich_municipal_points(gdf)
+        return output, "xlsx" if lower_name.endswith(".xlsx") else "csv"
 
     if lower_name.endswith(".zip"):
         zip_path = workspace / "entrada.zip"
@@ -560,9 +647,15 @@ async def convertir_formato(
     columna_latitud: str = Form(""),
     columna_longitud: str = Form(""),
     hoja: str | None = Form(None),
+    tipo_geometria: str = Form("puntos"),
+    columna_orden: str = Form(""),
 ):
     if not file.filename:
         raise HTTPException(status_code=400, detail="Debes cargar un archivo.")
+    if tipo_geometria not in {"puntos", "poligono"}:
+        raise HTTPException(status_code=400, detail="Tipo de geometría no válido.")
+    if tipo_geometria == "poligono" and not file.filename.lower().endswith((".csv", ".xlsx")):
+        raise HTTPException(status_code=400, detail="Para crear un polígono, carga sus vértices en CSV o Excel .xlsx.")
 
     formato_salida = formato_salida.strip().lower()
     allowed_outputs = {"geojson", "shp", "kml", "gpkg", "csv"}
@@ -584,6 +677,8 @@ async def convertir_formato(
             columna_latitud,
             columna_longitud,
             hoja,
+            tipo_geometria,
+            columna_orden,
         )
         if gdf.empty:
             raise ValueError("La capa no contiene entidades geográficas.")
@@ -593,7 +688,7 @@ async def convertir_formato(
         if gdf.crs is None:
             gdf = gdf.set_crs("EPSG:4326")
 
-        if source_format == formato_salida:
+        if source_format == formato_salida and tipo_geometria != "poligono":
             raise ValueError("El formato de salida es igual al formato de entrada.")
 
         output_path, media_type = export_single_format(gdf, workspace, formato_salida)

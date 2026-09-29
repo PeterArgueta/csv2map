@@ -41,6 +41,8 @@ export function ConvertirFormatos({ language = 'es' }) {
   const [file, setFile] = useState(null);
   const [inputFormat, setInputFormat] = useState('');
   const [outputFormat, setOutputFormat] = useState('geojson');
+  const [geometryType, setGeometryType] = useState('puntos');
+  const [orderColumn, setOrderColumn] = useState('');
   const [latColumn, setLatColumn] = useState('');
   const [lonColumn, setLonColumn] = useState('');
   const [sheetNames, setSheetNames] = useState([]);
@@ -48,6 +50,7 @@ export function ConvertirFormatos({ language = 'es' }) {
   const [inspecting, setInspecting] = useState(false);
   const inspectionId = useRef(0);
   const isTable = ['csv', 'xlsx'].includes(inputFormat);
+  const isPolygon = isTable && geometryType === 'poligono';
   const [isDragging, setIsDragging] = useState(false);
   const [converting, setConverting] = useState(false);
   const [message, setMessage] = useState('');
@@ -66,6 +69,7 @@ export function ConvertirFormatos({ language = 'es' }) {
     setSheetName('');
     setLatColumn('');
     setLonColumn('');
+    setOrderColumn('');
     setInspecting(false);
     if (!selected) return;
     const detected = detectInputFormat(selected.name);
@@ -120,6 +124,8 @@ export function ConvertirFormatos({ language = 'es' }) {
       form.append('file', file);
       form.append('formato_salida', outputFormat);
       if (isTable) {
+        form.append('tipo_geometria', geometryType);
+        if (isPolygon) form.append('columna_orden', orderColumn.trim());
         form.append('columna_latitud', latColumn.trim());
         form.append('columna_longitud', lonColumn.trim());
         if (sheetName) form.append('hoja', sheetName);
@@ -160,7 +166,7 @@ export function ConvertirFormatos({ language = 'es' }) {
         <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">{en ? 'GIS converter' : 'Conversor GIS'}</p>
         <h2 className="mt-2 text-3xl font-bold tracking-tight">{en ? 'Convert geospatial formats' : 'Convierte formatos geográficos'}</h2>
         <p className="mt-2 max-w-3xl leading-7 text-slate-600">
-          {en ? 'Convert GIS layers or create points from CSV/Excel coordinates. Points in Guatemala include municipality and department names and codes.' : 'Convierte capas GIS o crea puntos desde coordenadas de CSV/Excel. Los puntos en Guatemala incluyen nombres y códigos de municipio y departamento.'}
+          {en ? 'Convert GIS layers or create points and polygons from CSV/Excel coordinates.' : 'Convierte capas GIS o crea puntos y polígonos desde coordenadas de CSV/Excel.'}
         </p>
       </div>
 
@@ -202,9 +208,16 @@ export function ConvertirFormatos({ language = 'es' }) {
 
           {isTable && (
             <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+              <label className="mb-4 block">
+                <span className="field-label">{en ? 'Create geometry' : 'Crear geometría'}</span>
+                <select value={geometryType} onChange={(event) => { setGeometryType(event.target.value); setError(''); setMessage(''); }} className="field-control">
+                  <option value="puntos">{en ? 'Points with municipal attributes' : 'Puntos con atributos municipales'}</option>
+                  <option value="poligono">{en ? 'Polygon from vertices' : 'Polígono desde vértices'}</option>
+                </select>
+              </label>
               <p className="text-sm font-bold text-slate-800">{en ? 'File coordinates' : 'Coordenadas del archivo'}</p>
               <p className="mt-1 text-xs leading-5 text-slate-600">
-                {en ? 'Use WGS84 decimal degrees. Leave the fields blank for automatic detection: lat, latitude, latitud, y; lon, lng, long, longitude, longitud, x. You can also enter custom column names.' : 'Usa grados decimales WGS84. Deja los campos vacíos para detectar: lat, latitude, latitud, y; lon, lng, long, longitude, longitud, x. También puedes escribir nombres de columnas personalizados.'}
+                {en ? 'Use WGS84 decimal degrees or degrees, minutes and seconds. Automatic columns: lat, latitude, latitud, y, Norte; lon, lng, longitude, longitud, x, Oeste. Oeste means west (negative longitude). With other headers, include N/S/E/W in DMS values or use signed decimals.' : 'Usa coordenadas WGS84 en grados decimales o grados, minutos y segundos. Detecta lat, latitude, latitud, y, Norte; lon, lng, longitude, longitud, x, Oeste. Oeste indica longitud negativa. Con otros encabezados, agrega N/S/E/O a las coordenadas GMS o usa decimales con signo.'}
               </p>
               {sheetNames.length > 1 && (
                 <label className="mt-3 block">
@@ -214,7 +227,16 @@ export function ConvertirFormatos({ language = 'es' }) {
                   </select>
                 </label>
               )}
-              <p className="mt-2 text-xs leading-5 text-slate-600">{en ? 'Original columns are preserved. Municipal attributes apply to Guatemala. Points outside the layer or on shared boundaries are flagged in estado_territorial.' : 'Se conservan las columnas originales. Los atributos municipales corresponden a Guatemala. Los puntos fuera de la capa o en límites compartidos se señalan en estado_territorial.'}</p>
+              <p className="mt-2 text-xs leading-5 text-slate-600">{isPolygon
+                ? (en ? 'Creates one polygon without municipal or per-vertex attributes. It connects vertices in order and closes the ring automatically.' : 'Crea un polígono sin atributos municipales ni columnas de cada vértice. Une los vértices en orden y cierra la figura automáticamente.')
+                : (en ? 'Original columns are preserved. Municipal attributes apply to Guatemala. Points outside the layer or on shared boundaries are flagged in estado_territorial.' : 'Se conservan las columnas originales. Los atributos municipales corresponden a Guatemala. Los puntos fuera de la capa o en límites compartidos se señalan en estado_territorial.')}</p>
+              {isPolygon && (
+                <label className="mt-3 block">
+                  <span className="field-label">{en ? 'Vertex order column (optional)' : 'Columna de orden de vértices (opcional)'}</span>
+                  <input value={orderColumn} onChange={(event) => setOrderColumn(event.target.value)} className="field-control" placeholder={en ? 'Vertex, order or row order' : 'Vértice, orden o el orden de las filas'} />
+                  <span className="mt-1 block text-xs leading-5 text-slate-500">{en ? 'Detects Vértice, vertex, orden, order, punto or point. Values must be unique numbers; without a column, uses row order. At least 3 distinct vertices. Correct the order if segments cross.' : 'Detecta Vértice, vertex, orden, order, punto o point. Deben ser números únicos; si no hay columna, usa el orden de las filas. Mínimo 3 vértices distintos. Revisa el orden si los segmentos se cruzan.'}</span>
+                </label>
+              )}
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label>
                   <span className="field-label">{en ? 'Latitude column' : 'Columna de latitud'}</span>
@@ -236,7 +258,7 @@ export function ConvertirFormatos({ language = 'es' }) {
           <div className="mt-5 space-y-2">
             {FORMAT_OPTIONS.map((option) => {
               const selected = outputFormat === option.id;
-              const same = inputFormat === option.id;
+              const same = inputFormat === option.id && !isPolygon;
               return (
                 <label key={option.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${selected ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200 hover:border-slate-300'} ${same ? 'opacity-50' : ''}`}>
                   <input
@@ -260,7 +282,7 @@ export function ConvertirFormatos({ language = 'es' }) {
           <button
             type="button"
             onClick={convert}
-            disabled={!file || !outputFormat || converting || inputFormat === outputFormat || inspecting || (inputFormat === 'xlsx' && !sheetName)}
+            disabled={!file || !outputFormat || converting || (inputFormat === outputFormat && !isPolygon) || inspecting || (inputFormat === 'xlsx' && !sheetName)}
             className="mt-5 flex w-full items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {converting ? (en ? 'Converting…' : 'Convirtiendo…') : `${en ? 'Convert to' : 'Convertir a'} ${outputInfo?.label || ''}`}
