@@ -15,6 +15,7 @@ const INPUT_LABELS = {
   kml: 'KML',
   gpkg: 'GeoPackage',
   csv: 'CSV',
+  xlsx: 'Excel (.xlsx)',
 };
 
 const detectInputFormat = (name = '') => {
@@ -24,6 +25,7 @@ const detectInputFormat = (name = '') => {
   if (lower.endsWith('.kml')) return 'kml';
   if (lower.endsWith('.gpkg')) return 'gpkg';
   if (lower.endsWith('.csv')) return 'csv';
+  if (lower.endsWith('.xlsx')) return 'xlsx';
   return '';
 };
 
@@ -39,8 +41,13 @@ export function ConvertirFormatos({ language = 'es' }) {
   const [file, setFile] = useState(null);
   const [inputFormat, setInputFormat] = useState('');
   const [outputFormat, setOutputFormat] = useState('geojson');
-  const [latColumn, setLatColumn] = useState('latitud');
-  const [lonColumn, setLonColumn] = useState('longitud');
+  const [latColumn, setLatColumn] = useState('');
+  const [lonColumn, setLonColumn] = useState('');
+  const [sheetNames, setSheetNames] = useState([]);
+  const [sheetName, setSheetName] = useState('');
+  const [inspecting, setInspecting] = useState(false);
+  const inspectionId = useRef(0);
+  const isTable = ['csv', 'xlsx'].includes(inputFormat);
   const [isDragging, setIsDragging] = useState(false);
   const [converting, setConverting] = useState(false);
   const [message, setMessage] = useState('');
@@ -54,12 +61,18 @@ export function ConvertirFormatos({ language = 'es' }) {
   const chooseFile = (selected) => {
     setMessage('');
     setError('');
+    const requestId = ++inspectionId.current;
+    setSheetNames([]);
+    setSheetName('');
+    setLatColumn('');
+    setLonColumn('');
+    setInspecting(false);
     if (!selected) return;
     const detected = detectInputFormat(selected.name);
     if (!detected) {
       setFile(null);
       setInputFormat('');
-      setError(`${en ? 'Unsupported format. Use GeoJSON, Shapefile ZIP, KML, GeoPackage or CSV.' : 'Formato no compatible. Usa GeoJSON, ZIP de Shapefile, KML, GeoPackage o CSV.'}`);
+      setError(`${en ? 'Unsupported format. Use GeoJSON, Shapefile ZIP, KML, GeoPackage or CSV/Excel (.xlsx).' : 'Formato no compatible. Usa GeoJSON, ZIP de Shapefile, KML, GeoPackage o CSV/Excel (.xlsx).'}`);
       return;
     }
     if (selected.size > 10 * 1024 * 1024) {
@@ -70,6 +83,21 @@ export function ConvertirFormatos({ language = 'es' }) {
     }
     setFile(selected);
     setInputFormat(detected);
+    if (detected === 'xlsx') {
+      setInspecting(true);
+      const form = new FormData();
+      form.append('file', selected);
+      const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+      axios.post(`${apiUrl}/inspeccionar_tabla/`, form).then(({ data }) => {
+        if (requestId !== inspectionId.current) return;
+        setSheetNames(data.sheet_names || []);
+        setSheetName(data.sheet_name || '');
+      }).catch(() => {
+        if (requestId === inspectionId.current) setError(en ? 'Could not inspect the Excel workbook. Please upload it again.' : 'No fue posible leer las hojas del Excel. Vuelve a cargarlo.');
+      }).finally(() => {
+        if (requestId === inspectionId.current) setInspecting(false);
+      });
+    }
     if (detected === outputFormat) {
       setOutputFormat(FORMAT_OPTIONS.find((option) => option.id !== detected)?.id || 'geojson');
     }
@@ -91,9 +119,10 @@ export function ConvertirFormatos({ language = 'es' }) {
       const form = new FormData();
       form.append('file', file);
       form.append('formato_salida', outputFormat);
-      if (inputFormat === 'csv') {
+      if (isTable) {
         form.append('columna_latitud', latColumn.trim());
         form.append('columna_longitud', lonColumn.trim());
+        if (sheetName) form.append('hoja', sheetName);
       }
 
       const response = await axios.post(`${apiUrl}/convertir_formato/`, form, {
@@ -131,7 +160,7 @@ export function ConvertirFormatos({ language = 'es' }) {
         <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">{en ? 'GIS converter' : 'Conversor GIS'}</p>
         <h2 className="mt-2 text-3xl font-bold tracking-tight">{en ? 'Convert geospatial formats' : 'Convierte formatos geográficos'}</h2>
         <p className="mt-2 max-w-3xl leading-7 text-slate-600">
-          {en ? 'Convert a layer between GeoJSON, Shapefile, KML, GeoPackage and CSV without territorial codes.' : 'Convierte una capa entre GeoJSON, Shapefile, KML, GeoPackage y CSV sin depender de códigos territoriales.'}
+          {en ? 'Convert GIS layers or create points from CSV/Excel coordinates. Points in Guatemala include municipality and department names and codes.' : 'Convierte capas GIS o crea puntos desde coordenadas de CSV/Excel. Los puntos en Guatemala incluyen nombres y códigos de municipio y departamento.'}
         </p>
       </div>
 
@@ -139,7 +168,7 @@ export function ConvertirFormatos({ language = 'es' }) {
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="font-bold">{en ? '1. Upload your layer' : '1. Carga tu capa'}</h3>
+              <h3 className="font-bold">{en ? '1. Upload your file' : '1. Carga tu archivo'}</h3>
               <p className="mt-1 text-sm text-slate-500">{en ? 'The input format is detected automatically.' : 'El formato de entrada se detecta automáticamente.'}</p>
             </div>
             {inputFormat && (
@@ -160,31 +189,40 @@ export function ConvertirFormatos({ language = 'es' }) {
             onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') inputRef.current?.click(); }}
           >
             <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-indigo-50 text-xl font-bold text-indigo-600">↑</div>
-            <p className="mt-3 font-semibold text-slate-700">{file ? file.name : (en ? 'Select or drop a layer' : 'Selecciona o arrastra una capa')}</p>
-            <p className="mt-1 text-xs text-slate-500">{en ? 'GeoJSON · SHP (.zip) · KML · GPKG · CSV · max 10 MB' : 'GeoJSON · SHP (.zip) · KML · GPKG · CSV · máximo 10 MB'}</p>
+            <p className="mt-3 font-semibold text-slate-700">{file ? file.name : (en ? 'Select or drop a file' : 'Selecciona o arrastra un archivo')}</p>
+            <p className="mt-1 text-xs text-slate-500">{en ? 'GeoJSON · SHP (.zip) · KML · GPKG · CSV · Excel (.xlsx) · max 10 MB' : 'GeoJSON · SHP (.zip) · KML · GPKG · CSV · Excel (.xlsx) · máximo 10 MB'}</p>
             <input
               ref={inputRef}
               type="file"
-              accept=".geojson,.json,.zip,.kml,.gpkg,.csv,application/geo+json,application/json,text/csv"
+              accept=".geojson,.json,.zip,.kml,.gpkg,.csv,.xlsx,application/geo+json,application/json,text/csv"
               className="hidden"
               onChange={(event) => chooseFile(event.target.files?.[0])}
             />
           </div>
 
-          {inputFormat === 'csv' && (
+          {isTable && (
             <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
-              <p className="text-sm font-bold text-slate-800">{en ? 'CSV coordinates' : 'Coordenadas del CSV'}</p>
+              <p className="text-sm font-bold text-slate-800">{en ? 'File coordinates' : 'Coordenadas del archivo'}</p>
               <p className="mt-1 text-xs leading-5 text-slate-600">
-                {en ? 'The CSV must represent points. Specify the columns containing WGS84 coordinates.' : 'El CSV debe representar puntos. Indica las columnas que contienen coordenadas en WGS84.'}
+                {en ? 'Use WGS84 decimal degrees. Leave the fields blank for automatic detection: lat, latitude, latitud, y; lon, lng, long, longitude, longitud, x. You can also enter custom column names.' : 'Usa grados decimales WGS84. Deja los campos vacíos para detectar: lat, latitude, latitud, y; lon, lng, long, longitude, longitud, x. También puedes escribir nombres de columnas personalizados.'}
               </p>
+              {sheetNames.length > 1 && (
+                <label className="mt-3 block">
+                  <span className="field-label">{en ? 'Excel sheet' : 'Hoja de Excel'}</span>
+                  <select value={sheetName} onChange={(event) => setSheetName(event.target.value)} className="field-control">
+                    {sheetNames.map((name) => <option key={name} value={name}>{name}</option>)}
+                  </select>
+                </label>
+              )}
+              <p className="mt-2 text-xs leading-5 text-slate-600">{en ? 'Original columns are preserved. Municipal attributes apply to Guatemala. Points outside the layer or on shared boundaries are flagged in estado_territorial.' : 'Se conservan las columnas originales. Los atributos municipales corresponden a Guatemala. Los puntos fuera de la capa o en límites compartidos se señalan en estado_territorial.'}</p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label>
                   <span className="field-label">{en ? 'Latitude column' : 'Columna de latitud'}</span>
-                  <input value={latColumn} onChange={(event) => setLatColumn(event.target.value)} className="field-control" placeholder="latitud" />
+                  <input value={latColumn} onChange={(event) => setLatColumn(event.target.value)} className="field-control" placeholder={en ? 'Automatic detection' : 'Detección automática'} />
                 </label>
                 <label>
                   <span className="field-label">{en ? 'Longitude column' : 'Columna de longitud'}</span>
-                  <input value={lonColumn} onChange={(event) => setLonColumn(event.target.value)} className="field-control" placeholder="longitud" />
+                  <input value={lonColumn} onChange={(event) => setLonColumn(event.target.value)} className="field-control" placeholder={en ? 'Automatic detection' : 'Detección automática'} />
                 </label>
               </div>
             </div>
@@ -222,7 +260,7 @@ export function ConvertirFormatos({ language = 'es' }) {
           <button
             type="button"
             onClick={convert}
-            disabled={!file || !outputFormat || converting || inputFormat === outputFormat || (inputFormat === 'csv' && (!latColumn.trim() || !lonColumn.trim()))}
+            disabled={!file || !outputFormat || converting || inputFormat === outputFormat || inspecting || (inputFormat === 'xlsx' && !sheetName)}
             className="mt-5 flex w-full items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {converting ? (en ? 'Converting…' : 'Convirtiendo…') : `${en ? 'Convert to' : 'Convertir a'} ${outputInfo?.label || ''}`}

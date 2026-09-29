@@ -382,17 +382,49 @@ async def exportar_geojson(
 
 
 def resolve_csv_coordinate_column(frame: pd.DataFrame, requested: str, candidates: tuple[str, ...]) -> str:
-    by_lower = {str(column).strip().lower(): str(column) for column in frame.columns}
-    requested_key = requested.strip().lower()
-    if requested_key and requested_key in by_lower:
+    def key(value: str) -> str:
+        return ''.join(char for char in normalize_text_key(value) if char.isalnum())
+    by_lower = {key(str(column)): str(column) for column in frame.columns}
+    requested_key = key(requested)
+    if requested_key:
+        if requested_key not in by_lower:
+            raise ValueError(f"No se encontró la columna '{requested}'.")
         return by_lower[requested_key]
     for candidate in candidates:
-        if candidate in by_lower:
-            return by_lower[candidate]
+        if key(candidate) in by_lower:
+            return by_lower[key(candidate)]
     raise ValueError(
         "No se encontró una columna de coordenadas válida. "
         "Indica los nombres de las columnas de latitud y longitud."
     )
+
+
+def enrich_municipal_points(points: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    municipalities = load_layer("GTM", "municipios").to_crs("EPSG:4326")
+    reference = gpd.GeoDataFrame({
+        "codigo_municipio": municipalities["cod_muni_1"].map(lambda v: normalizar_codigo(v, 4)),
+        "municipio": municipalities["nombre_1"],
+        "codigo_departamento": municipalities["cod_dept_1"].map(lambda v: normalizar_codigo(v, 2)),
+        "departamento": municipalities["depto_1"],
+    }, geometry=municipalities.geometry, crs=municipalities.crs)
+    # Boundaries can intersect more than one municipality: keep one row per point
+    # and report ambiguity instead of assigning an arbitrary municipality.
+    matches = gpd.sjoin(points[[points.geometry.name]], reference, how="left", predicate="intersects")
+    counts = matches.groupby(level=0)["index_right"].count()
+    unique = matches[~matches.index.duplicated(keep="first")]
+    result = points.copy()
+    for column in ("codigo_municipio", "municipio", "codigo_departamento", "departamento"):
+        target = column
+        if target in result.columns:
+            target = f"ctm_{column}"
+            while target in result.columns:
+                target = f"ctm_{target}"
+        result[target] = unique[column].where(counts.eq(1), "").fillna("").reindex(result.index)
+    status_column = "estado_territorial"
+    while status_column in result.columns:
+        status_column = f"ctm_{status_column}"
+    result[status_column] = counts.map(lambda n: "asignado" if n == 1 else "limite_ambiguo" if n > 1 else "fuera_de_capa")
+    return result
 
 
 def read_convertible_layer(
@@ -401,34 +433,38 @@ def read_convertible_layer(
     content: bytes,
     columna_latitud: str,
     columna_longitud: str,
+    hoja: str | None = None,
 ) -> tuple[gpd.GeoDataFrame, str]:
     lower_name = filename.lower()
 
-    if lower_name.endswith(".csv"):
-        frame, _ = parse_csv(content)
+    if lower_name.endswith((".csv", ".xlsx")):
+        frame, _ = parse_table(content, filename, hoja)
+        frame = frame.reset_index(drop=True)
         lat_col = resolve_csv_coordinate_column(
             frame,
             columna_latitud,
-            ("latitud", "latitude", "lat", "y"),
+            ("latitud", "latitude", "lat", "y", "coord_lat", "coordenada_latitud", "lat_dd", "decimal_latitude"),
         )
         lon_col = resolve_csv_coordinate_column(
             frame,
             columna_longitud,
-            ("longitud", "longitude", "lon", "lng", "long", "x"),
+            ("longitud", "longitude", "lon", "lng", "long", "x", "coord_lon", "coordenada_longitud", "lon_dd", "decimal_longitude"),
         )
-        lat = pd.to_numeric(frame[lat_col], errors="coerce")
-        lon = pd.to_numeric(frame[lon_col], errors="coerce")
-        invalid = int((lat.isna() | lon.isna()).sum())
+        if lat_col == lon_col:
+            raise ValueError("La latitud y la longitud deben usar columnas distintas.")
+        lat = pd.to_numeric(frame[lat_col].astype(str).str.strip().str.replace(",", ".", regex=False), errors="coerce")
+        lon = pd.to_numeric(frame[lon_col].astype(str).str.strip().str.replace(",", ".", regex=False), errors="coerce")
+        invalid = int((~lat.between(-90, 90) | ~lon.between(-180, 180)).sum())
         if invalid:
             raise ValueError(
-                f"El CSV contiene {invalid} fila(s) con coordenadas vacías o no numéricas."
+                f"El archivo contiene {invalid} fila(s) con coordenadas vacías, no numéricas o fuera del rango WGS84."
             )
         gdf = gpd.GeoDataFrame(
             frame.copy(),
             geometry=gpd.points_from_xy(lon, lat),
             crs="EPSG:4326",
         )
-        return gdf, "csv"
+        return enrich_municipal_points(gdf), "xlsx" if lower_name.endswith(".xlsx") else "csv"
 
     if lower_name.endswith(".zip"):
         zip_path = workspace / "entrada.zip"
@@ -523,6 +559,7 @@ async def convertir_formato(
     formato_salida: str = Form(...),
     columna_latitud: str = Form(""),
     columna_longitud: str = Form(""),
+    hoja: str | None = Form(None),
 ):
     if not file.filename:
         raise HTTPException(status_code=400, detail="Debes cargar un archivo.")
@@ -546,6 +583,7 @@ async def convertir_formato(
             content,
             columna_latitud,
             columna_longitud,
+            hoja,
         )
         if gdf.empty:
             raise ValueError("La capa no contiene entidades geográficas.")
