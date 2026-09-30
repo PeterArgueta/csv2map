@@ -403,33 +403,72 @@ def resolve_csv_coordinate_column(frame: pd.DataFrame, requested: str, candidate
     )
 
 
-def enrich_municipal_points(points: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    municipalities = load_layer("GTM", "municipios").to_crs("EPSG:4326")
-    reference = gpd.GeoDataFrame({
-        "codigo_municipio": municipalities["cod_muni_1"].map(lambda v: normalizar_codigo(v, 4)),
-        "municipio": municipalities["nombre_1"],
-        "codigo_departamento": municipalities["cod_dept_1"].map(lambda v: normalizar_codigo(v, 2)),
-        "departamento": municipalities["depto_1"],
-    }, geometry=municipalities.geometry, crs=municipalities.crs)
-    # Boundaries can intersect more than one municipality: keep one row per point
-    # and report ambiguity instead of assigning an arbitrary municipality.
-    matches = gpd.sjoin(points[[points.geometry.name]], reference, how="left", predicate="intersects")
+def get_point_enrichment_config(pais: str) -> tuple[dict[str, object], dict[str, object]]:
+    catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    country = next((item for item in catalog["countries"] if item["code"] == pais), None)
+    if not country:
+        raise ValueError("País no configurado.")
+    capability = country.get("point_enrichment") or {}
+    if not capability.get("enabled"):
+        raise ValueError("Los datos administrativos para puntos aún no están disponibles para este país.")
+    return country, capability
+
+
+def enrich_administrative_points(points: gpd.GeoDataFrame, pais: str) -> gpd.GeoDataFrame:
+    """Spatially enrich points using the country capability declared in catalog.json."""
+    country, capability = get_point_enrichment_config(pais)
+    level_id = str(capability.get("level_id") or "")
+    if pais not in LAYERS or level_id not in LAYERS[pais]:
+        raise ValueError("La capa administrativa configurada para este país no está disponible.")
+
+    config = LAYERS[pais][level_id]
+    reference = load_match_reference(pais, level_id).to_crs("EPSG:4326")
+    code_field = str(config["match_code_field"])
+    name_field = str(config["match_name_field"])
+    parent_name_field = config.get("match_parent_name_field")
+    parent_code_field = str(capability.get("parent_code_property") or "parent_code")
+
+    required = {code_field, name_field}
+    if not required.issubset(reference.columns):
+        raise ValueError("La capa administrativa no contiene los campos requeridos para enriquecer puntos.")
+
+    normalized = gpd.GeoDataFrame({
+        "_admin2_code": reference[code_field].fillna("").astype(str),
+        "_admin2_name": reference[name_field].fillna("").astype(str),
+        "_admin1_code": reference[parent_code_field].fillna("").astype(str)
+            if parent_code_field in reference.columns else "",
+        "_admin1_name": reference[parent_name_field].fillna("").astype(str)
+            if parent_name_field and parent_name_field in reference.columns else "",
+    }, geometry=reference.geometry, crs=reference.crs)
+
+    matches = gpd.sjoin(points[[points.geometry.name]], normalized, how="left", predicate="intersects")
     counts = matches.groupby(level=0)["index_right"].count()
     unique = matches[~matches.index.duplicated(keep="first")]
     result = points.copy()
-    for column in ("codigo_municipio", "municipio", "codigo_departamento", "departamento"):
-        target = column
-        if target in result.columns:
-            target = f"ctm_{column}"
-            while target in result.columns:
-                target = f"ctm_{target}"
-        result[target] = unique[column].where(counts.eq(1), "").fillna("").reindex(result.index)
-    status_column = "estado_territorial"
-    while status_column in result.columns:
-        status_column = f"ctm_{status_column}"
-    result[status_column] = counts.map(lambda n: "asignado" if n == 1 else "limite_ambiguo" if n > 1 else "fuera_de_capa")
-    return result
+    columns = capability.get("columns") or {}
 
+    def add_column(preferred: str, values) -> None:
+        target = preferred
+        while target in result.columns:
+            target = f"ctm_{target}"
+        result[target] = values
+
+    assigned = counts.eq(1)
+    add_column(str(columns.get("country") or "pais"),
+               pd.Series(country["name"], index=result.index))
+    add_column(str(columns.get("admin1_code") or "admin1_codigo"),
+               unique["_admin1_code"].where(assigned, "").fillna("").reindex(result.index))
+    add_column(str(columns.get("admin1_name") or "admin1_nombre"),
+               unique["_admin1_name"].where(assigned, "").fillna("").reindex(result.index))
+    add_column(str(columns.get("admin2_code") or "admin2_codigo"),
+               unique["_admin2_code"].where(assigned, "").fillna("").reindex(result.index))
+    add_column(str(columns.get("admin2_name") or "admin2_nombre"),
+               unique["_admin2_name"].where(assigned, "").fillna("").reindex(result.index))
+    add_column(str(columns.get("status") or "estado_territorial"),
+               counts.reindex(result.index, fill_value=0).map(
+                   lambda n: "asignado" if n == 1 else "limite_ambiguo" if n > 1 else "fuera_de_capa"
+               ))
+    return result
 
 def parse_coordinate(value: object, axis: str, column: str) -> float:
     """Read decimal degrees or DMS; Norte/Oeste headers supply hemisphere."""
@@ -518,6 +557,7 @@ def read_convertible_layer(
     hoja: str | None = None,
     tipo_geometria: str = "puntos",
     columna_orden: str = "",
+    pais: str = "GTM",
 ) -> tuple[gpd.GeoDataFrame, str]:
     lower_name = filename.lower()
 
@@ -550,8 +590,14 @@ def read_convertible_layer(
             geometry=gpd.points_from_xy(parsed["lon"], parsed["lat"]),
             crs="EPSG:4326",
         )
-        output = (polygon_from_vertices(gdf, columna_orden) if tipo_geometria == "poligono"
-                  else gdf if tipo_geometria == "puntos_poligono" else enrich_municipal_points(gdf))
+        if tipo_geometria == "poligono":
+            output = polygon_from_vertices(gdf, columna_orden)
+        elif tipo_geometria == "puntos_poligono":
+            output = gdf
+        elif tipo_geometria == "puntos_admin":
+            output = enrich_administrative_points(gdf, pais)
+        else:
+            output = gdf
         return output, "xlsx" if lower_name.endswith(".xlsx") else "csv"
 
     if lower_name.endswith(".zip"):
@@ -687,13 +733,20 @@ async def convertir_formato(
     hoja: str | None = Form(None),
     tipo_geometria: str = Form("puntos"),
     columna_orden: str = Form(""),
+    pais: str = Form("GTM"),
 ):
     if not file.filename:
         raise HTTPException(status_code=400, detail="Debes cargar un archivo.")
-    if tipo_geometria not in {"puntos", "poligono", "puntos_poligono"}:
+    if tipo_geometria not in {"puntos", "puntos_admin", "poligono", "puntos_poligono"}:
         raise HTTPException(status_code=400, detail="Tipo de geometría no válido.")
-    if tipo_geometria in {"poligono", "puntos_poligono"} and not file.filename.lower().endswith((".csv", ".xlsx")):
-        raise HTTPException(status_code=400, detail="Para crear un polígono, carga sus vértices en CSV o Excel .xlsx.")
+    if tipo_geometria in {"puntos_admin", "poligono", "puntos_poligono"} and not file.filename.lower().endswith((".csv", ".xlsx")):
+        raise HTTPException(status_code=400, detail="Para crear geometrías desde coordenadas, carga un CSV o Excel .xlsx.")
+    pais = pais.upper().strip()
+    if tipo_geometria == "puntos_admin":
+        try:
+            get_point_enrichment_config(pais)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     formato_salida = formato_salida.strip().lower()
     allowed_outputs = {"geojson", "shp", "kml", "gpkg", "csv"}
@@ -717,6 +770,7 @@ async def convertir_formato(
             hoja,
             tipo_geometria,
             columna_orden,
+            pais,
         )
         if gdf.empty:
             raise ValueError("La capa no contiene entidades geográficas.")
@@ -726,7 +780,7 @@ async def convertir_formato(
         if gdf.crs is None:
             gdf = gdf.set_crs("EPSG:4326")
 
-        if source_format == formato_salida and tipo_geometria == "puntos":
+        if source_format == formato_salida and not file.filename.lower().endswith((".csv", ".xlsx")):
             raise ValueError("El formato de salida es igual al formato de entrada.")
 
         if tipo_geometria == "puntos_poligono":
