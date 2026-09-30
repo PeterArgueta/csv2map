@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import unicodedata
 import urllib.request
+import urllib.parse
 import zipfile
 from pathlib import Path
 
@@ -46,6 +47,60 @@ def resolve_local_path(raw_path: str) -> Path:
     if candidate.exists():
         return candidate
     raise FileNotFoundError(raw_path)
+
+
+def fetch_json(url: str, params: dict[str, object]) -> dict:
+    query = urllib.parse.urlencode(params)
+    request = urllib.request.Request(
+        f"{url}?{query}",
+        headers={"User-Agent": "ConvertToMap-build/1.0"},
+    )
+    with urllib.request.urlopen(request, timeout=120) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def download_arcgis_layer(layer_url: str, destination: Path) -> Path:
+    """Download every feature from a public ArcGIS REST layer as WGS84 GeoJSON."""
+    query_url = layer_url.rstrip("/") + "/query"
+    ids = fetch_json(query_url, {
+        "where": "1=1",
+        "returnIdsOnly": "true",
+        "f": "json",
+    }).get("objectIds") or []
+
+    features = []
+    if ids:
+        batch_size = 200
+        for offset in range(0, len(ids), batch_size):
+            batch = ids[offset:offset + batch_size]
+            payload = fetch_json(query_url, {
+                "objectIds": ",".join(str(value) for value in batch),
+                "outFields": "*",
+                "returnGeometry": "true",
+                "outSR": "4326",
+                "f": "geojson",
+            })
+            features.extend(payload.get("features") or [])
+    else:
+        payload = fetch_json(query_url, {
+            "where": "1=1",
+            "outFields": "*",
+            "returnGeometry": "true",
+            "outSR": "4326",
+            "f": "geojson",
+        })
+        features.extend(payload.get("features") or [])
+
+    if not features:
+        raise RuntimeError(f"No features returned by ArcGIS layer: {layer_url}")
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(
+        json.dumps({"type": "FeatureCollection", "features": features}, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8",
+    )
+    print(f"Downloaded {len(features)} features from {layer_url}")
+    return destination
 
 
 def build_guatemala_zones() -> Path:
@@ -101,6 +156,10 @@ def transform_remote_geojson(source: Path, target: Path, code_map_name: str, cod
 
 def canonical_source(country: dict, layer: dict, code_maps: dict) -> Path:
     api = layer.get("api") or {}
+    if api.get("arcgis_layer_url"):
+        target = TMP_DIR / f"{country['code']}_{layer['id']}_source.geojson"
+        return download_arcgis_layer(api["arcgis_layer_url"], target)
+
     if api.get("gzip_path"):
         source_gzip = resolve_local_path(api["gzip_path"])
         target = PUBLIC_DIR / "countries" / country["code"] / f"{layer['id']}.geojson"
@@ -140,8 +199,13 @@ def build_optimized_map(source: Path, layer: dict) -> None:
     if target.resolve() == source.resolve():
         return
     target.parent.mkdir(parents=True, exist_ok=True)
-    tolerance = "0.01" if layer.get("admin_level") == "admin1" else "0.002"
-    run("ogr2ogr", "-f", "GeoJSON", str(target), str(source), "-t_srs", "EPSG:4326", "-simplify", tolerance)
+    tolerance = layer.get("simplify_tolerance")
+    if tolerance is None:
+        tolerance = 0.01 if layer.get("admin_level") == "admin1" else 0.002
+    args = ["ogr2ogr", "-f", "GeoJSON", str(target), str(source), "-t_srs", "EPSG:4326"]
+    if float(tolerance) > 0:
+        args.extend(["-simplify", str(tolerance)])
+    run(*args)
 
 
 def build_downloads(source: Path, country: dict, layer: dict) -> None:
