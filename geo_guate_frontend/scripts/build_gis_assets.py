@@ -262,7 +262,15 @@ def build_optimized_map(source: Path, layer: dict) -> None:
     tolerance = layer.get("simplify_tolerance")
     if tolerance is None:
         tolerance = 0.01 if layer.get("admin_level") == "admin1" else 0.002
-    args = ["ogr2ogr", "-f", "GeoJSON", str(target), str(source), "-t_srs", "EPSG:4326"]
+    args = [
+        "ogr2ogr", "-f", "GeoJSON", str(target), str(source),
+        "-t_srs", "EPSG:4326",
+        "-lco", "COORDINATE_PRECISION=5",
+    ]
+    if layer.get("map_filter"):
+        args.extend(["-where", str(layer["map_filter"])])
+    if layer.get("map_fields"):
+        args.extend(["-select", ",".join(str(field) for field in layer["map_fields"])])
     if float(tolerance) > 0:
         args.extend(["-simplify", str(tolerance)])
     run(*args)
