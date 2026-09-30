@@ -348,7 +348,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
     setFields((current) => [...current, field]);
     setPoints((current) => current.map((point) => ({ ...point, [name]: newFieldType === 'boolean' ? false : '' })));
     setNewFieldName('');
-    setMessage(`Campo “${field.label}” agregado.`);
+    setMessage(en ? `Field “${field.label}” added.` : `Campo “${field.label}” agregado.`);
   };
 
   const removeField = (name) => {
@@ -441,7 +441,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
             {en ? 'Click the map to create points. Choose a country and territorial level; ConvertToMap automatically assigns codes, territory and coordinates from the selected layer.' : 'Haz clic en el mapa para crear puntos. Elige país y nivel territorial; ConvertToMap asigna automáticamente códigos, territorio y coordenadas según la capa seleccionada.'}
           </p>
         </div>
-        <span className="w-fit rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700">Puntos · V1</span>
+        <span className="w-fit rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700">{en ? 'Points · V1' : 'Puntos · V1'}</span>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
@@ -517,7 +517,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
               {drawing ? '● Agregar punto: activo' : 'Activar agregar punto'}
             </button>
             <div className="mt-3 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
-              <span className="text-slate-500">Puntos creados</span>
+              <span className="text-slate-500">{en ? 'Points created' : 'Puntos creados'}</span>
               <strong>{points.length}</strong>
             </div>
             {points.length > 0 && (
@@ -546,7 +546,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
               <div>
-                <h3 className="font-bold">Mapa de captura</h3>
+                <h3 className="font-bold">{en ? 'Capture map' : 'Mapa de captura'}</h3>
                 <p className="mt-1 text-xs text-slate-500">{en ? 'Territorial source' : 'Fuente territorial'}: {selectedCountry?.source_label || 'ConvertToMap'} · {selectedLayer?.name || ''}</p>
               </div>
               <select value={basemap} onChange={(event) => setBasemap(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
@@ -594,7 +594,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
             <section className="rounded-2xl border border-indigo-200 bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">Punto seleccionado</p>
+                  <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">{en ? 'Selected point' : 'Punto seleccionado'}</p>
                   <h3 className="mt-1 text-lg font-bold">{selectedPoint.__territoryName || (en ? 'Outside territorial boundaries' : 'Fuera de límites territoriales')}</h3>
                   <p className="text-sm text-slate-500">{selectedPoint.__territoryLayer || selectedLayer?.name || 'Territorio'} · {selectedPoint.latitud}, {selectedPoint.longitud}</p>
                 </div>
