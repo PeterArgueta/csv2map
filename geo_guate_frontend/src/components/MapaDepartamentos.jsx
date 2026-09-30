@@ -5,13 +5,15 @@ import 'leaflet/dist/leaflet.css';
 
 const BASEMAPS = {
   gris: {
-    label: 'Mapa gris',
+    labelEs: 'Mapa gris',
+    labelEn: 'Gray map',
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; OpenStreetMap contributors',
     className: 'grayscale-tiles',
   },
   calles: {
-    label: 'Calles',
+    labelEs: 'Calles',
+    labelEn: 'Streets',
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; OpenStreetMap contributors',
   },
@@ -27,7 +29,8 @@ function FitLayer({ data }) {
   return null;
 }
 
-export function MapaDepartamentos({ geojsonData, codigosSeleccionados, layerConfig, nivel }) {
+export function MapaDepartamentos({ geojsonData, codigosSeleccionados, layerConfig, nivel, language = 'es' }) {
+  const en = language === 'en';
   const [hoveredCode, setHoveredCode] = useState(null);
   const [basemap, setBasemap] = useState('gris');
 
@@ -48,9 +51,9 @@ export function MapaDepartamentos({ geojsonData, codigosSeleccionados, layerConf
 
   const onEachFeature = (feature, layer) => {
     const code = getCode(feature);
-    const name = feature.properties?.[layerConfig.name_property] || 'Sin nombre';
+    const name = feature.properties?.[layerConfig.name_property] || (en ? 'Unnamed' : 'Sin nombre');
     const department = layerConfig.parent_name_property ? feature.properties?.[layerConfig.parent_name_property] : null;
-    layer.bindTooltip(`<strong>${name}</strong>${department ? `<br>${department}` : ''}<br>Código: ${code}`, {
+    layer.bindTooltip(`<strong>${name}</strong>${department ? `<br>${department}` : ''}<br>${en ? 'Code' : 'Código'}: ${code}`, {
       direction: 'top',
       className: 'custom-tooltip',
     });
@@ -62,7 +65,7 @@ export function MapaDepartamentos({ geojsonData, codigosSeleccionados, layerConf
       <div className="relative h-[560px] w-full overflow-hidden rounded-xl border border-slate-200">
         <div className="absolute right-3 top-3 z-[500]">
           <select value={basemap} onChange={(event) => setBasemap(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
-            {Object.entries(BASEMAPS).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}
+            {Object.entries(BASEMAPS).map(([id, item]) => <option key={id} value={id}>{en ? item.labelEn : item.labelEs}</option>)}
           </select>
         </div>
         <MapContainer center={[15.5, -90.5]} zoom={7} minZoom={5} maxZoom={15} zoomControl={false} className="h-full w-full" style={{ background: '#f8fafc' }}>
@@ -84,8 +87,8 @@ export function MapaDepartamentos({ geojsonData, codigosSeleccionados, layerConf
           )}
         </MapContainer>
         <div className="pointer-events-none absolute bottom-3 left-3 z-[500] rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-xs shadow-sm backdrop-blur">
-          <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-sm bg-indigo-600" /> Incluido en el CSV</div>
-          <div className="mt-1 flex items-center gap-2"><span className="h-3 w-3 rounded-sm border border-slate-400 bg-white" /> Sin seleccionar</div>
+          <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-sm bg-indigo-600" /> {en ? 'Included in CSV' : 'Incluido en el CSV'}</div>
+          <div className="mt-1 flex items-center gap-2"><span className="h-3 w-3 rounded-sm border border-slate-400 bg-white" /> {en ? 'Not selected' : 'Sin seleccionar'}</div>
         </div>
       </div>
     </div>
