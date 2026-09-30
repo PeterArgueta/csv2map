@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import axios from 'axios';
 
 const FORMAT_OPTIONS = [
@@ -57,10 +57,13 @@ export function ConvertirFormatos({ language = 'es' }) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const outputInfo = useMemo(
-    () => FORMAT_OPTIONS.find((option) => option.id === outputFormat),
-    [outputFormat],
-  );
+  const outputInfo = FORMAT_OPTIONS.find((option) => option.id === outputFormat) || FORMAT_OPTIONS[0];
+
+  const chooseOutputFormat = (formatId) => {
+    setOutputFormat(formatId);
+    setError('');
+    setMessage('');
+  };
 
   const chooseFile = (selected) => {
     setMessage('');
@@ -274,7 +277,7 @@ export function ConvertirFormatos({ language = 'es' }) {
                     value={option.id}
                     checked={selected}
                     disabled={same}
-                    onChange={() => setOutputFormat(option.id)}
+                    onChange={() => chooseOutputFormat(option.id)}
                     className="mt-1 h-4 w-4 accent-indigo-600"
                   />
                   <span>
