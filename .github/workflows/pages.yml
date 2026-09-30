@@ -33,8 +33,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: geo_guate_frontend/data/remote_cache
-          key: official-gis-sources-v1-${{ runner.os }}
+          key: official-gis-sources-v2-${{ runner.os }}
           restore-keys: |
+            official-gis-sources-v1-${{ runner.os }}
             official-gis-sources-v1-
 
       - name: Generate static GIS downloads
