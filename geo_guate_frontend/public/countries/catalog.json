@@ -253,7 +253,7 @@
           "singular_en": "road segment",
           "count": null,
           "name_property": "TIPO",
-          "map_url": "/countries/SLV/red_vial_marn.optimized.geojson",
+          "map_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/22/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=geojson",
           "source_label": "MARN El Salvador · Geoportal VIGEA",
           "source_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/22",
           "description_es": "Red vial nacional publicada en el Geoportal del Ministerio de Medio Ambiente y Recursos Naturales de El Salvador.",
@@ -263,16 +263,14 @@
             "basename": "converttomap_slv_red_vial_marn"
           },
           "downloads": {
-            "geojson": "/downloads/red_vial_el_salvador_marn.geojson",
-            "shp": "/downloads/red_vial_el_salvador_marn_shapefile.zip",
-            "gpkg": "/downloads/red_vial_el_salvador_marn.gpkg",
-            "kml": "/downloads/red_vial_el_salvador_marn.kml"
+            "geojson": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/22/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=geojson"
           },
           "category": "transport",
           "category_es": "Infraestructura vial",
           "category_en": "Road infrastructure",
           "simplify_tolerance": 0.0002,
-          "download_only": true
+          "download_only": true,
+          "remote_live": true
         },
         {
           "id": "centros_escolares_marn",
@@ -284,7 +282,7 @@
           "singular_en": "school",
           "count": null,
           "name_property": "NOMBRE",
-          "map_url": "/countries/SLV/centros_escolares_marn.geojson",
+          "map_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/23/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=geojson",
           "source_label": "MARN El Salvador · Geoportal VIGEA",
           "source_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/23",
           "description_es": "Ubicación de centros escolares publicada en el Geoportal del MARN de El Salvador.",
@@ -294,16 +292,14 @@
             "basename": "converttomap_slv_centros_escolares_marn"
           },
           "downloads": {
-            "geojson": "/downloads/centros_escolares_el_salvador_marn.geojson",
-            "shp": "/downloads/centros_escolares_el_salvador_marn_shapefile.zip",
-            "gpkg": "/downloads/centros_escolares_el_salvador_marn.gpkg",
-            "kml": "/downloads/centros_escolares_el_salvador_marn.kml"
+            "geojson": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/23/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=geojson"
           },
           "category": "education",
           "category_es": "Educación",
           "category_en": "Education",
           "simplify_tolerance": 0,
-          "download_only": true
+          "download_only": true,
+          "remote_live": true
         },
         {
           "id": "salud_marn",
@@ -315,7 +311,7 @@
           "singular_en": "health facility",
           "count": null,
           "name_property": "NOMBRE",
-          "map_url": "/countries/SLV/hospitales_unidades_salud_marn.geojson",
+          "map_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/24/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=geojson",
           "source_label": "MARN El Salvador · Geoportal VIGEA",
           "source_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/24",
           "description_es": "Hospitales y unidades de salud publicados en el Geoportal del MARN de El Salvador.",
@@ -325,16 +321,14 @@
             "basename": "converttomap_slv_salud_marn"
           },
           "downloads": {
-            "geojson": "/downloads/hospitales_unidades_salud_el_salvador_marn.geojson",
-            "shp": "/downloads/hospitales_unidades_salud_el_salvador_marn_shapefile.zip",
-            "gpkg": "/downloads/hospitales_unidades_salud_el_salvador_marn.gpkg",
-            "kml": "/downloads/hospitales_unidades_salud_el_salvador_marn.kml"
+            "geojson": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/24/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=geojson"
           },
           "category": "health",
           "category_es": "Salud",
           "category_en": "Health",
           "simplify_tolerance": 0,
-          "download_only": true
+          "download_only": true,
+          "remote_live": true
         },
         {
           "id": "puentes_red_vial_marn",
@@ -346,7 +340,7 @@
           "singular_en": "bridge",
           "count": null,
           "name_property": "NOMBREDELP",
-          "map_url": "/countries/SLV/puentes_red_vial_marn.geojson",
+          "map_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/32/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=geojson",
           "source_label": "MARN El Salvador · Geoportal VIGEA",
           "source_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/32",
           "description_es": "Puentes asociados a la red vial principal publicados en el Geoportal del MARN de El Salvador.",
@@ -356,16 +350,14 @@
             "basename": "converttomap_slv_puentes_red_vial_marn"
           },
           "downloads": {
-            "geojson": "/downloads/puentes_red_vial_el_salvador_marn.geojson",
-            "shp": "/downloads/puentes_red_vial_el_salvador_marn_shapefile.zip",
-            "gpkg": "/downloads/puentes_red_vial_el_salvador_marn.gpkg",
-            "kml": "/downloads/puentes_red_vial_el_salvador_marn.kml"
+            "geojson": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/32/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=geojson"
           },
           "category": "transport",
           "category_es": "Infraestructura vial",
           "category_en": "Road infrastructure",
           "simplify_tolerance": 0,
-          "download_only": true
+          "download_only": true,
+          "remote_live": true
         },
         {
           "id": "poblados_marn",
@@ -377,7 +369,7 @@
           "singular_en": "settlement",
           "count": null,
           "name_property": "NOMBRE",
-          "map_url": "/countries/SLV/poblados_marn.geojson",
+          "map_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/17/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=geojson",
           "source_label": "MARN El Salvador · Geoportal VIGEA",
           "source_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/17",
           "description_es": "Poblados de El Salvador publicados en el Geoportal del MARN.",
@@ -387,16 +379,14 @@
             "basename": "converttomap_slv_poblados_marn"
           },
           "downloads": {
-            "geojson": "/downloads/poblados_el_salvador_marn.geojson",
-            "shp": "/downloads/poblados_el_salvador_marn_shapefile.zip",
-            "gpkg": "/downloads/poblados_el_salvador_marn.gpkg",
-            "kml": "/downloads/poblados_el_salvador_marn.kml"
+            "geojson": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/17/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=geojson"
           },
           "category": "settlements",
           "category_es": "Poblados",
           "category_en": "Settlements",
           "simplify_tolerance": 0,
-          "download_only": true
+          "download_only": true,
+          "remote_live": true
         }
       ],
       "region": "Central America",
