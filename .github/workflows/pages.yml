@@ -44,6 +44,10 @@ jobs:
           sudo apt-get install -y gdal-bin zip
           python scripts/build_gis_assets.py
 
+      - name: Validate generated GIS assets
+        working-directory: geo_guate_frontend
+        run: python scripts/validate_catalog.py --check-assets
+
       - name: Build frontend
         working-directory: geo_guate_frontend
         env:
