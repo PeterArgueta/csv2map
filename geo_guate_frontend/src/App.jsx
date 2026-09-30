@@ -304,7 +304,7 @@ function App() {
             ) : mapError ? (
               <div className="grid h-[560px] place-items-center text-sm text-red-600">{mapError}</div>
             ) : (
-              <MapaDepartamentos geojsonData={geojsonData} codigosSeleccionados={codigosCsv} layerConfig={layerConfig} nivel={nivel} />
+              <MapaDepartamentos geojsonData={geojsonData} codigosSeleccionados={codigosCsv} layerConfig={layerConfig} nivel={nivel} language={language} />
             )}
           </div>
         </section>
@@ -536,7 +536,7 @@ function App() {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <nav data-ctm-react-i18n="true" className="fixed inset-x-0 bottom-0 z-[1300] flex h-[68px] shrink-0 border-t border-slate-200 bg-white/95 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur lg:sticky lg:top-16 lg:h-[calc(100vh-64px)] lg:w-[88px] lg:flex-col lg:border-r lg:border-t-0 lg:shadow-none">
+        <nav data-ctm-react-i18n="true" className="fixed inset-x-0 bottom-0 z-[1300] flex h-[72px] shrink-0 border-t border-slate-200 bg-white/95 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur lg:sticky lg:top-16 lg:h-[calc(100vh-64px)] lg:w-[88px] lg:flex-col lg:border-r lg:border-t-0 lg:shadow-none">
           {APP_NAV_ITEMS.map((item) => {
             const activeItem = view === item.view;
             return (
@@ -547,13 +547,13 @@ function App() {
                 className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-1 border-indigo-600 px-1 py-1.5 text-center transition lg:min-h-[88px] lg:flex-none lg:px-2 lg:py-2 ${activeItem ? 'border-t-2 bg-indigo-50 text-indigo-700 lg:border-l-4 lg:border-t-0' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
               >
                 <span className="text-lg leading-none sm:text-xl">{item.icon}</span>
-                <span className="max-w-[72px] whitespace-normal break-words text-center text-[9px] font-bold leading-[1.05] sm:max-w-[78px] sm:text-[10px]">{language === 'en' ? item.en : item.es}</span>
+                <span className="max-w-[72px] whitespace-normal break-words text-center text-[10px] font-bold leading-[1.1] sm:max-w-[78px] sm:text-[11px]">{language === 'en' ? item.en : item.es}</span>
               </a>
             );
           })}
         </nav>
 
-        <div className="min-w-0 flex-1 pb-[68px] lg:pb-0">
+        <div className="min-w-0 flex-1 pb-[72px] lg:pb-0">
           {view === 'convertir' && renderConvert()}
           {view === 'crear-capa' && <CrearCapaPuntos language={language} />}
           {view === 'formatos' && <ConvertirFormatos language={language} />}
