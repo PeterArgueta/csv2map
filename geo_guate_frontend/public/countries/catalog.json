@@ -156,7 +156,22 @@
         }
       ],
       "region": "Central America",
-      "region_es": "Centroamérica"
+      "region_es": "Centroamérica",
+      "point_enrichment": {
+        "enabled": true,
+        "level_id": "municipios",
+        "label": "Municipios y departamentos",
+        "label_en": "Municipalities and departments",
+        "parent_code_property": "parent_code",
+        "columns": {
+          "country": "pais",
+          "admin1_code": "codigo_departamento",
+          "admin1_name": "departamento",
+          "admin2_code": "codigo_municipio",
+          "admin2_name": "municipio",
+          "status": "estado_territorial"
+        }
+      }
     },
     {
       "code": "BLZ",
