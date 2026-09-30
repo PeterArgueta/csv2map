@@ -302,7 +302,7 @@ def build_downloads(source: Path, country: dict, layer: dict) -> None:
             if shp_dir.exists():
                 shutil.rmtree(shp_dir)
             shp_dir.mkdir(parents=True)
-            run("ogr2ogr", "-f", "ESRI Shapefile", str(shp_dir), str(source), "-nln", basename, "-lco", "ENCODING=UTF-8")
+            run("ogr2ogr", "-f", "ESRI Shapefile", str(shp_dir), str(source), "-nln", basename, "-unsetFieldWidth", "-lco", "ENCODING=UTF-8")
             with zipfile.ZipFile(target, "w", compression=zipfile.ZIP_DEFLATED) as archive:
                 for part in shp_dir.iterdir():
                     archive.write(part, arcname=part.name)
