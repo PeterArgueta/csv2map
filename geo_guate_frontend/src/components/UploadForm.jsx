@@ -220,7 +220,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
     if (fileData && rows.length) {
       const selected = detectCodeColumn(headers, nivel);
       setCodeColumn(selected);
-      setFileError(selected ? '' : 'Selecciona la columna que contiene el nombre o ID territorial.');
+      setFileError(selected ? '' : (en ? 'Select the column containing the territorial name or ID.' : 'Selecciona la columna que contiene el nombre o ID territorial.'));
       emitPreview(rows, headers, selected, fileData);
     }
     if (!isAdmin1) setShowCsvBuilder(false);
@@ -413,11 +413,11 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
 
       <div>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <label className="field-label mb-0">Archivo CSV o Excel</label>
+          <label className="field-label mb-0">{en ? 'CSV or Excel file' : 'Archivo CSV o Excel'}</label>
           <div className="flex items-center gap-3">
             {isAdmin1 && (
               <button type="button" onClick={() => setShowCsvBuilder((value) => !value)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">
-                {showCsvBuilder ? 'Cerrar creador' : 'Crear CSV'}
+                {showCsvBuilder ? (en ? 'Close builder' : 'Cerrar creador') : (en ? 'Create CSV' : 'Crear CSV')}
               </button>
             )}
             <button type="button" onClick={downloadSample} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">{en ? 'Download example' : 'Descargar ejemplo'}</button>
@@ -428,7 +428,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
           <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-sm font-bold text-slate-800">Crear CSV de {String(layerConfig?.name || 'territorios').toLowerCase()}</p>
+                <p className="text-sm font-bold text-slate-800">{en ? 'Create CSV for' : 'Crear CSV de'} {String(layerConfig?.name || (en ? 'territories' : 'territorios')).toLowerCase()}</p>
                 <p className="text-xs text-slate-500">{en ? 'Select territories and add the variables you need.' : 'Selecciona territorios y agrega las variables que necesites.'}</p>
               </div>
               <div className="flex gap-2 text-xs font-bold">
@@ -563,7 +563,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
       )}
 
       <fieldset>
-        <legend className="field-label">Formatos de salida</legend>
+        <legend className="field-label">{en ? 'Output formats' : 'Formatos de salida'}</legend>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {FORMAT_OPTIONS.map((option) => {
             const checked = formats.includes(option.id);
