@@ -377,21 +377,27 @@ function App() {
                           {language === 'en' ? (layer.category_en || 'Geographic layer') : (layer.category_es || 'Capa geográfica')}
                         </span>
                         <h4 className="mt-4 text-xl font-bold">{layerName}</h4>
-                        <p className="mt-1 text-sm font-semibold text-slate-400">
-                          {layer.count} {language === 'en' ? 'features' : 'entidades'}
-                        </p>
+                        {Number.isInteger(layer.count) && layer.count > 0 && (
+                          <p className="mt-1 text-sm font-semibold text-slate-400">
+                            {layer.count} {language === 'en' ? 'features' : 'entidades'}
+                          </p>
+                        )}
                         <p className="mt-3 max-w-lg text-sm leading-6 text-slate-600">
-                          {layer.category === 'transport'
-                            ? (language === 'en'
-                              ? `${layerName} prepared for visualization, analysis and GIS downloads.`
-                              : `${layer.name} preparada para visualización, análisis y descargas GIS.`)
-                            : layer.category === 'reference'
-                              ? (language === 'en'
-                                ? `Reference layer prepared for cartographic visualization and download.`
-                                : 'Capa de referencia preparada para visualización cartográfica y descarga.')
-                              : (language === 'en'
-                                ? `Boundaries of ${layerName.toLowerCase()} prepared for maps, analysis and GIS conversions.`
-                                : `Límites de ${layer.name.toLowerCase()} preparados para mapas, análisis y conversiones GIS.`)}
+                          {language === 'en' && layer.description_en
+                            ? layer.description_en
+                            : !language || language === 'es'
+                              ? (layer.description_es || (
+                                layer.category === 'transport'
+                                  ? `${layer.name} preparada para visualización, análisis y descargas GIS.`
+                                  : layer.category === 'reference'
+                                    ? 'Capa de referencia preparada para visualización cartográfica y descarga.'
+                                    : `Límites de ${layer.name.toLowerCase()} preparados para mapas, análisis y conversiones GIS.`
+                              ))
+                              : (layer.category === 'transport'
+                                ? `${layerName} prepared for visualization, analysis and GIS downloads.`
+                                : layer.category === 'reference'
+                                  ? 'Reference layer prepared for cartographic visualization and download.'
+                                  : `Boundaries of ${layerName.toLowerCase()} prepared for maps, analysis and GIS conversions.`)}
                         </p>
                         <p className="mt-3 text-xs text-slate-500">
                           {language === 'en' ? 'Source:' : 'Fuente:'}{' '}
