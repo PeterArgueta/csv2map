@@ -256,8 +256,8 @@
           "map_url": "/countries/SLV/red_vial_openstreetmap.optimized.geojson",
           "source_label": "OpenStreetMap contributors · Geofabrik",
           "source_url": "https://download.geofabrik.de/central-america/el-salvador.html",
-          "description_es": "Vista optimizada de la red vial de El Salvador. El mapa muestra únicamente vías primary, secondary y tertiary (incluyendo sus enlaces); las descargas conservan la red vial completa.",
-          "description_en": "Optimized view of El Salvador's road network. The map displays only primary, secondary and tertiary roads (including their links); downloads preserve the complete road network.",
+          "description_es": "Vista optimizada de la red vial de El Salvador. El mapa muestra únicamente vías primary, secondary y tertiary; las descargas conservan la red vial completa.",
+          "description_en": "Optimized view of El Salvador's road network. The map displays only primary, secondary and tertiary roads; downloads preserve the complete road network.",
           "api": {
             "archive_url": "https://download.geofabrik.de/central-america/el-salvador-latest-free.shp.zip",
             "archive_cache_path": "geo_guate_frontend/data/remote_cache/SLV/el_salvador_geofabrik_roads.zip",
@@ -273,19 +273,14 @@
           "category": "transport",
           "category_es": "Infraestructura vial",
           "category_en": "Road infrastructure",
-          "simplify_tolerance": 0.00035,
+          "simplify_tolerance": 0.0005,
           "download_only": true,
           "source_layer_name": "Red vial",
-          "map_filter": "fclass IN ('primary','primary_link','secondary','secondary_link','tertiary','tertiary_link')",
+          "map_filter": "fclass IN ('primary','secondary','tertiary')",
           "map_fields": [
-            "osm_id",
             "fclass",
             "name",
-            "ref",
-            "oneway",
-            "maxspeed",
-            "bridge",
-            "tunnel"
+            "ref"
           ]
         }
       ],
