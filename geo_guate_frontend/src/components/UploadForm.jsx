@@ -68,7 +68,8 @@ const buildSafeColumnHeaders = (columns) => {
   });
 };
 
-export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfig, geojsonData, onCountryChange, onLevelChange, onUpload }) {
+export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfig, geojsonData, onCountryChange, onLevelChange, onUpload, language = 'es' }) {
+  const en = language === 'en';
   const fileInputRef = useRef();
   const [fileData, setFileData] = useState(null);
   const [rows, setRows] = useState([]);
@@ -151,7 +152,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
       const response = await axios.post(`${apiUrl}/inspeccionar_tabla/`, formData);
       const { headers: fields = [], rows: data = [], sheet_names: availableSheets = [], sheet_name: activeSheet = '' } = response.data || {};
       if (!data.length || !fields.length) {
-        setFileError('El archivo no contiene encabezados y filas de datos.');
+        setFileError(en ? 'The file does not contain headers and data rows.' : 'El archivo no contiene encabezados y filas de datos.');
         return;
       }
       const selected = detectCodeColumn(fields, nivel);
@@ -160,7 +161,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
       setCodeColumn(selected);
       setSheetNames(availableSheets);
       setSheetName(activeSheet || '');
-      if (!selected) setFileError('Selecciona la columna que contiene el nombre o ID territorial.');
+      if (!selected) setFileError(en ? 'Select the column containing the territorial name or ID.' : 'Selecciona la columna que contiene el nombre o ID territorial.');
       emitPreview(data, fields, selected, file);
     } catch (error) {
       setFileError(await readApiError(error));
@@ -173,11 +174,11 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
     setSuccessMessage('');
     const lowerName = file.name.toLowerCase();
     if (!lowerName.endsWith('.csv') && !lowerName.endsWith('.xlsx')) {
-      setFileError('Selecciona un archivo CSV o Excel .xlsx.');
+      setFileError(en ? 'Select a CSV or Excel .xlsx file.' : 'Selecciona un archivo CSV o Excel .xlsx.');
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      setFileError('El archivo supera el límite de 10 MB.');
+      setFileError(en ? 'The file exceeds the 10 MB limit.' : 'El archivo supera el límite de 10 MB.');
       return;
     }
 
@@ -196,7 +197,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
       transformHeader: (header) => header.trim(),
       complete: ({ data, errors, meta }) => {
         if (!data.length || !meta.fields?.length) {
-          setFileError('El archivo no contiene encabezados y filas de datos.');
+          setFileError(en ? 'The file does not contain headers and data rows.' : 'El archivo no contiene encabezados y filas de datos.');
           return;
         }
         const seriousError = errors.find((error) => error.type !== 'FieldMismatch');
@@ -208,7 +209,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
         setRows(data);
         setHeaders(meta.fields);
         setCodeColumn(selected);
-        if (!selected) setFileError('Selecciona la columna que contiene el nombre o ID territorial.');
+        if (!selected) setFileError(en ? 'Select the column containing the territorial name or ID.' : 'Selecciona la columna que contiene el nombre o ID territorial.');
         emitPreview(data, meta.fields, selected, file);
       },
       error: () => setFileError('No fue posible leer el archivo seleccionado.'),
@@ -262,12 +263,12 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
     if (payload instanceof Blob) {
       try {
         const parsed = JSON.parse(await payload.text());
-        return parsed.detail || 'No fue posible procesar el archivo.';
+        return parsed.detail || (en ? 'Could not process the file.' : 'No fue posible procesar el archivo.');
       } catch {
-        return 'No fue posible procesar el archivo.';
+        return en ? 'Could not process the file.' : 'No fue posible procesar el archivo.';
       }
     }
-    return payload?.detail || 'No fue posible conectar con el servicio de conversión.';
+    return payload?.detail || (en ? 'Could not connect to the conversion service.' : 'No fue posible conectar con el servicio de conversión.');
   };
 
   const handleProcesar = async () => {
@@ -397,14 +398,14 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
   return (
     <div className="space-y-6 p-6">
       <div>
-        <label htmlFor="pais" className="field-label">País</label>
+        <label htmlFor="pais" className="field-label">{en ? 'Country' : 'País'}</label>
         <select id="pais" value={pais} onChange={(event) => onCountryChange(event.target.value)} className="field-control">
           {countries.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}
         </select>
       </div>
 
       <div>
-        <label htmlFor="nivel" className="field-label">Nivel geográfico</label>
+        <label htmlFor="nivel" className="field-label">{en ? 'Geographic level' : 'Nivel geográfico'}</label>
         <select id="nivel" value={nivel} onChange={(event) => onLevelChange(event.target.value)} className="field-control">
           {selectedCountry.levels.filter(isGeoreferenceLayer).map((level) => <option key={level.id} value={level.id}>{level.name} ({level.count})</option>)}
         </select>
@@ -419,7 +420,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
                 {showCsvBuilder ? 'Cerrar creador' : 'Crear CSV'}
               </button>
             )}
-            <button type="button" onClick={downloadSample} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">Descargar ejemplo</button>
+            <button type="button" onClick={downloadSample} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">{en ? 'Download example' : 'Descargar ejemplo'}</button>
           </div>
         </div>
 
@@ -428,7 +429,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-sm font-bold text-slate-800">Crear CSV de {String(layerConfig?.name || 'territorios').toLowerCase()}</p>
-                <p className="text-xs text-slate-500">Selecciona territorios y agrega las variables que necesites.</p>
+                <p className="text-xs text-slate-500">{en ? 'Select territories and add the variables you need.' : 'Selecciona territorios y agrega las variables que necesites.'}</p>
               </div>
               <div className="flex gap-2 text-xs font-bold">
                 <button type="button" onClick={() => setSelectedDepartments(territories.map(([code]) => code))} className="text-indigo-600 hover:text-indigo-800">Todos</button>
@@ -440,7 +441,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
               <div className="mb-2 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold text-slate-700">Columnas de datos</p>
-                  <p className="text-[11px] text-slate-500">Ej.: población, presupuesto, ventas o pobreza.</p>
+                  <p className="text-[11px] text-slate-500">{en ? 'E.g. population, budget, sales or poverty.' : 'Ej.: población, presupuesto, ventas o pobreza.'}</p>
                 </div>
                 <button
                   type="button"
@@ -453,7 +454,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
               </div>
 
               {customColumns.length === 0 ? (
-                <p className="rounded-lg bg-slate-50 p-2 text-xs text-slate-500">El CSV contendrá únicamente código y {String(layerConfig?.singular || 'territorio').toLowerCase()}.</p>
+                <p className="rounded-lg bg-slate-50 p-2 text-xs text-slate-500">{en ? 'The CSV will contain only the code and territorial name.' : <>El CSV contendrá únicamente código y {String(layerConfig?.singular || 'territorio').toLowerCase()}.</>}</p>
               ) : (
                 <div className="space-y-2">
                   {customColumns.map((column, index) => (
@@ -509,7 +510,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
                 Usar este CSV
               </button>
               <button type="button" disabled={!selectedDepartments.length} onClick={downloadCreatedCsv} className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:text-slate-300">
-                Descargar CSV
+                {en ? 'Download CSV' : 'Descargar CSV'}
               </button>
             </div>
           </div>
@@ -526,7 +527,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
           onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') fileInputRef.current?.click(); }}
         >
           <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-indigo-50 text-xl text-indigo-600">↑</div>
-          <p className="mt-3 text-sm font-semibold text-slate-700">{fileData ? fileData.name : 'Selecciona o arrastra tu archivo'}</p>
+          <p className="mt-3 text-sm font-semibold text-slate-700">{fileData ? fileData.name : (en ? 'Select or drag your file' : 'Selecciona o arrastra tu archivo')}</p>
           <p className="mt-1 text-xs text-slate-500">CSV o Excel .xlsx de hasta 10 MB</p>
           <input ref={fileInputRef} type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={(event) => parseFile(event.target.files?.[0])} />
         </div>
@@ -555,7 +556,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
         <div>
           <label htmlFor="code-column" className="field-label">Columna territorial (nombre o ID)</label>
           <select id="code-column" value={codeColumn} onChange={(event) => handleColumnChange(event.target.value)} className="field-control">
-            <option value="">Seleccionar columna…</option>
+            <option value="">{en ? 'Select column…' : 'Seleccionar columna…'}</option>
             {headers.map((header) => <option key={header} value={header}>{header}</option>)}
           </select>
         </div>
@@ -578,7 +579,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
         </div>
       </fieldset>
 
-      {fileError && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"><strong>Revisa el archivo:</strong> {fileError}</div>}
+      {fileError && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"><strong>{en ? 'Check the file:' : 'Revisa el archivo:'}</strong> {fileError}</div>}
       {successMessage && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{successMessage}</div>}
 
       <button
@@ -599,11 +600,11 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
           <div className="h-2 overflow-hidden rounded-full bg-indigo-100">
             <div className="processing-bar h-full rounded-full bg-indigo-600" />
           </div>
-          <p className="mt-2 text-xs text-slate-500">La descarga comenzará automáticamente cuando termine.</p>
+          <p className="mt-2 text-xs text-slate-500">{en ? 'The download will start automatically when processing finishes.' : 'La descarga comenzará automáticamente cuando termine.'}</p>
         </div>
       )}
 
-      <p className="text-center text-xs leading-5 text-slate-500">Los archivos temporales se eliminan automáticamente después de la descarga.</p>
+      <p className="text-center text-xs leading-5 text-slate-500">{en ? 'Temporary files are automatically deleted after download.' : 'Los archivos temporales se eliminan automáticamente después de la descarga.'}</p>
     </div>
   );
 }
