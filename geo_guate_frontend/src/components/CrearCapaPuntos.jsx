@@ -7,23 +7,25 @@ import 'leaflet/dist/leaflet.css';
 
 const BASEMAPS = {
   gris: {
-    label: 'Mapa gris',
+    labelEs: 'Mapa gris',
+    labelEn: 'Gray map',
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; OpenStreetMap contributors',
     className: 'grayscale-tiles',
   },
   calles: {
-    label: 'Calles',
+    labelEs: 'Calles',
+    labelEn: 'Streets',
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; OpenStreetMap contributors',
   },
 };
 
 const FIELD_TYPES = [
-  ['text', 'Texto'],
-  ['number', 'Número'],
-  ['date', 'Fecha'],
-  ['boolean', 'Sí / No'],
+  ['text', 'Texto', 'Text'],
+  ['number', 'Número', 'Number'],
+  ['date', 'Fecha', 'Date'],
+  ['boolean', 'Sí / No', 'Yes / No'],
 ];
 
 const EXPORT_FORMATS = [
@@ -435,7 +437,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
     <main className="mx-auto max-w-7xl px-4 py-7 sm:px-6">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">Captura GIS</p>
+          <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">{en ? 'GIS capture' : 'Captura GIS'}</p>
           <h2 className="mt-2 text-3xl font-bold tracking-tight">{en ? 'Create geographic layer' : 'Crear capa geográfica'}</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
             {en ? 'Click the map to create points. Choose a country and territorial level; ConvertToMap automatically assigns codes, territory and coordinates from the selected layer.' : 'Haz clic en el mapa para crear puntos. Elige país y nivel territorial; ConvertToMap asigna automáticamente códigos, territorio y coordenadas según la capa seleccionada.'}
@@ -458,7 +460,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
               </select>
             </label>
             <label className="mt-3 block">
-              <span className="field-label">Nivel territorial</span>
+              <span className="field-label">{en ? 'Territorial level' : 'Nivel territorial'}</span>
               <select value={selectedLayer?.id || ''} onChange={(event) => changeLayer(event.target.value)} className="field-control" disabled={!availableLayers.length}>
                 {availableLayers.map((layer) => (
                   <option key={layer.id} value={layer.id}>{layer.name}</option>
@@ -466,14 +468,14 @@ export function CrearCapaPuntos({ language = 'es' }) {
               </select>
             </label>
             <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-              {selectedLayer ? `${selectedLayer.name} · ${selectedLayer.count} entidades` : 'Sin capas disponibles'}
+              {selectedLayer ? `${selectedLayer.name} · ${selectedLayer.count} ${en ? 'features' : 'entidades'}` : (en ? 'No layers available' : 'Sin capas disponibles')}
             </div>
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h3 className="font-bold">2. Define los campos</h3>
+                <h3 className="font-bold">{en ? '2. Define fields' : '2. Define los campos'}</h3>
                 <p className="mt-1 text-xs leading-5 text-slate-500">{en ? 'Territorial data is added automatically.' : 'Los datos territoriales se agregan automáticamente.'}</p>
               </div>
             </div>
@@ -482,14 +484,14 @@ export function CrearCapaPuntos({ language = 'es' }) {
               <input
                 value={newFieldName}
                 onChange={(event) => setNewFieldName(event.target.value)}
-                placeholder="Ej. nombre, monto, estado"
+                placeholder={en ? 'E.g. name, amount, status' : 'Ej. nombre, monto, estado'}
                 className="field-control"
               />
               <select value={newFieldType} onChange={(event) => setNewFieldType(event.target.value)} className="field-control">
-                {FIELD_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                {FIELD_TYPES.map(([value, labelEs, labelEn]) => <option key={value} value={value}>{en ? labelEn : labelEs}</option>)}
               </select>
             </div>
-            <button type="button" onClick={addField} className="mt-2 w-full rounded-lg border border-indigo-200 px-3 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50">+ Agregar campo</button>
+            <button type="button" onClick={addField} className="mt-2 w-full rounded-lg border border-indigo-200 px-3 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50">{en ? '+ Add field' : '+ Agregar campo'}</button>
 
             <div className="mt-4 space-y-2">
               {fields.length === 0 ? (
@@ -500,28 +502,28 @@ export function CrearCapaPuntos({ language = 'es' }) {
                     <p className="truncate text-sm font-semibold text-slate-700">{field.label}</p>
                     <p className="text-[11px] text-slate-400">{field.type}</p>
                   </div>
-                  <button type="button" onClick={() => removeField(field.name)} className="text-xs font-bold text-red-500 hover:text-red-700">Quitar</button>
+                  <button type="button" onClick={() => removeField(field.name)} className="text-xs font-bold text-red-500 hover:text-red-700">{en ? 'Remove' : 'Quitar'}</button>
                 </div>
               ))}
             </div>
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 className="font-bold">3. Crea puntos</h3>
-            <p className="mt-1 text-xs leading-5 text-slate-500">Activa el modo de captura y haz clic sobre el mapa.</p>
+            <h3 className="font-bold">{en ? '3. Create points' : '3. Crea puntos'}</h3>
+            <p className="mt-1 text-xs leading-5 text-slate-500">{en ? 'Enable capture mode and click on the map.' : 'Activa el modo de captura y haz clic sobre el mapa.'}</p>
             <button
               type="button"
               onClick={() => setDrawing((value) => !value)}
               className={`mt-4 w-full rounded-lg px-3 py-2.5 text-sm font-bold ${drawing ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'border border-slate-300 bg-white text-slate-700 hover:border-indigo-300'}`}
             >
-              {drawing ? '● Agregar punto: activo' : 'Activar agregar punto'}
+              {drawing ? (en ? '● Add point: active' : '● Agregar punto: activo') : (en ? 'Enable add point' : 'Activar agregar punto')}
             </button>
             <div className="mt-3 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
               <span className="text-slate-500">{en ? 'Points created' : 'Puntos creados'}</span>
               <strong>{points.length}</strong>
             </div>
             {points.length > 0 && (
-              <button type="button" onClick={() => { setPoints([]); setSelectedId(null); }} className="mt-2 w-full text-xs font-bold text-red-500 hover:text-red-700">Limpiar todos los puntos</button>
+              <button type="button" onClick={() => { setPoints([]); setSelectedId(null); }} className="mt-2 w-full text-xs font-bold text-red-500 hover:text-red-700">{en ? 'Clear all points' : 'Limpiar todos los puntos'}</button>
             )}
           </section>
 
@@ -538,7 +540,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
             >
               {exporting ? (en ? 'Generating…' : 'Generando…') : `${en ? 'Download' : 'Descargar'} ${EXPORT_FORMATS.find(([value]) => value === format)?.[1]}`}
             </button>
-            <p className="mt-2 text-[11px] leading-4 text-slate-400">GeoJSON y CSV se generan en tu navegador. SHP, GPKG y KML se convierten mediante la API de ConvertToMap.</p>
+            <p className="mt-2 text-[11px] leading-4 text-slate-400">{en ? 'GeoJSON and CSV are generated in your browser. SHP, GPKG and KML are converted through the ConvertToMap API.' : 'GeoJSON y CSV se generan en tu navegador. SHP, GPKG y KML se convierten mediante la API de ConvertToMap.'}</p>
           </section>
         </aside>
 
@@ -550,7 +552,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
                 <p className="mt-1 text-xs text-slate-500">{en ? 'Territorial source' : 'Fuente territorial'}: {selectedCountry?.source_label || 'ConvertToMap'} · {selectedLayer?.name || ''}</p>
               </div>
               <select value={basemap} onChange={(event) => setBasemap(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
-                {Object.entries(BASEMAPS).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}
+                {Object.entries(BASEMAPS).map(([id, item]) => <option key={id} value={id}>{en ? item.labelEn : item.labelEs}</option>)}
               </select>
             </div>
             <div className={`h-[590px] ${drawing ? 'cursor-crosshair' : ''}`}>
@@ -579,7 +581,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
                     >
                       <Tooltip direction="top">
                         <strong>{point.__territoryName || (en ? 'Outside boundary' : 'Fuera de límite')}</strong>
-                        <br />{point.__territoryLayer || selectedLayer?.name || 'Territorio'}
+                        <br />{point.__territoryLayer || selectedLayer?.name || (en ? 'Territory' : 'Territorio')}
                       </Tooltip>
                     </CircleMarker>
                   ))}
@@ -596,9 +598,9 @@ export function CrearCapaPuntos({ language = 'es' }) {
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">{en ? 'Selected point' : 'Punto seleccionado'}</p>
                   <h3 className="mt-1 text-lg font-bold">{selectedPoint.__territoryName || (en ? 'Outside territorial boundaries' : 'Fuera de límites territoriales')}</h3>
-                  <p className="text-sm text-slate-500">{selectedPoint.__territoryLayer || selectedLayer?.name || 'Territorio'} · {selectedPoint.latitud}, {selectedPoint.longitud}</p>
+                  <p className="text-sm text-slate-500">{selectedPoint.__territoryLayer || selectedLayer?.name || (en ? 'Territory' : 'Territorio')} · {selectedPoint.latitud}, {selectedPoint.longitud}</p>
                 </div>
-                <button type="button" onClick={() => removePoint(selectedPoint.id)} className="text-xs font-bold text-red-500 hover:text-red-700">Eliminar punto</button>
+                <button type="button" onClick={() => removePoint(selectedPoint.id)} className="text-xs font-bold text-red-500 hover:text-red-700">{en ? 'Delete point' : 'Eliminar punto'}</button>
               </div>
 
               {fields.length > 0 && (
@@ -629,14 +631,14 @@ export function CrearCapaPuntos({ language = 'es' }) {
           {points.length > 0 && (
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-200 px-5 py-4">
-                <h3 className="font-bold">Tabla de atributos</h3>
+                <h3 className="font-bold">{en ? 'Attribute table' : 'Tabla de atributos'}</h3>
                 <p className="mt-1 text-xs text-slate-500">{en ? 'Select a row to edit its data.' : 'Selecciona una fila para editar sus datos.'}</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200 text-sm">
                   <thead className="bg-slate-50">
                     <tr>
-                      {['ID', selectedLayer?.name || 'Territorio', ...(selectedLayer?.id === 'municipios' ? ['Departamento'] : []), 'Latitud', 'Longitud', ...fields.map((field) => field.label)].map((header) => (
+                      {['ID', selectedLayer?.name || (en ? 'Territory' : 'Territorio'), ...(selectedLayer?.id === 'municipios' ? [en ? 'Department' : 'Departamento'] : []), en ? 'Latitude' : 'Latitud', en ? 'Longitude' : 'Longitud', ...fields.map((field) => field.label)].map((header) => (
                         <th key={header} className="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">{header}</th>
                       ))}
                     </tr>
