@@ -56,6 +56,7 @@ const PROJECTS = [
   {
     name: 'ConvertToMap',
     description: 'Convierte archivos CSV en capas GIS listas para usar.',
+    description_en: 'Convert CSV files into ready-to-use GIS layers.',
     href: '/geoportal',
     tag: 'GIS',
     internal: true,
@@ -63,6 +64,7 @@ const PROJECTS = [
   {
     name: 'Generador QR',
     description: 'Crea códigos QR personalizados con colores, logo, tamaño y descarga en PNG.',
+    description_en: 'Create custom QR codes with colors, logo, size controls and PNG download.',
     href: 'https://qr.converttomap.com',
     tag: 'QR',
     external: true,
@@ -156,7 +158,7 @@ function App() {
         }
       })
       .catch((error) => {
-        if (error.name !== 'AbortError') setMapError('No fue posible cargar el catálogo de países.');
+        if (error.name !== 'AbortError') setMapError(language === 'en' ? 'Could not load the country catalog.' : 'No fue posible cargar el catálogo de países.');
       });
     return () => controller.abort();
   }, []);
@@ -181,7 +183,7 @@ function App() {
       } catch (error) {
         if (error.name !== 'AbortError') {
           console.error('Error cargando GeoJSON:', error);
-          setMapError('No fue posible cargar la capa de límites.');
+          setMapError(language === 'en' ? 'Could not load the boundary layer.' : 'No fue posible cargar la capa de límites.');
         }
       } finally {
         setIsLoadingMap(false);
@@ -248,17 +250,17 @@ function App() {
   const renderConvert = () => (
     <main className="mx-auto max-w-7xl px-4 pb-8 pt-5 sm:px-6 sm:pt-6">
       <div className="mb-4 max-w-4xl">
-        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Convierte tus datos en capas GIS</h2>
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{language === 'en' ? 'Convert your data into GIS layers' : 'Convierte tus datos en capas GIS'}</h2>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
-            Selecciona un país, carga un CSV con códigos territoriales, comprueba tus datos en el mapa y descarga el resultado para QGIS, ArcGIS o Google Earth.
+            {language === 'en' ? 'Select a country, upload a CSV with territorial codes, verify your data on the map and download the result for QGIS, ArcGIS or Google Earth.' : 'Selecciona un país, carga un CSV con códigos territoriales, comprueba tus datos en el mapa y descarga el resultado para QGIS, ArcGIS o Google Earth.'}
           </p>
           <div className="flex shrink-0 flex-wrap gap-2">
             <button type="button" onClick={loadExample} className="rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700">
-              Probar con ejemplo
+              {language === 'en' ? 'Try an example' : 'Probar con ejemplo'}
             </button>
             <button type="button" onClick={() => navigate('/capas')} className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-bold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700">
-              Descargar capas
+              {language === 'en' ? 'Download layers' : 'Descargar capas'}
             </button>
           </div>
         </div>
@@ -267,8 +269,8 @@ function App() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(380px,0.85fr)_minmax(0,1.15fr)]">
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 px-6 py-4">
-            <h3 className="font-bold">1. Configura la conversión</h3>
-            <p className="mt-1 text-sm text-slate-500">Sube tu CSV, selecciona la columna territorial y los formatos de salida.</p>
+            <h3 className="font-bold">{language === 'en' ? '1. Configure conversion' : '1. Configura la conversión'}</h3>
+            <p className="mt-1 text-sm text-slate-500">{language === 'en' ? 'Upload your CSV, select the territorial column and output formats.' : 'Sube tu CSV, selecciona la columna territorial y los formatos de salida.'}</p>
           </div>
           {catalog && selectedCountry && layerConfig ? (
             <UploadForm
@@ -281,23 +283,24 @@ function App() {
               onCountryChange={handleCountryChange}
               onLevelChange={handleLevelChange}
               onUpload={handleUpload}
+              language={language}
             />
           ) : (
-            <div className="grid min-h-72 place-items-center"><div className="loader" aria-label="Cargando países" /></div>
+            <div className="grid min-h-72 place-items-center"><div className="loader" aria-label={language === 'en' ? 'Loading countries' : 'Cargando países'} /></div>
           )}
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div>
-              <h3 className="font-bold">2. Verifica en el mapa</h3>
-              <p className="mt-1 text-sm text-slate-500">Se resaltan los códigos encontrados en el CSV.</p>
+              <h3 className="font-bold">{language === 'en' ? '2. Verify on the map' : '2. Verifica en el mapa'}</h3>
+              <p className="mt-1 text-sm text-slate-500">{language === 'en' ? 'Territorial codes found in the CSV are highlighted.' : 'Se resaltan los códigos encontrados en el CSV.'}</p>
             </div>
-            <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">{codigosCsv.length} seleccionados</span>
+            <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">{codigosCsv.length} {language === 'en' ? 'selected' : 'seleccionados'}</span>
           </div>
           <div className="p-4">
             {isLoadingMap ? (
-              <div className="grid h-[560px] place-items-center"><div className="loader" aria-label="Cargando mapa" /></div>
+              <div className="grid h-[560px] place-items-center"><div className="loader" aria-label={language === 'en' ? 'Loading map' : 'Cargando mapa'} /></div>
             ) : mapError ? (
               <div className="grid h-[560px] place-items-center text-sm text-red-600">{mapError}</div>
             ) : (
@@ -311,10 +314,10 @@ function App() {
         <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-2 border-b border-slate-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="font-bold">Vista previa de datos</h3>
+              <h3 className="font-bold">{language === 'en' ? 'Data preview' : 'Vista previa de datos'}</h3>
               <p className="text-sm text-slate-500">{fileName}</p>
             </div>
-            <span className="text-xs font-semibold text-slate-500">Primeras {csvPreview.length} filas</span>
+            <span className="text-xs font-semibold text-slate-500">{language === 'en' ? 'First' : 'Primeras'} {csvPreview.length} {language === 'en' ? 'rows' : 'filas'}</span>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 text-sm">
@@ -464,9 +467,9 @@ function App() {
   const renderProjects = () => (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <div className="mb-7">
-        <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">Herramientas</p>
-        <h2 className="mt-2 text-3xl font-bold tracking-tight">Proyectos</h2>
-        <p className="mt-2 max-w-2xl leading-7 text-slate-600">Herramientas para trabajar con datos y contenido digital.</p>
+        <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">{language === 'en' ? 'Tools' : 'Herramientas'}</p>
+        <h2 className="mt-2 text-3xl font-bold tracking-tight">{language === 'en' ? 'Projects' : 'Proyectos'}</h2>
+        <p className="mt-2 max-w-2xl leading-7 text-slate-600">{language === 'en' ? 'Tools for working with data and digital content.' : 'Herramientas para trabajar con datos y contenido digital.'}</p>
       </div>
       <div className="grid gap-5 md:grid-cols-2">
         {PROJECTS.map((project) => (
@@ -482,7 +485,7 @@ function App() {
               <div>
                 <span className="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">{project.tag}</span>
                 <h3 className="mt-4 text-xl font-bold text-slate-900">{project.name}</h3>
-                <p className="mt-2 leading-6 text-slate-600">{project.description}</p>
+                <p className="mt-2 leading-6 text-slate-600">{language === 'en' ? project.description_en : project.description}</p>
               </div>
               <span className="text-xl text-slate-400 transition group-hover:translate-x-1 group-hover:text-indigo-600">→</span>
             </div>
