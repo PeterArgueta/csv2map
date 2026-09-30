@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -15,6 +16,10 @@ def fail(message: str) -> None:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check-assets", action="store_true", help="Verify generated local map and download assets.")
+    args = parser.parse_args()
+
     catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
     countries = catalog.get("countries") or []
     if not countries:
@@ -64,6 +69,17 @@ def main() -> None:
                     fail(f"duplicate download URL: {public_url}")
                 download_paths.add(public_url)
 
+            if args.check_assets:
+                if isinstance(map_url, str) and map_url.startswith("/"):
+                    map_path = PUBLIC_DIR / map_url.lstrip("/")
+                    if not map_path.exists() or map_path.stat().st_size == 0:
+                        fail(f"{code}/{layer_id}: missing generated map asset {map_url}")
+                for public_url in (layer.get("downloads") or {}).values():
+                    if isinstance(public_url, str) and public_url.startswith("/"):
+                        download_path = PUBLIC_DIR / public_url.lstrip("/")
+                        if not download_path.exists() or download_path.stat().st_size == 0:
+                            fail(f"{code}/{layer_id}: missing generated download asset {public_url}")
+
             api = layer.get("api") or {}
             if api.get("path"):
                 path = REPO_DIR / api["path"]
@@ -92,7 +108,8 @@ def main() -> None:
 
     print(
         f"Catalog QA OK: {len(countries)} countries, "
-        f"{sum(len(c['levels']) for c in countries)} layers."
+        f"{sum(len(c['levels']) for c in countries)} layers"
+        + (" with built assets verified." if args.check_assets else ".")
     )
 
 
