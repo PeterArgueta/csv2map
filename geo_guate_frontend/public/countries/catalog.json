@@ -255,13 +255,17 @@
           "name_property": "LENGTH",
           "map_url": "/countries/SLV/red_vial_marn.optimized.geojson",
           "source_label": "MARN El Salvador · Geoportal VIGEA",
-          "source_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/21",
+          "source_url": "https://mapas.marn.gob.sv/arcgis/rest/services/VIGEA/VIGEALayers/MapServer/22",
           "description_es": "Red vial nacional publicada en el Geoportal del Ministerio de Medio Ambiente y Recursos Naturales de El Salvador.",
           "description_en": "National road network published by El Salvador's Ministry of Environment and Natural Resources geoportal.",
           "api": {
-            "arcgis_layer_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/21",
             "cache_path": "geo_guate_frontend/data/remote_cache/SLV/red_vial_marn.geojson",
-            "basename": "converttomap_slv_red_vial_marn"
+            "basename": "converttomap_slv_red_vial_marn",
+            "arcgis_layer_urls": [
+              "https://mapas.marn.gob.sv/arcgis/rest/services/VIGEA/VIGEALayers/MapServer/22",
+              "https://geoportal.marn.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/22",
+              "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/22"
+            ]
           },
           "downloads": {
             "geojson": "/downloads/red_vial_el_salvador_marn.geojson",
@@ -288,13 +292,17 @@
           "name_property": "NOMBRE",
           "map_url": "/countries/SLV/centros_escolares_marn.geojson",
           "source_label": "MARN El Salvador · Geoportal VIGEA",
-          "source_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/19",
+          "source_url": "https://mapas.marn.gob.sv/arcgis/rest/services/VIGEA/VIGEALayers/MapServer/19",
           "description_es": "Ubicación de centros escolares publicada en el Geoportal del MARN de El Salvador.",
           "description_en": "School locations published by El Salvador's MARN geoportal.",
           "api": {
-            "arcgis_layer_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/19",
             "cache_path": "geo_guate_frontend/data/remote_cache/SLV/centros_escolares_marn.geojson",
-            "basename": "converttomap_slv_centros_escolares_marn"
+            "basename": "converttomap_slv_centros_escolares_marn",
+            "arcgis_layer_urls": [
+              "https://mapas.marn.gob.sv/arcgis/rest/services/VIGEA/VIGEALayers/MapServer/19",
+              "https://geoportal.marn.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/19",
+              "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/19"
+            ]
           },
           "downloads": {
             "geojson": "/downloads/centros_escolares_el_salvador_marn.geojson",
@@ -321,13 +329,17 @@
           "name_property": "NOMBRE",
           "map_url": "/countries/SLV/hospitales_unidades_salud_marn.geojson",
           "source_label": "MARN El Salvador · Geoportal VIGEA",
-          "source_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/20",
+          "source_url": "https://mapas.marn.gob.sv/arcgis/rest/services/VIGEA/VIGEALayers/MapServer/20",
           "description_es": "Hospitales y unidades de salud publicados en el Geoportal del MARN de El Salvador.",
           "description_en": "Hospitals and health units published by El Salvador's MARN geoportal.",
           "api": {
-            "arcgis_layer_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/20",
             "cache_path": "geo_guate_frontend/data/remote_cache/SLV/salud_marn.geojson",
-            "basename": "converttomap_slv_salud_marn"
+            "basename": "converttomap_slv_salud_marn",
+            "arcgis_layer_urls": [
+              "https://mapas.marn.gob.sv/arcgis/rest/services/VIGEA/VIGEALayers/MapServer/20",
+              "https://geoportal.marn.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/20",
+              "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/20"
+            ]
           },
           "downloads": {
             "geojson": "/downloads/hospitales_unidades_salud_el_salvador_marn.geojson",
@@ -354,13 +366,17 @@
           "name_property": "NOMBRE",
           "map_url": "/countries/SLV/puentes_red_vial_marn.geojson",
           "source_label": "MARN El Salvador · Geoportal VIGEA",
-          "source_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/17",
+          "source_url": "https://mapas.marn.gob.sv/arcgis/rest/services/VIGEA/VIGEALayers/MapServer/17",
           "description_es": "Puentes asociados a la red vial principal publicados en el Geoportal del MARN de El Salvador.",
           "description_en": "Bridges on the main road network published by El Salvador's MARN geoportal.",
           "api": {
-            "arcgis_layer_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/17",
             "cache_path": "geo_guate_frontend/data/remote_cache/SLV/puentes_red_vial_marn.geojson",
-            "basename": "converttomap_slv_puentes_red_vial_marn"
+            "basename": "converttomap_slv_puentes_red_vial_marn",
+            "arcgis_layer_urls": [
+              "https://mapas.marn.gob.sv/arcgis/rest/services/VIGEA/VIGEALayers/MapServer/17",
+              "https://geoportal.marn.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/17",
+              "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/17"
+            ]
           },
           "downloads": {
             "geojson": "/downloads/puentes_red_vial_el_salvador_marn.geojson",
@@ -387,13 +403,17 @@
           "name_property": "SMALL_NAME",
           "map_url": "/countries/SLV/poblados_marn.geojson",
           "source_label": "MARN El Salvador · Geoportal VIGEA",
-          "source_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/12",
+          "source_url": "https://mapas.marn.gob.sv/arcgis/rest/services/VIGEA/VIGEALayers/MapServer/12",
           "description_es": "Poblados de El Salvador publicados en el Geoportal del MARN.",
           "description_en": "Settlements of El Salvador published by the MARN geoportal.",
           "api": {
-            "arcgis_layer_url": "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/12",
             "cache_path": "geo_guate_frontend/data/remote_cache/SLV/poblados_marn.geojson",
-            "basename": "converttomap_slv_poblados_marn"
+            "basename": "converttomap_slv_poblados_marn",
+            "arcgis_layer_urls": [
+              "https://mapas.marn.gob.sv/arcgis/rest/services/VIGEA/VIGEALayers/MapServer/12",
+              "https://geoportal.marn.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/12",
+              "https://geoportal.snet.gob.sv/server/rest/services/sig_ccanales/VIGEALayers/MapServer/12"
+            ]
           },
           "downloads": {
             "geojson": "/downloads/poblados_el_salvador_marn.geojson",
