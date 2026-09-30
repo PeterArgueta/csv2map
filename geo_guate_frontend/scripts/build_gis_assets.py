@@ -193,6 +193,33 @@ def canonical_source(country: dict, layer: dict, code_maps: dict) -> Path:
                 print(f"ArcGIS source failed: {exc}")
         raise RuntimeError("All ArcGIS sources failed:\n" + "\n".join(errors))
 
+    if api.get("archive_url"):
+        cache_path = api.get("archive_cache_path")
+        archive_path = REPO_DIR / cache_path if cache_path else TMP_DIR / f"{country['code']}_{layer['id']}.zip"
+        if not archive_path.exists() or archive_path.stat().st_size < 100:
+            download(api["archive_url"], archive_path)
+        else:
+            print(f"Using cached archive {archive_path}")
+
+        extract_dir = TMP_DIR / f"archive_{country['code']}_{layer['id']}"
+        if extract_dir.exists():
+            shutil.rmtree(extract_dir)
+        extract_dir.mkdir(parents=True)
+        with zipfile.ZipFile(archive_path) as archive:
+            archive.extractall(extract_dir)
+
+        member = api.get("archive_member")
+        if member:
+            matches = list(extract_dir.rglob(member))
+            if not matches:
+                raise RuntimeError(f"Archive member not found: {member}")
+            return matches[0]
+
+        candidates = list(extract_dir.rglob("*.shp"))
+        if not candidates:
+            raise RuntimeError(f"No shapefile found in archive: {api['archive_url']}")
+        return candidates[0]
+
     if api.get("gzip_path"):
         source_gzip = resolve_local_path(api["gzip_path"])
         target = PUBLIC_DIR / "countries" / country["code"] / f"{layer['id']}.geojson"
