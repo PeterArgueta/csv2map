@@ -48,7 +48,7 @@ def main() -> None:
                 fail(f"{code}/{layer_id}: missing name or name_property")
 
             count = layer.get("count")
-            if not isinstance(count, int) or count <= 0:
+            if count is not None and (not isinstance(count, int) or count <= 0):
                 fail(f"{code}/{layer_id}: invalid feature count")
 
             for public_url in (layer.get("downloads") or {}).values():
