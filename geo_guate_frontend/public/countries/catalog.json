@@ -486,6 +486,54 @@
       ],
       "region": "North America",
       "region_es": "Norteamérica"
+    },
+    {
+      "code": "COL",
+      "name": "Colombia",
+      "region": "South America",
+      "region_es": "Sudamérica",
+      "source_label": "IGAC · Límites de entidades territoriales",
+      "source_url": "https://mapas2.igac.gov.co/server/rest/services/limites/limites/FeatureServer/2",
+      "levels": [
+        {
+          "id": "departamentos",
+          "admin_level": "admin1",
+          "geometry_type": "polygon",
+          "name": "Departamentos",
+          "name_en": "Departments",
+          "singular": "departamento",
+          "singular_en": "department",
+          "count": 33,
+          "category": "administrative",
+          "category_es": "Límites administrativos",
+          "category_en": "Administrative boundaries",
+          "code_property": "DeCodigo",
+          "name_property": "DeNombre",
+          "code_width": 2,
+          "map_url": "/countries/COL/admin1.optimized.geojson",
+          "simplify_tolerance": 0.004,
+          "map_fields": [
+            "DeCodigo",
+            "DeNombre",
+            "DeArea",
+            "DeNorma"
+          ],
+          "description_es": "Límites departamentales oficiales de Colombia publicados por el Instituto Geográfico Agustín Codazzi (IGAC). Incluye Bogotá D.C. como entidad territorial de primer nivel equivalente para fines cartográficos.",
+          "description_en": "Official departmental boundaries of Colombia published by the Instituto Geográfico Agustín Codazzi (IGAC). Bogotá D.C. is included as a first-level territorial unit for mapping purposes.",
+          "api": {
+            "arcgis_layer_url": "https://mapas2.igac.gov.co/server/rest/services/limites/limites/FeatureServer/2",
+            "cache_path": "geo_guate_frontend/data/remote_cache/COL/departamentos_igac.geojson",
+            "code_field": "DeCodigo",
+            "basename": "converttomap_col_departamentos"
+          },
+          "downloads": {
+            "geojson": "/downloads/departamentos_colombia.geojson",
+            "shp": "/downloads/departamentos_colombia_shapefile.zip",
+            "gpkg": "/downloads/departamentos_colombia.gpkg",
+            "kml": "/downloads/departamentos_colombia.kml"
+          }
+        }
+      ]
     }
   ]
 }
