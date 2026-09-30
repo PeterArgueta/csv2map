@@ -41,7 +41,10 @@ def main() -> None:
             layer_ids.add(layer_id)
 
             map_url = layer.get("map_url")
-            if not isinstance(map_url, str) or not map_url.startswith("/"):
+            valid_map_url = isinstance(map_url, str) and (
+                map_url.startswith("/") or (layer.get("remote_live") and map_url.startswith("https://"))
+            )
+            if not valid_map_url:
                 fail(f"{code}/{layer_id}: invalid map_url")
 
             if not layer.get("name") or not layer.get("name_property"):
@@ -52,7 +55,10 @@ def main() -> None:
                 fail(f"{code}/{layer_id}: invalid feature count")
 
             for public_url in (layer.get("downloads") or {}).values():
-                if not isinstance(public_url, str) or not public_url.startswith("/"):
+                valid_download_url = isinstance(public_url, str) and (
+                    public_url.startswith("/") or (layer.get("remote_live") and public_url.startswith("https://"))
+                )
+                if not valid_download_url:
                     fail(f"{code}/{layer_id}: invalid download URL {public_url!r}")
                 if public_url in download_paths:
                     fail(f"duplicate download URL: {public_url}")
