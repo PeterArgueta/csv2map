@@ -295,7 +295,12 @@ export function ConvertirFormatos({ language = 'es' }) {
             disabled={!file || !outputFormat || converting || (inputFormat === outputFormat && !isPolygon) || inspecting || (inputFormat === 'xlsx' && !sheetName)}
             className="mt-5 flex w-full items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            {converting ? (en ? 'Converting…' : 'Convirtiendo…') : `${en ? 'Convert to' : 'Convertir a'} ${outputInfo?.label || ''}`}
+            {converting ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
+                <span>{en ? 'Processing…' : 'Procesando…'}</span>
+              </span>
+            ) : (en ? 'Convert' : 'Convertir')}
           </button>
 
           <div className="mt-4 rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-500">
