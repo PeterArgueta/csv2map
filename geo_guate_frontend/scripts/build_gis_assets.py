@@ -171,17 +171,27 @@ def transform_remote_geojson(source: Path, target: Path, code_map_name: str, cod
 
 def canonical_source(country: dict, layer: dict, code_maps: dict) -> Path:
     api = layer.get("api") or {}
-    if api.get("arcgis_layer_url"):
+    arcgis_urls = api.get("arcgis_layer_urls") or ([api["arcgis_layer_url"]] if api.get("arcgis_layer_url") else [])
+    if arcgis_urls:
         cache_path = api.get("cache_path")
         if cache_path:
-            target = resolve_local_path(cache_path) if (REPO_DIR / cache_path).exists() else REPO_DIR / cache_path
+            target = REPO_DIR / cache_path
             if target.exists() and target.stat().st_size > 100:
                 print(f"Using cached source {target}")
                 return target
             target.parent.mkdir(parents=True, exist_ok=True)
         else:
             target = TMP_DIR / f"{country['code']}_{layer['id']}_source.geojson"
-        return download_arcgis_layer(api["arcgis_layer_url"], target)
+
+        errors = []
+        for layer_url in arcgis_urls:
+            try:
+                print(f"Trying ArcGIS source {layer_url}")
+                return download_arcgis_layer(layer_url, target)
+            except Exception as exc:
+                errors.append(f"{layer_url}: {exc}")
+                print(f"ArcGIS source failed: {exc}")
+        raise RuntimeError("All ArcGIS sources failed:\n" + "\n".join(errors))
 
     if api.get("gzip_path"):
         source_gzip = resolve_local_path(api["gzip_path"])
