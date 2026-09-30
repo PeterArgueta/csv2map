@@ -4,10 +4,10 @@ import Papa from 'papaparse';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const FORMAT_OPTIONS = [
-  { id: 'shp', label: 'Shapefile', note: '.shp + archivos auxiliares' },
-  { id: 'kml', label: 'KML', note: 'Google Earth' },
-  { id: 'geojson', label: 'GeoJSON', note: 'Web y aplicaciones' },
-  { id: 'gpkg', label: 'GeoPackage', note: 'QGIS y ArcGIS' },
+  { id: 'shp', label: 'Shapefile', note: '.shp + archivos auxiliares', noteEn: '.shp + auxiliary files' },
+  { id: 'kml', label: 'KML', note: 'Google Earth', noteEn: 'Google Earth' },
+  { id: 'geojson', label: 'GeoJSON', note: 'Web y aplicaciones', noteEn: 'Web and applications' },
+  { id: 'gpkg', label: 'GeoPackage', note: 'QGIS y ArcGIS', noteEn: 'QGIS and ArcGIS' },
 ];
 
 const COLUMN_HINTS = {
@@ -202,7 +202,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
         }
         const seriousError = errors.find((error) => error.type !== 'FieldMismatch');
         if (seriousError) {
-          setFileError(`No se pudo interpretar el CSV: ${seriousError.message}`);
+          setFileError(en ? `Could not parse the CSV: ${seriousError.message}` : `No se pudo interpretar el CSV: ${seriousError.message}`);
           return;
         }
         const selected = detectCodeColumn(meta.fields, nivel);
@@ -212,7 +212,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
         if (!selected) setFileError(en ? 'Select the column containing the territorial name or ID.' : 'Selecciona la columna que contiene el nombre o ID territorial.');
         emitPreview(data, meta.fields, selected, file);
       },
-      error: () => setFileError('No fue posible leer el archivo seleccionado.'),
+      error: () => setFileError(en ? 'Could not read the selected file.' : 'No fue posible leer el archivo seleccionado.'),
     });
   };
 
@@ -300,8 +300,12 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
       const matched = response.headers['x-matched-count'];
       const unmatched = response.headers['x-unmatched-count'];
       const mode = response.headers['x-match-mode'];
-      const matchLabel = mode === 'nombre' ? 'territorios encontrados por nombre' : mode === 'mixto' ? 'territorios encontrados por nombre/ID' : 'IDs encontrados';
-      setSuccessMessage(`ZIP generado: ${matched || 'varios'} ${matchLabel}${unmatched && unmatched !== '0' ? ` y ${unmatched} no encontrados o ambiguos` : ''}.`);
+      const matchLabel = en
+        ? (mode === 'nombre' ? 'territories matched by name' : mode === 'mixto' ? 'territories matched by name/ID' : 'IDs matched')
+        : (mode === 'nombre' ? 'territorios encontrados por nombre' : mode === 'mixto' ? 'territorios encontrados por nombre/ID' : 'IDs encontrados');
+      setSuccessMessage(en
+        ? `ZIP generated: ${matched || 'several'} ${matchLabel}${unmatched && unmatched !== '0' ? ` and ${unmatched} unmatched or ambiguous` : ''}.`
+        : `ZIP generado: ${matched || 'varios'} ${matchLabel}${unmatched && unmatched !== '0' ? ` y ${unmatched} no encontrados o ambiguos` : ''}.`);
     } catch (error) {
       setFileError(await readApiError(error));
     } finally {
@@ -432,15 +436,15 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
                 <p className="text-xs text-slate-500">{en ? 'Select territories and add the variables you need.' : 'Selecciona territorios y agrega las variables que necesites.'}</p>
               </div>
               <div className="flex gap-2 text-xs font-bold">
-                <button type="button" onClick={() => setSelectedDepartments(territories.map(([code]) => code))} className="text-indigo-600 hover:text-indigo-800">Todos</button>
-                <button type="button" onClick={() => setSelectedDepartments([])} className="text-slate-500 hover:text-slate-700">Limpiar</button>
+                <button type="button" onClick={() => setSelectedDepartments(territories.map(([code]) => code))} className="text-indigo-600 hover:text-indigo-800">{en ? 'All' : 'Todos'}</button>
+                <button type="button" onClick={() => setSelectedDepartments([])} className="text-slate-500 hover:text-slate-700">{en ? 'Clear' : 'Limpiar'}</button>
               </div>
             </div>
 
             <div className="mb-4 rounded-lg border border-slate-200 bg-white p-3">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-bold text-slate-700">Columnas de datos</p>
+                  <p className="text-xs font-bold text-slate-700">{en ? 'Data columns' : 'Columnas de datos'}</p>
                   <p className="text-[11px] text-slate-500">{en ? 'E.g. population, budget, sales or poverty.' : 'Ej.: población, presupuesto, ventas o pobreza.'}</p>
                 </div>
                 <button
@@ -449,7 +453,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
                   disabled={customColumns.length >= 8}
                   className="rounded-lg border border-indigo-200 px-2.5 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:text-slate-300"
                 >
-                  + Agregar columna
+                  {en ? '+ Add column' : '+ Agregar columna'}
                 </button>
               </div>
 
@@ -464,12 +468,12 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
                           type="text"
                           value={column.name}
                           onChange={(event) => renameCustomColumn(column.id, event.target.value)}
-                          placeholder={`Nombre de columna ${index + 1}`}
+                          placeholder={`${en ? 'Column name' : 'Nombre de columna'} ${index + 1}`}
                           className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs outline-none focus:border-indigo-400"
                         />
                         <p className="mt-1 truncate text-[10px] text-slate-400">CSV: {safeHeaders[index]?.header}</p>
                       </div>
-                      <button type="button" onClick={() => removeCustomColumn(column.id)} className="mt-1 rounded-md px-2 py-1 text-sm font-bold text-slate-400 hover:bg-red-50 hover:text-red-600" aria-label={`Eliminar ${column.name || 'columna'}`}>×</button>
+                      <button type="button" onClick={() => removeCustomColumn(column.id)} className="mt-1 rounded-md px-2 py-1 text-sm font-bold text-slate-400 hover:bg-red-50 hover:text-red-600" aria-label={`${en ? 'Remove' : 'Eliminar'} ${column.name || (en ? 'column' : 'columna')}`}>×</button>
                     </div>
                   ))}
                 </div>
@@ -494,7 +498,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
                             type="text"
                             value={departmentValues[code]?.[column.id] ?? ''}
                             onChange={(event) => setDepartmentValue(code, column.id, event.target.value)}
-                            placeholder={column.name.trim() || `Dato ${index + 1}`}
+                            placeholder={column.name.trim() || `${en ? 'Data' : 'Dato'} ${index + 1}`}
                             className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs outline-none focus:border-indigo-400"
                           />
                         ))}
@@ -507,7 +511,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
 
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <button type="button" disabled={!selectedDepartments.length} onClick={useCreatedCsv} className="flex-1 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-slate-300">
-                Usar este CSV
+                {en ? 'Use this CSV' : 'Usar este CSV'}
               </button>
               <button type="button" disabled={!selectedDepartments.length} onClick={downloadCreatedCsv} className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:text-slate-300">
                 {en ? 'Download CSV' : 'Descargar CSV'}
@@ -528,14 +532,14 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
         >
           <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-indigo-50 text-xl text-indigo-600">↑</div>
           <p className="mt-3 text-sm font-semibold text-slate-700">{fileData ? fileData.name : (en ? 'Select or drag your file' : 'Selecciona o arrastra tu archivo')}</p>
-          <p className="mt-1 text-xs text-slate-500">CSV o Excel .xlsx de hasta 10 MB</p>
+          <p className="mt-1 text-xs text-slate-500">{en ? 'CSV or Excel .xlsx up to 10 MB' : 'CSV o Excel .xlsx de hasta 10 MB'}</p>
           <input ref={fileInputRef} type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={(event) => parseFile(event.target.files?.[0])} />
         </div>
       </div>
 
       {sheetNames.length > 1 && fileData?.name?.toLowerCase().endsWith('.xlsx') && (
         <div>
-          <label htmlFor="sheet-name" className="field-label">Hoja de Excel</label>
+          <label htmlFor="sheet-name" className="field-label">{en ? 'Excel sheet' : 'Hoja de Excel'}</label>
           <select
             id="sheet-name"
             value={sheetName}
@@ -554,7 +558,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
 
       {headers.length > 0 && (
         <div>
-          <label htmlFor="code-column" className="field-label">Columna territorial (nombre o ID)</label>
+          <label htmlFor="code-column" className="field-label">{en ? 'Territorial column (name or ID)' : 'Columna territorial (nombre o ID)'}</label>
           <select id="code-column" value={codeColumn} onChange={(event) => handleColumnChange(event.target.value)} className="field-control">
             <option value="">{en ? 'Select column…' : 'Seleccionar columna…'}</option>
             {headers.map((header) => <option key={header} value={header}>{header}</option>)}
@@ -571,7 +575,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
               <label key={option.id} className={`cursor-pointer rounded-xl border p-3 transition ${checked ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200 hover:border-slate-300'}`}>
                 <div className="flex items-start gap-3">
                   <input type="checkbox" checked={checked} onChange={() => toggleFormat(option.id)} className="mt-1 h-4 w-4 accent-indigo-600" />
-                  <span><span className="block text-sm font-bold text-slate-700">{option.label}</span><span className="block text-xs text-slate-500">{option.note}</span></span>
+                  <span><span className="block text-sm font-bold text-slate-700">{option.label}</span><span className="block text-xs text-slate-500">{en ? option.noteEn : option.note}</span></span>
                 </div>
               </label>
             );
@@ -588,14 +592,14 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
         disabled={!fileData || !codeColumn || formats.length === 0 || isProcessing}
         className="flex w-full items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
       >
-        {isProcessing ? 'Generando archivos…' : `Generar paquete de ${nivel}`}
+        {isProcessing ? (en ? 'Generating files…' : 'Generando archivos…') : `${en ? 'Generate package for' : 'Generar paquete de'} ${nivel}`}
       </button>
 
       {isProcessing && (
         <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3" aria-live="polite">
           <div className="mb-2 flex items-center justify-between text-xs font-semibold text-indigo-700">
-            <span>Generando mapa y archivos</span>
-            <span>Procesando…</span>
+            <span>{en ? 'Generating map and files' : 'Generando mapa y archivos'}</span>
+            <span>{en ? 'Processing…' : 'Procesando…'}</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-indigo-100">
             <div className="processing-bar h-full rounded-full bg-indigo-600" />
