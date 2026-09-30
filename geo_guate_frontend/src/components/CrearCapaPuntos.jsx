@@ -216,7 +216,8 @@ function MapViewUpdater({ data }) {
   return null;
 }
 
-export function CrearCapaPuntos() {
+export function CrearCapaPuntos({ language = 'es' }) {
+  const en = language === 'en';
   const [catalog, setCatalog] = useState(null);
   const [countryCode, setCountryCode] = useState('GTM');
   const [layerId, setLayerId] = useState('municipios');
@@ -249,7 +250,7 @@ export function CrearCapaPuntos() {
         if (preferred) setLayerId(preferred.id);
       })
       .catch((error) => {
-        if (error.name !== 'AbortError') setLoadError('No fue posible cargar el catálogo territorial.');
+        if (error.name !== 'AbortError') setLoadError(en ? 'Could not load the territorial catalog.' : 'No fue posible cargar el catálogo territorial.');
       });
     return () => controller.abort();
   }, []);
@@ -292,7 +293,7 @@ export function CrearCapaPuntos() {
       })
       .then(setTerritories)
       .catch((error) => {
-        if (error.name !== 'AbortError') setLoadError('No fue posible cargar la capa territorial seleccionada.');
+        if (error.name !== 'AbortError') setLoadError(en ? 'Could not load the selected territorial layer.' : 'No fue posible cargar la capa territorial seleccionada.');
       });
     return () => controller.abort();
   }, [selectedLayer?.map_url]);
@@ -336,11 +337,11 @@ export function CrearCapaPuntos() {
   const addField = () => {
     const name = normalizeFieldName(newFieldName);
     if (!name) {
-      setMessage('Escribe un nombre válido para el campo.');
+      setMessage(en ? 'Enter a valid field name.' : 'Escribe un nombre válido para el campo.');
       return;
     }
     if (RESERVED_FIELDS.has(name) || fields.some((field) => field.name === name)) {
-      setMessage('Ese nombre de campo ya existe o está reservado.');
+      setMessage(en ? 'That field name already exists or is reserved.' : 'Ese nombre de campo ya existe o está reservado.');
       return;
     }
     const field = { name, label: newFieldName.trim(), type: newFieldType };
@@ -417,7 +418,7 @@ export function CrearCapaPuntos() {
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (error) {
-      let detail = 'No fue posible exportar la capa.';
+      let detail = en ? 'Could not export the layer.' : 'No fue posible exportar la capa.';
       if (error.response?.data instanceof Blob) {
         try {
           const payload = JSON.parse(await error.response.data.text());
@@ -435,9 +436,9 @@ export function CrearCapaPuntos() {
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">Captura GIS</p>
-          <h2 className="mt-2 text-3xl font-bold tracking-tight">Crear capa geográfica</h2>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight">{en ? 'Create geographic layer' : 'Crear capa geográfica'}</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
-            Haz clic en el mapa para crear puntos. Elige país y nivel territorial; ConvertToMap asigna automáticamente códigos, territorio y coordenadas según la capa seleccionada.
+            {en ? 'Click the map to create points. Choose a country and territorial level; ConvertToMap automatically assigns codes, territory and coordinates from the selected layer.' : 'Haz clic en el mapa para crear puntos. Elige país y nivel territorial; ConvertToMap asigna automáticamente códigos, territorio y coordenadas según la capa seleccionada.'}
           </p>
         </div>
         <span className="w-fit rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700">Puntos · V1</span>
@@ -446,10 +447,10 @@ export function CrearCapaPuntos() {
       <div className="grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
         <aside className="space-y-4">
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 className="font-bold">1. Selecciona territorio</h3>
-            <p className="mt-1 text-xs leading-5 text-slate-500">Elige el país y la capa administrativa que se usará para asignar atributos a cada punto.</p>
+            <h3 className="font-bold">{en ? '1. Select territory' : '1. Selecciona territorio'}</h3>
+            <p className="mt-1 text-xs leading-5 text-slate-500">{en ? 'Choose the country and administrative layer used to assign attributes to each point.' : 'Elige el país y la capa administrativa que se usará para asignar atributos a cada punto.'}</p>
             <label className="mt-4 block">
-              <span className="field-label">País</span>
+              <span className="field-label">{en ? 'Country' : 'País'}</span>
               <select value={countryCode} onChange={(event) => changeCountry(event.target.value)} className="field-control">
                 {(catalog?.countries || []).map((country) => (
                   <option key={country.code} value={country.code}>{country.name}</option>
@@ -473,7 +474,7 @@ export function CrearCapaPuntos() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="font-bold">2. Define los campos</h3>
-                <p className="mt-1 text-xs leading-5 text-slate-500">Los datos territoriales se agregan automáticamente.</p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">{en ? 'Territorial data is added automatically.' : 'Los datos territoriales se agregan automáticamente.'}</p>
               </div>
             </div>
 
@@ -492,7 +493,7 @@ export function CrearCapaPuntos() {
 
             <div className="mt-4 space-y-2">
               {fields.length === 0 ? (
-                <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-500">Puedes empezar sin campos adicionales y agregarlos después.</p>
+                <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-500">{en ? 'You can start without extra fields and add them later.' : 'Puedes empezar sin campos adicionales y agregarlos después.'}</p>
               ) : fields.map((field) => (
                 <div key={field.name} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2">
                   <div className="min-w-0">
@@ -525,7 +526,7 @@ export function CrearCapaPuntos() {
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 className="font-bold">4. Descargar capa</h3>
+            <h3 className="font-bold">{en ? '4. Download layer' : '4. Descargar capa'}</h3>
             <select value={format} onChange={(event) => setFormat(event.target.value)} className="field-control mt-3">
               {EXPORT_FORMATS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
@@ -535,7 +536,7 @@ export function CrearCapaPuntos() {
               disabled={!points.length || exporting}
               className="mt-2 w-full rounded-lg bg-indigo-600 px-3 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
-              {exporting ? 'Generando…' : `Descargar ${EXPORT_FORMATS.find(([value]) => value === format)?.[1]}`}
+              {exporting ? (en ? 'Generating…' : 'Generando…') : `${en ? 'Download' : 'Descargar'} ${EXPORT_FORMATS.find(([value]) => value === format)?.[1]}`}
             </button>
             <p className="mt-2 text-[11px] leading-4 text-slate-400">GeoJSON y CSV se generan en tu navegador. SHP, GPKG y KML se convierten mediante la API de ConvertToMap.</p>
           </section>
@@ -546,7 +547,7 @@ export function CrearCapaPuntos() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
               <div>
                 <h3 className="font-bold">Mapa de captura</h3>
-                <p className="mt-1 text-xs text-slate-500">Fuente territorial: {selectedCountry?.source_label || 'Catálogo ConvertToMap'} · {selectedLayer?.name || ''}</p>
+                <p className="mt-1 text-xs text-slate-500">{en ? 'Territorial source' : 'Fuente territorial'}: {selectedCountry?.source_label || 'ConvertToMap'} · {selectedLayer?.name || ''}</p>
               </div>
               <select value={basemap} onChange={(event) => setBasemap(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
                 {Object.entries(BASEMAPS).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}
@@ -577,7 +578,7 @@ export function CrearCapaPuntos() {
                       eventHandlers={{ click: (event) => { event.originalEvent?.stopPropagation?.(); setSelectedId(point.id); } }}
                     >
                       <Tooltip direction="top">
-                        <strong>{point.__territoryName || 'Fuera de límite'}</strong>
+                        <strong>{point.__territoryName || (en ? 'Outside boundary' : 'Fuera de límite')}</strong>
                         <br />{point.__territoryLayer || selectedLayer?.name || 'Territorio'}
                       </Tooltip>
                     </CircleMarker>
@@ -594,7 +595,7 @@ export function CrearCapaPuntos() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">Punto seleccionado</p>
-                  <h3 className="mt-1 text-lg font-bold">{selectedPoint.__territoryName || 'Fuera de límites territoriales'}</h3>
+                  <h3 className="mt-1 text-lg font-bold">{selectedPoint.__territoryName || (en ? 'Outside territorial boundaries' : 'Fuera de límites territoriales')}</h3>
                   <p className="text-sm text-slate-500">{selectedPoint.__territoryLayer || selectedLayer?.name || 'Territorio'} · {selectedPoint.latitud}, {selectedPoint.longitud}</p>
                 </div>
                 <button type="button" onClick={() => removePoint(selectedPoint.id)} className="text-xs font-bold text-red-500 hover:text-red-700">Eliminar punto</button>
@@ -608,7 +609,7 @@ export function CrearCapaPuntos() {
                       {field.type === 'boolean' ? (
                         <select value={String(selectedPoint[field.name])} onChange={(event) => updatePoint(selectedPoint.id, field.name, event.target.value === 'true')} className="field-control">
                           <option value="false">No</option>
-                          <option value="true">Sí</option>
+                          <option value="true">{en ? 'Yes' : 'Sí'}</option>
                         </select>
                       ) : (
                         <input
@@ -629,7 +630,7 @@ export function CrearCapaPuntos() {
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-200 px-5 py-4">
                 <h3 className="font-bold">Tabla de atributos</h3>
-                <p className="mt-1 text-xs text-slate-500">Selecciona una fila para editar sus datos.</p>
+                <p className="mt-1 text-xs text-slate-500">{en ? 'Select a row to edit its data.' : 'Selecciona una fila para editar sus datos.'}</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200 text-sm">
