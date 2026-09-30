@@ -253,6 +253,9 @@ def main() -> None:
         print(f"\n=== {country['name']} ===")
         for layer in country["levels"]:
             print(f"-- {layer['name']}")
+            if layer.get("remote_live"):
+                print("   live remote layer: skipped during static build")
+                continue
             source = canonical_source(country, layer, code_maps)
             build_optimized_map(source, layer)
             build_downloads(source, country, layer)
