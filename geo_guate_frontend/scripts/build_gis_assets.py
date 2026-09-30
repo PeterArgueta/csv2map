@@ -9,6 +9,7 @@ import unicodedata
 import urllib.request
 import urllib.parse
 import zipfile
+import time
 from pathlib import Path
 
 FRONTEND_DIR = Path(__file__).resolve().parents[1]
@@ -49,14 +50,28 @@ def resolve_local_path(raw_path: str) -> Path:
     raise FileNotFoundError(raw_path)
 
 
-def fetch_json(url: str, params: dict[str, object]) -> dict:
+def fetch_json(url: str, params: dict[str, object], attempts: int = 5) -> dict:
     query = urllib.parse.urlencode(params)
     request = urllib.request.Request(
         f"{url}?{query}",
-        headers={"User-Agent": "ConvertToMap-build/1.0"},
+        headers={
+            "User-Agent": "Mozilla/5.0 ConvertToMap/1.0",
+            "Accept": "application/json,text/plain,*/*",
+        },
     )
-    with urllib.request.urlopen(request, timeout=120) as response:
-        return json.loads(response.read().decode("utf-8"))
+    last_error = None
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=180) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except Exception as exc:
+            last_error = exc
+            if attempt == attempts:
+                break
+            wait = min(30, 3 * attempt)
+            print(f"ArcGIS request failed ({attempt}/{attempts}): {exc}; retrying in {wait}s")
+            time.sleep(wait)
+    raise RuntimeError(f"ArcGIS request failed after {attempts} attempts: {last_error}")
 
 
 def download_arcgis_layer(layer_url: str, destination: Path) -> Path:
@@ -157,7 +172,15 @@ def transform_remote_geojson(source: Path, target: Path, code_map_name: str, cod
 def canonical_source(country: dict, layer: dict, code_maps: dict) -> Path:
     api = layer.get("api") or {}
     if api.get("arcgis_layer_url"):
-        target = TMP_DIR / f"{country['code']}_{layer['id']}_source.geojson"
+        cache_path = api.get("cache_path")
+        if cache_path:
+            target = resolve_local_path(cache_path) if (REPO_DIR / cache_path).exists() else REPO_DIR / cache_path
+            if target.exists() and target.stat().st_size > 100:
+                print(f"Using cached source {target}")
+                return target
+            target.parent.mkdir(parents=True, exist_ok=True)
+        else:
+            target = TMP_DIR / f"{country['code']}_{layer['id']}_source.geojson"
         return download_arcgis_layer(api["arcgis_layer_url"], target)
 
     if api.get("gzip_path"):
@@ -253,9 +276,6 @@ def main() -> None:
         print(f"\n=== {country['name']} ===")
         for layer in country["levels"]:
             print(f"-- {layer['name']}")
-            if layer.get("remote_live"):
-                print("   live remote layer: skipped during static build")
-                continue
             source = canonical_source(country, layer, code_maps)
             build_optimized_map(source, layer)
             build_downloads(source, country, layer)
