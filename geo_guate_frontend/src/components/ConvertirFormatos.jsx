@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 
 const FORMAT_OPTIONS = [
@@ -42,6 +42,8 @@ export function ConvertirFormatos({ language = 'es' }) {
   const [inputFormat, setInputFormat] = useState('');
   const [outputFormat, setOutputFormat] = useState('geojson');
   const [geometryType, setGeometryType] = useState('puntos');
+  const [adminCountries, setAdminCountries] = useState([]);
+  const [adminCountry, setAdminCountry] = useState('GTM');
   const [orderColumn, setOrderColumn] = useState('');
   const [latColumn, setLatColumn] = useState('');
   const [lonColumn, setLonColumn] = useState('');
@@ -50,7 +52,8 @@ export function ConvertirFormatos({ language = 'es' }) {
   const [inspecting, setInspecting] = useState(false);
   const inspectionId = useRef(0);
   const isTable = ['csv', 'xlsx'].includes(inputFormat);
-  const isPolygon = isTable && geometryType !== 'puntos';
+  const isPolygon = isTable && ['puntos_poligono', 'poligono'].includes(geometryType);
+  const isAdminPoints = isTable && geometryType === 'puntos_admin';
   const includeVertices = isTable && geometryType === 'puntos_poligono';
   const [isDragging, setIsDragging] = useState(false);
   const [converting, setConverting] = useState(false);
@@ -58,6 +61,29 @@ export function ConvertirFormatos({ language = 'es' }) {
   const [error, setError] = useState('');
 
   const outputInfo = FORMAT_OPTIONS.find((option) => option.id === outputFormat) || FORMAT_OPTIONS[0];
+
+  useEffect(() => {
+    fetch('/countries/catalog.json')
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then((catalog) => {
+        const available = (catalog.countries || [])
+          .filter((country) => country.point_enrichment?.enabled)
+          .map((country) => ({
+            code: country.code,
+            name: country.name,
+            label: country.point_enrichment?.label,
+            labelEn: country.point_enrichment?.label_en,
+          }));
+        setAdminCountries(available);
+        if (available.length && !available.some((country) => country.code === adminCountry)) {
+          setAdminCountry(available[0].code);
+        }
+      })
+      .catch(() => setAdminCountries([]));
+  }, []);
 
   const chooseOutputFormat = (formatId) => {
     setOutputFormat(formatId);
@@ -130,6 +156,7 @@ export function ConvertirFormatos({ language = 'es' }) {
       form.append('formato_salida', outputFormat);
       if (isTable) {
         form.append('tipo_geometria', geometryType);
+        if (isAdminPoints) form.append('pais', adminCountry);
         if (isPolygon) form.append('columna_orden', orderColumn.trim());
         form.append('columna_latitud', latColumn.trim());
         form.append('columna_longitud', lonColumn.trim());
@@ -218,11 +245,39 @@ export function ConvertirFormatos({ language = 'es' }) {
               <label className="mb-4 block">
                 <span className="field-label">{en ? 'Create geometry' : 'Crear geometría'}</span>
                 <select value={geometryType} onChange={(event) => { setGeometryType(event.target.value); setError(''); setMessage(''); }} className="field-control">
-                  <option value="puntos">{en ? 'Points with municipal attributes' : 'Puntos con atributos municipales'}</option>
-                  <option value="puntos_poligono">{en ? 'Vertices and polygon' : 'Vértices y polígono'}</option>
+                  <option value="puntos">{en ? 'Points' : 'Puntos'}</option>
+                  <option value="puntos_admin">{en ? 'Points with administrative data' : 'Puntos con datos administrativos'}</option>
+                  <option value="puntos_poligono">{en ? 'Vertices and polygon' : 'Vértices + polígono'}</option>
                   <option value="poligono">{en ? 'Polygon from vertices' : 'Polígono desde vértices'}</option>
                 </select>
               </label>
+              {isAdminPoints && (
+                <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50/70 p-3">
+                  <label className="block">
+                    <span className="field-label">{en ? 'Country for administrative data' : 'País para datos administrativos'}</span>
+                    <select
+                      value={adminCountry}
+                      onChange={(event) => { setAdminCountry(event.target.value); setError(''); setMessage(''); }}
+                      className="field-control"
+                      disabled={!adminCountries.length}
+                    >
+                      {adminCountries.length ? adminCountries.map((country) => (
+                        <option key={country.code} value={country.code}>
+                          {country.name}{country.label ? ` · ${en && country.labelEn ? country.labelEn : country.label}` : ''}
+                        </option>
+                      )) : (
+                        <option value="GTM">{en ? 'Loading available countries…' : 'Cargando países disponibles…'}</option>
+                      )}
+                    </select>
+                  </label>
+                  <p className="mt-2 text-xs leading-5 text-slate-600">
+                    {en
+                      ? 'Only countries with a configured administrative reference layer are enabled. Guatemala is available now; more countries can be added through the catalog.'
+                      : 'Solo se habilitan países con una capa administrativa de referencia configurada. Guatemala está disponible ahora; los siguientes países se agregarán desde el catálogo.'}
+                  </p>
+                </div>
+              )}
+
               <p className="text-sm font-bold text-slate-800">{en ? 'File coordinates' : 'Coordenadas del archivo'}</p>
               <p className="mt-1 text-xs leading-5 text-slate-600">
                 {en ? 'Use WGS84 decimal degrees or degrees, minutes and seconds. Automatic columns: lat, latitude, latitud, y, Norte; lon, lng, longitude, longitud, x, Oeste. Oeste means west (negative longitude). With other headers, include N/S/E/W in DMS values or use signed decimals.' : 'Usa coordenadas WGS84 en grados decimales o grados, minutos y segundos. Detecta lat, latitude, latitud, y, Norte; lon, lng, longitude, longitud, x, Oeste. Oeste indica longitud negativa. Con otros encabezados, agrega N/S/E/O a las coordenadas GMS o usa decimales con signo.'}
@@ -235,11 +290,23 @@ export function ConvertirFormatos({ language = 'es' }) {
                   </select>
                 </label>
               )}
-              <p className="mt-2 text-xs leading-5 text-slate-600">{isPolygon
-                ? (includeVertices
-                  ? (en ? 'Downloads two layers together in a ZIP: original vertices and the closed polygon they form. No municipal attributes are added.' : 'Descarga dos capas juntas en un ZIP: los vértices originales y el polígono cerrado que forman. No agrega atributos municipales.')
-                  : (en ? 'Creates one polygon without municipal or per-vertex attributes. It connects vertices in order and closes the ring automatically.' : 'Crea un polígono sin atributos municipales ni columnas de cada vértice. Une los vértices en orden y cierra la figura automáticamente.'))
-                : (en ? 'Original columns are preserved. Municipal attributes apply to Guatemala. Points outside the layer or on shared boundaries are flagged in estado_territorial.' : 'Se conservan las columnas originales. Los atributos municipales corresponden a Guatemala. Los puntos fuera de la capa o en límites compartidos se señalan en estado_territorial.')}</p>
+              <p className="mt-2 text-xs leading-5 text-slate-600">
+                {geometryType === 'puntos'
+                  ? (en
+                    ? 'Creates a point layer from the coordinates and preserves the original columns. No country-specific data is added.'
+                    : 'Crea una capa de puntos desde las coordenadas y conserva las columnas originales. No agrega datos específicos de ningún país.')
+                  : isAdminPoints
+                    ? (en
+                      ? 'Creates points and performs a spatial join with the administrative layer configured for the selected country. Points on shared boundaries or outside the layer are flagged.'
+                      : 'Crea puntos y realiza un cruce espacial con la capa administrativa configurada para el país seleccionado. Los puntos en límites compartidos o fuera de la capa quedan identificados.')
+                    : includeVertices
+                      ? (en
+                        ? 'Downloads two layers together in a ZIP: the original vertices and the closed polygon they form. No administrative attributes are added.'
+                        : 'Descarga dos capas juntas en un ZIP: los vértices originales y el polígono cerrado que forman. No agrega atributos administrativos.')
+                      : (en
+                        ? 'Creates one polygon from the ordered vertices and closes the ring automatically. No administrative attributes are added.'
+                        : 'Crea un polígono a partir de los vértices ordenados y cierra la figura automáticamente. No agrega atributos administrativos.')}
+              </p>
               {isPolygon && (
                 <label className="mt-3 block">
                   <span className="field-label">{en ? 'Vertex order column (optional)' : 'Columna de orden de vértices (opcional)'}</span>
@@ -268,7 +335,7 @@ export function ConvertirFormatos({ language = 'es' }) {
           <div className="mt-5 space-y-2">
             {FORMAT_OPTIONS.map((option) => {
               const selected = outputFormat === option.id;
-              const same = inputFormat === option.id && !isPolygon;
+              const same = inputFormat === option.id && !isTable;
               return (
                 <label key={option.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${selected ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200 hover:border-slate-300'} ${same ? 'opacity-50' : ''}`}>
                   <input
@@ -292,7 +359,7 @@ export function ConvertirFormatos({ language = 'es' }) {
           <button
             type="button"
             onClick={convert}
-            disabled={!file || !outputFormat || converting || (inputFormat === outputFormat && !isPolygon) || inspecting || (inputFormat === 'xlsx' && !sheetName)}
+            disabled={!file || !outputFormat || converting || (inputFormat === outputFormat && !isTable) || inspecting || (inputFormat === 'xlsx' && !sheetName) || (isAdminPoints && !adminCountries.length)}
             className="mt-5 flex w-full items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {converting ? (
