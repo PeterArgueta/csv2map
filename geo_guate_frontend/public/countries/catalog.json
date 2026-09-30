@@ -242,6 +242,161 @@
           "category": "administrative",
           "category_es": "Límites administrativos",
           "category_en": "Administrative boundaries"
+        },
+        {
+          "id": "red_vial_marn",
+          "admin_level": "transport",
+          "geometry_type": "line",
+          "name": "Red vial",
+          "name_en": "Road network",
+          "singular": "tramo vial",
+          "singular_en": "road segment",
+          "count": null,
+          "name_property": "TIPO",
+          "map_url": "/countries/SLV/red_vial_marn.optimized.geojson",
+          "source_label": "MARN El Salvador · Geoportal VIGEA",
+          "source_url": "https://geoportal.marn.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/22",
+          "description_es": "Red vial nacional publicada en el Geoportal del Ministerio de Medio Ambiente y Recursos Naturales de El Salvador.",
+          "description_en": "National road network published by El Salvador's Ministry of Environment and Natural Resources geoportal.",
+          "api": {
+            "arcgis_layer_url": "https://geoportal.marn.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/22",
+            "basename": "converttomap_slv_red_vial_marn"
+          },
+          "downloads": {
+            "geojson": "/downloads/red_vial_el_salvador_marn.geojson",
+            "shp": "/downloads/red_vial_el_salvador_marn_shapefile.zip",
+            "gpkg": "/downloads/red_vial_el_salvador_marn.gpkg",
+            "kml": "/downloads/red_vial_el_salvador_marn.kml"
+          },
+          "category": "transport",
+          "category_es": "Infraestructura vial",
+          "category_en": "Road infrastructure",
+          "simplify_tolerance": 0.0002,
+          "download_only": true
+        },
+        {
+          "id": "centros_escolares_marn",
+          "admin_level": "education",
+          "geometry_type": "point",
+          "name": "Centros escolares",
+          "name_en": "Schools",
+          "singular": "centro escolar",
+          "singular_en": "school",
+          "count": null,
+          "name_property": "NOMBRE",
+          "map_url": "/countries/SLV/centros_escolares_marn.geojson",
+          "source_label": "MARN El Salvador · Geoportal VIGEA",
+          "source_url": "https://geoportal.marn.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/23",
+          "description_es": "Ubicación de centros escolares publicada en el Geoportal del MARN de El Salvador.",
+          "description_en": "School locations published by El Salvador's MARN geoportal.",
+          "api": {
+            "arcgis_layer_url": "https://geoportal.marn.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/23",
+            "basename": "converttomap_slv_centros_escolares_marn"
+          },
+          "downloads": {
+            "geojson": "/downloads/centros_escolares_el_salvador_marn.geojson",
+            "shp": "/downloads/centros_escolares_el_salvador_marn_shapefile.zip",
+            "gpkg": "/downloads/centros_escolares_el_salvador_marn.gpkg",
+            "kml": "/downloads/centros_escolares_el_salvador_marn.kml"
+          },
+          "category": "education",
+          "category_es": "Educación",
+          "category_en": "Education",
+          "simplify_tolerance": 0,
+          "download_only": true
+        },
+        {
+          "id": "salud_marn",
+          "admin_level": "health",
+          "geometry_type": "point",
+          "name": "Hospitales y unidades de salud",
+          "name_en": "Hospitals and health units",
+          "singular": "establecimiento de salud",
+          "singular_en": "health facility",
+          "count": null,
+          "name_property": "NOMBRE",
+          "map_url": "/countries/SLV/hospitales_unidades_salud_marn.geojson",
+          "source_label": "MARN El Salvador · Geoportal VIGEA",
+          "source_url": "https://geoportal.marn.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/24",
+          "description_es": "Hospitales y unidades de salud publicados en el Geoportal del MARN de El Salvador.",
+          "description_en": "Hospitals and health units published by El Salvador's MARN geoportal.",
+          "api": {
+            "arcgis_layer_url": "https://geoportal.marn.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/24",
+            "basename": "converttomap_slv_salud_marn"
+          },
+          "downloads": {
+            "geojson": "/downloads/hospitales_unidades_salud_el_salvador_marn.geojson",
+            "shp": "/downloads/hospitales_unidades_salud_el_salvador_marn_shapefile.zip",
+            "gpkg": "/downloads/hospitales_unidades_salud_el_salvador_marn.gpkg",
+            "kml": "/downloads/hospitales_unidades_salud_el_salvador_marn.kml"
+          },
+          "category": "health",
+          "category_es": "Salud",
+          "category_en": "Health",
+          "simplify_tolerance": 0,
+          "download_only": true
+        },
+        {
+          "id": "puentes_red_vial_marn",
+          "admin_level": "transport_point",
+          "geometry_type": "point",
+          "name": "Puentes de red vial principal",
+          "name_en": "Main road bridges",
+          "singular": "puente",
+          "singular_en": "bridge",
+          "count": null,
+          "name_property": "NOMBRE",
+          "map_url": "/countries/SLV/puentes_red_vial_marn.geojson",
+          "source_label": "MARN El Salvador · Geoportal VIGEA",
+          "source_url": "https://geoportal.marn.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/32",
+          "description_es": "Puentes asociados a la red vial principal publicados en el Geoportal del MARN de El Salvador.",
+          "description_en": "Bridges on the main road network published by El Salvador's MARN geoportal.",
+          "api": {
+            "arcgis_layer_url": "https://geoportal.marn.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/32",
+            "basename": "converttomap_slv_puentes_red_vial_marn"
+          },
+          "downloads": {
+            "geojson": "/downloads/puentes_red_vial_el_salvador_marn.geojson",
+            "shp": "/downloads/puentes_red_vial_el_salvador_marn_shapefile.zip",
+            "gpkg": "/downloads/puentes_red_vial_el_salvador_marn.gpkg",
+            "kml": "/downloads/puentes_red_vial_el_salvador_marn.kml"
+          },
+          "category": "transport",
+          "category_es": "Infraestructura vial",
+          "category_en": "Road infrastructure",
+          "simplify_tolerance": 0,
+          "download_only": true
+        },
+        {
+          "id": "poblados_marn",
+          "admin_level": "settlements",
+          "geometry_type": "point",
+          "name": "Poblados",
+          "name_en": "Settlements",
+          "singular": "poblado",
+          "singular_en": "settlement",
+          "count": null,
+          "name_property": "NOMBRE",
+          "map_url": "/countries/SLV/poblados_marn.geojson",
+          "source_label": "MARN El Salvador · Geoportal VIGEA",
+          "source_url": "https://geoportal.marn.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/17",
+          "description_es": "Poblados de El Salvador publicados en el Geoportal del MARN.",
+          "description_en": "Settlements of El Salvador published by the MARN geoportal.",
+          "api": {
+            "arcgis_layer_url": "https://geoportal.marn.gob.sv/server/rest/services/sig_ccanales/CapasVIGEA2022/MapServer/17",
+            "basename": "converttomap_slv_poblados_marn"
+          },
+          "downloads": {
+            "geojson": "/downloads/poblados_el_salvador_marn.geojson",
+            "shp": "/downloads/poblados_el_salvador_marn_shapefile.zip",
+            "gpkg": "/downloads/poblados_el_salvador_marn.gpkg",
+            "kml": "/downloads/poblados_el_salvador_marn.kml"
+          },
+          "category": "settlements",
+          "category_es": "Poblados",
+          "category_en": "Settlements",
+          "simplify_tolerance": 0,
+          "download_only": true
         }
       ],
       "region": "Central America",
