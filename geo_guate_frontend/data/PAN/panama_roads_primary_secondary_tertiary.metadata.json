@@ -1,0 +1,19 @@
+{
+  "country": "Panamá",
+  "country_code": "PAN",
+  "dataset": "Red vial OSM · primary, secondary, tertiary",
+  "source": "OpenStreetMap contributors · Geofabrik",
+  "source_page": "https://download.geofabrik.de/central-america/panama.html",
+  "source_archive": "https://download.geofabrik.de/central-america/panama-latest-free.shp.zip",
+  "snapshot_date": "2026-10-01",
+  "crs": "EPSG:4326",
+  "included_fclass": ["primary", "secondary", "tertiary"],
+  "feature_count": 7555,
+  "counts": {
+    "primary": 1659,
+    "secondary": 2110,
+    "tertiary": 3786
+  },
+  "compressed_bytes": 1184357,
+  "sha256": "242bc48aa46c54fc3556e6243696f16d9eea719260fd2053b9031133b688b5af"
+}
