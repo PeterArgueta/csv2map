@@ -780,6 +780,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
 
   return (
     <div
+      data-geoportal-version="map-first-v1"
       className={embedded
         ? "relative flex h-[calc(100dvh-128px)] min-h-[560px] overflow-hidden bg-slate-100 text-slate-900 sm:h-[calc(100dvh-136px)] lg:h-[calc(100vh-64px)] lg:min-h-[620px]"
         : "relative flex h-screen min-h-[620px] overflow-hidden bg-slate-100 text-slate-900"}
