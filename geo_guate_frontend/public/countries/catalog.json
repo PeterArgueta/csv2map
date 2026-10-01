@@ -444,6 +444,63 @@
             "kml": "/downloads/provincias_comarcas_panama.kml"
           },
           "metadata_url": "/countries/PAN/metadata.json"
+        },
+        {
+          "id": "red_vial_osm",
+          "admin_level": "transport",
+          "geometry_type": "line",
+          "style_mode": "road_fclass",
+          "style_property": "fclass",
+          "name": "Red vial nacional",
+          "name_en": "National road network",
+          "singular": "tramo vial",
+          "singular_en": "road segment",
+          "count": 7555,
+          "name_property": "name",
+          "map_url": "/countries/PAN/red_vial_osm.optimized.geojson",
+          "source_label": "OpenStreetMap contributors · Geofabrik",
+          "source_url": "https://download.geofabrik.de/central-america/panama.html",
+          "description_es": "Red vial de Panamá almacenada por ConvertToMap a partir de un snapshot de OpenStreetMap/Geofabrik del 1 de octubre de 2026. Incluye únicamente vías primary, secondary y tertiary tanto en el visor como en las descargas.",
+          "description_en": "Panama road network stored by ConvertToMap from an OpenStreetMap/Geofabrik snapshot dated October 1, 2026. It includes only primary, secondary and tertiary roads in both the viewer and downloads.",
+          "api": {
+            "gzip_path": "geo_guate_frontend/data/PAN/panama_roads_primary_secondary_tertiary.geojson.gz",
+            "basename": "converttomap_pan_red_vial"
+          },
+          "downloads": {
+            "geojson": "/countries/PAN/red_vial_osm.geojson",
+            "shp": "/downloads/red_vial_panama_shapefile.zip",
+            "gpkg": "/downloads/red_vial_panama.gpkg",
+            "kml": "/downloads/red_vial_panama.kml"
+          },
+          "category": "transport",
+          "category_es": "Infraestructura vial",
+          "category_en": "Road infrastructure",
+          "simplify_tolerance": 0.0005,
+          "download_only": true,
+          "source_layer_name": "Red vial",
+          "snapshot_date": "2026-10-01",
+          "source_snapshot_path": "geo_guate_frontend/data/PAN/panama_roads_primary_secondary_tertiary.geojson.gz",
+          "categories": [
+            {
+              "value": "primary",
+              "count": 1659
+            },
+            {
+              "value": "secondary",
+              "count": 2110
+            },
+            {
+              "value": "tertiary",
+              "count": 3786
+            }
+          ],
+          "map_fields": [
+            "fclass",
+            "name",
+            "ref",
+            "oneway",
+            "maxspeed"
+          ]
         }
       ]
     },
