@@ -400,7 +400,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
   const safeHeaders = buildSafeColumnHeaders(customColumns);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-5 p-4 sm:space-y-6 sm:p-6">
       <div>
         <label htmlFor="pais" className="field-label">{en ? 'Country' : 'País'}</label>
         <select id="pais" value={pais} onChange={(event) => onCountryChange(event.target.value)} className="field-control">

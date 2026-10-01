@@ -95,12 +95,12 @@ const pathToView = (pathname) => {
 };
 
 const APP_NAV_ITEMS = [
-  { view: 'geoportal', path: '/geoportal', icon: '▱', es: 'Geoportal', en: 'Geoportal' },
-  { view: 'convertir', path: '/georeferenciar', icon: '◎', es: 'Georeferenciar', en: 'Georeference' },
-  { view: 'crear-capa', path: '/crear-capa', icon: '+', es: 'Crear capa', en: 'Create layer' },
-  { view: 'formatos', path: '/convertir-formatos', icon: '⇄', es: 'Convertidor', en: 'Converter' },
-  { view: 'capas', path: '/capas', icon: '▰', es: 'Capas', en: 'Layers' },
-  { view: 'proyectos', path: '/proyectos', icon: '◫', es: 'Proyectos', en: 'Projects' },
+  { view: 'geoportal', path: '/geoportal', icon: '▱', es: 'Geoportal', en: 'Geoportal', mobileEs: 'Mapa', mobileEn: 'Map' },
+  { view: 'convertir', path: '/georeferenciar', icon: '◎', es: 'Georeferenciar', en: 'Georeference', mobileEs: 'Georef.', mobileEn: 'Georef.' },
+  { view: 'crear-capa', path: '/crear-capa', icon: '+', es: 'Crear capa', en: 'Create layer', mobileEs: 'Crear', mobileEn: 'Create' },
+  { view: 'formatos', path: '/convertir-formatos', icon: '⇄', es: 'Convertidor', en: 'Converter', mobileEs: 'Convertir', mobileEn: 'Convert' },
+  { view: 'capas', path: '/capas', icon: '▰', es: 'Capas', en: 'Layers', mobileEs: 'Capas', mobileEn: 'Layers' },
+  { view: 'proyectos', path: '/proyectos', icon: '◫', es: 'Proyectos', en: 'Projects', mobileEs: 'Proy.', mobileEn: 'Projects' },
 ];
 
 function App() {
@@ -248,7 +248,7 @@ function App() {
   const navClass = (name) => `rounded-lg px-2.5 py-2 transition sm:px-3 ${view === name ? 'bg-white text-slate-900 shadow-sm' : 'hover:bg-white hover:text-slate-900'}`;
 
   const renderConvert = () => (
-    <main className="mx-auto max-w-7xl px-4 pb-8 pt-5 sm:px-6 sm:pt-6">
+    <main className="min-h-full w-full px-3 pb-6 pt-4 sm:px-4 sm:pb-8 sm:pt-5 lg:px-5 lg:pt-6">
       <div className="mb-4 max-w-4xl">
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{language === 'en' ? 'Convert your data into GIS layers' : 'Convierte tus datos en capas GIS'}</h2>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -339,7 +339,7 @@ function App() {
   );
 
   const renderLayers = () => (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <main className="min-h-full w-full px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6">
       <div className="mb-7">
         <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">{language === 'en' ? 'Geographic data' : 'Datos geográficos'}</p>
         <h2 className="mt-2 text-3xl font-bold tracking-tight">{language === 'en' ? 'Layers by country' : 'Capas por país'}</h2>
@@ -365,7 +365,7 @@ function App() {
               </span>
             </div>
 
-            <div className="grid gap-5 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {country.levels.map((layer) => {
                 const key = `${country.code}-${layer.id}`;
                 const availableFormats = Object.keys(layer.downloads || {});
@@ -465,13 +465,13 @@ function App() {
   );
 
   const renderProjects = () => (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <main className="min-h-full w-full px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6">
       <div className="mb-7">
         <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">{language === 'en' ? 'Tools' : 'Herramientas'}</p>
         <h2 className="mt-2 text-3xl font-bold tracking-tight">{language === 'en' ? 'Projects' : 'Proyectos'}</h2>
         <p className="mt-2 max-w-2xl leading-7 text-slate-600">{language === 'en' ? 'Tools for working with data and digital content.' : 'Herramientas para trabajar con datos y contenido digital.'}</p>
       </div>
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {PROJECTS.map((project) => (
           <a
             key={project.name}
@@ -536,7 +536,7 @@ function App() {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <nav data-ctm-react-i18n="true" className="fixed inset-x-0 bottom-0 z-[1300] flex h-[72px] shrink-0 border-t border-slate-200 bg-white/95 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur lg:sticky lg:top-16 lg:h-[calc(100vh-64px)] lg:w-[88px] lg:flex-col lg:border-r lg:border-t-0 lg:shadow-none">
+        <nav data-ctm-react-i18n="true" className="app-nav-mobile fixed inset-x-0 bottom-0 z-[1300] flex shrink-0 border-t border-slate-200 bg-white/95 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur lg:sticky lg:top-16 lg:w-[82px] lg:flex-col lg:border-r lg:border-t-0 lg:shadow-none">
           {APP_NAV_ITEMS.map((item) => {
             const activeItem = view === item.view;
             return (
@@ -544,16 +544,17 @@ function App() {
                 key={item.view}
                 href={item.path}
                 onClick={(event) => handleNav(event, item.path)}
-                className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-1 border-indigo-600 px-1 py-1.5 text-center transition lg:min-h-[88px] lg:flex-none lg:px-2 lg:py-2 ${activeItem ? 'border-t-2 bg-indigo-50 text-indigo-700 lg:border-l-4 lg:border-t-0' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+                className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 border-indigo-600 px-0.5 py-1 text-center transition lg:min-h-[82px] lg:flex-none lg:gap-1 lg:px-2 lg:py-2 ${activeItem ? 'border-t-2 bg-indigo-50 text-indigo-700 lg:border-l-4 lg:border-t-0' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
               >
-                <span className="text-lg leading-none sm:text-xl">{item.icon}</span>
-                <span className="max-w-[72px] whitespace-normal break-words text-center text-[10px] font-bold leading-[1.1] sm:max-w-[78px] sm:text-[11px]">{language === 'en' ? item.en : item.es}</span>
+                <span className="text-[17px] leading-none sm:text-lg lg:text-xl">{item.icon}</span>
+                <span className="max-w-[58px] truncate text-center text-[9px] font-bold leading-tight sm:max-w-[68px] sm:text-[10px] lg:hidden">{language === 'en' ? item.mobileEn : item.mobileEs}</span>
+                <span className="hidden max-w-[72px] whitespace-normal break-words text-center text-[10px] font-bold leading-[1.1] lg:block lg:text-[11px]">{language === 'en' ? item.en : item.es}</span>
               </a>
             );
           })}
         </nav>
 
-        <div className="min-w-0 flex-1 pb-[72px] lg:pb-0">
+        <div className="app-content-mobile min-w-0 flex-1 bg-slate-100">
           {view === 'convertir' && renderConvert()}
           {view === 'crear-capa' && <CrearCapaPuntos language={language} />}
           {view === 'formatos' && <ConvertirFormatos language={language} />}
@@ -562,7 +563,7 @@ function App() {
           {view === 'proyectos' && renderProjects()}
 
           {view !== 'geoportal' && (
-            <footer className="border-t border-slate-200 bg-white py-5 text-center text-sm text-slate-500">
+            <footer className="hidden border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-500 sm:block">
               © {new Date().getFullYear()} ConvertToMap
             </footer>
           )}

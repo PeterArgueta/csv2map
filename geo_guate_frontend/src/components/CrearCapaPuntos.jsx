@@ -445,11 +445,11 @@ export function CrearCapaPuntos({ language = 'es' }) {
   };
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-7 sm:px-6">
+    <main className="min-h-full w-full px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">{en ? 'GIS capture' : 'Captura GIS'}</p>
-          <h2 className="mt-2 text-3xl font-bold tracking-tight">{en ? 'Create geographic layer' : 'Crear capa geográfica'}</h2>
+          <h2 className="mt-1.5 text-2xl font-bold tracking-tight sm:text-3xl">{en ? 'Create geographic layer' : 'Crear capa geográfica'}</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
             {en ? 'Click the map to create points. Choose a country and territorial level; ConvertToMap automatically assigns codes, territory and coordinates from the selected layer.' : 'Haz clic en el mapa para crear puntos. Elige país y nivel territorial; ConvertToMap asigna automáticamente códigos, territorio y coordenadas según la capa seleccionada.'}
           </p>
@@ -457,9 +457,9 @@ export function CrearCapaPuntos({ language = 'es' }) {
         <span className="w-fit rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700">{en ? 'Points · V1' : 'Puntos · V1'}</span>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
         <aside className="space-y-4">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <h3 className="font-bold">{en ? '1. Select territory' : '1. Selecciona territorio'}</h3>
             <p className="mt-1 text-xs leading-5 text-slate-500">{en ? 'Choose the country and administrative layer used to assign attributes to each point.' : 'Elige el país y la capa administrativa que se usará para asignar atributos a cada punto.'}</p>
             <label className="mt-4 block">
@@ -483,7 +483,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="font-bold">{en ? '2. Define fields' : '2. Define los campos'}</h3>
@@ -519,7 +519,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <h3 className="font-bold">{en ? '3. Create points' : '3. Crea puntos'}</h3>
             <p className="mt-1 text-xs leading-5 text-slate-500">{en ? 'Enable capture mode and click on the map.' : 'Activa el modo de captura y haz clic sobre el mapa.'}</p>
             <button
@@ -538,7 +538,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
             )}
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <h3 className="font-bold">{en ? '4. Download layer' : '4. Descargar capa'}</h3>
             <div className="mt-3 flex items-center justify-between gap-3">
               <label htmlFor="create-layer-export-format" className="text-xs font-bold text-slate-600">
@@ -601,7 +601,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
                 {Object.entries(BASEMAPS).map(([id, item]) => <option key={id} value={id}>{en ? item.labelEn : item.labelEs}</option>)}
               </select>
             </div>
-            <div className={`h-[590px] ${drawing ? 'cursor-crosshair' : ''}`}>
+            <div className={`h-[52dvh] min-h-[390px] sm:h-[590px] ${drawing ? 'cursor-crosshair' : ''}`}>
               {loadError ? (
                 <div className="grid h-full place-items-center text-sm text-red-600">{loadError}</div>
               ) : (
@@ -639,7 +639,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
           {message && <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">{message}</div>}
 
           {selectedPoint && (
-            <section className="rounded-2xl border border-indigo-200 bg-white p-5 shadow-sm">
+            <section className="rounded-2xl border border-indigo-200 bg-white p-4 shadow-sm sm:p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">{en ? 'Selected point' : 'Punto seleccionado'}</p>

@@ -98,3 +98,24 @@
 .map-designer-label::before {
   display: none;
 }
+
+
+.app-nav-mobile {
+  height: calc(68px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.app-content-mobile {
+  padding-bottom: calc(68px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 1024px) {
+  .app-nav-mobile {
+    height: calc(100vh - 64px);
+    padding-bottom: 0;
+  }
+
+  .app-content-mobile {
+    padding-bottom: 0;
+  }
+}

@@ -195,17 +195,17 @@ export function ConvertirFormatos({ language = 'es' }) {
   };
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <div className="mb-7">
+    <main className="min-h-full w-full px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6">
+      <div className="mb-5 sm:mb-7">
         <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">{en ? 'GIS converter' : 'Conversor GIS'}</p>
-        <h2 className="mt-2 text-3xl font-bold tracking-tight">{en ? 'Convert geospatial formats' : 'Convierte formatos geográficos'}</h2>
+        <h2 className="mt-1.5 text-2xl font-bold tracking-tight sm:text-3xl">{en ? 'Convert geospatial formats' : 'Convierte formatos geográficos'}</h2>
         <p className="mt-2 max-w-3xl leading-7 text-slate-600">
           {en ? 'Convert GIS layers or create points and polygons from CSV/Excel coordinates.' : 'Convierte capas GIS o crea puntos y polígonos desde coordenadas de CSV/Excel.'}
         </p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] xl:gap-5">
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h3 className="font-bold">{en ? '1. Upload your file' : '1. Carga tu archivo'}</h3>
@@ -219,7 +219,7 @@ export function ConvertirFormatos({ language = 'es' }) {
           </div>
 
           <div
-            className={`mt-5 cursor-pointer rounded-xl border-2 border-dashed px-5 py-10 text-center transition ${isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50'}`}
+            className={`mt-5 cursor-pointer rounded-xl border-2 border-dashed px-4 py-8 text-center sm:px-5 sm:py-10 transition ${isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50'}`}
             onDragOver={(event) => { event.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
@@ -328,7 +328,7 @@ export function ConvertirFormatos({ language = 'es' }) {
           )}
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
           <h3 className="font-bold">{en ? '2. Choose the output format' : '2. Elige el formato de salida'}</h3>
           <p className="mt-1 text-sm text-slate-500">{en ? 'Geometry and attributes are preserved during conversion.' : 'La geometría y los atributos se conservan durante la conversión.'}</p>
 

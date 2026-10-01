@@ -62,7 +62,7 @@ export function MapaDepartamentos({ geojsonData, codigosSeleccionados, layerConf
 
   return (
     <div>
-      <div className="relative h-[560px] w-full overflow-hidden rounded-xl border border-slate-200">
+      <div className="relative h-[50dvh] min-h-[360px] w-full overflow-hidden rounded-xl border border-slate-200 sm:h-[560px]">
         <div className="absolute right-3 top-3 z-[500]">
           <select value={basemap} onChange={(event) => setBasemap(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
             {Object.entries(BASEMAPS).map(([id, item]) => <option key={id} value={id}>{en ? item.labelEn : item.labelEs}</option>)}
