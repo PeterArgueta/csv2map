@@ -1,0 +1,108 @@
+name: Snapshot Panama roads
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/snapshot-panama-roads.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install GIS tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gdal-bin unzip
+
+      - name: Download and filter Panama road network
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ARCHIVE_URL="https://download.geofabrik.de/central-america/panama-260916-free.shp.zip"
+          ARCHIVE="/tmp/panama-260916-free.shp.zip"
+          EXTRACT="/tmp/panama-roads"
+          FILTERED="/tmp/panama-primary-secondary-tertiary.geojson"
+          TARGET="geo_guate_frontend/data/PAN/panama_roads_primary_secondary_tertiary.geojson.gz"
+          META="geo_guate_frontend/data/PAN/panama_roads_primary_secondary_tertiary.metadata.json"
+
+          mkdir -p "$EXTRACT" "$(dirname "$TARGET")"
+          curl -fL --retry 5 --retry-delay 4 "$ARCHIVE_URL" -o "$ARCHIVE"
+          unzip -j "$ARCHIVE" 'gis_osm_roads_free_1.*' -d "$EXTRACT"
+
+          SOURCE="$EXTRACT/gis_osm_roads_free_1.shp"
+
+          ogr2ogr -f GeoJSON "$FILTERED" "$SOURCE" \
+            -where "fclass IN ('primary','secondary','tertiary')" \
+            -select "osm_id,code,fclass,name,ref,oneway,maxspeed,layer,bridge,tunnel" \
+            -t_srs EPSG:4326 \
+            -lco COORDINATE_PRECISION=6
+
+          count_class() {
+            ogrinfo -ro -so -al "$SOURCE" -where "fclass='$1'" | awk '/Feature Count:/ {print $3; exit}'
+          }
+
+          PRIMARY="$(count_class primary)"
+          SECONDARY="$(count_class secondary)"
+          TERTIARY="$(count_class tertiary)"
+          TOTAL=$((PRIMARY + SECONDARY + TERTIARY))
+
+          gzip -9 -c "$FILTERED" > "$TARGET"
+          SHA256="$(sha256sum "$TARGET" | awk '{print $1}')"
+          BYTES="$(stat -c%s "$TARGET")"
+
+          if [ "$BYTES" -gt 95000000 ]; then
+            echo "Filtered snapshot is unexpectedly large: $BYTES bytes"
+            exit 1
+          fi
+
+          cat > "$META" <<EOF
+          {
+            "country": "Panamá",
+            "country_code": "PAN",
+            "dataset": "Red vial OSM · primary, secondary, tertiary",
+            "source": "OpenStreetMap contributors · Geofabrik",
+            "source_page": "https://download.geofabrik.de/central-america/panama.html",
+            "source_archive": "$ARCHIVE_URL",
+            "snapshot_date": "2026-09-16",
+            "crs": "EPSG:4326",
+            "included_fclass": ["primary", "secondary", "tertiary"],
+            "feature_count": $TOTAL,
+            "counts": {
+              "primary": $PRIMARY,
+              "secondary": $SECONDARY,
+              "tertiary": $TERTIARY
+            },
+            "compressed_bytes": $BYTES,
+            "sha256": "$SHA256"
+          }
+          EOF
+
+          echo "Panama snapshot: $TOTAL road segments"
+          echo "primary=$PRIMARY secondary=$SECONDARY tertiary=$TERTIARY"
+          ls -lh "$TARGET" "$META"
+
+      - name: Commit self-hosted snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add             geo_guate_frontend/data/PAN/panama_roads_primary_secondary_tertiary.geojson.gz             geo_guate_frontend/data/PAN/panama_roads_primary_secondary_tertiary.metadata.json
+
+          if git diff --cached --quiet; then
+            echo "Snapshot is unchanged."
+            exit 0
+          fi
+
+          git commit -m "Store Panama road snapshot [skip ci]"
+          git push
