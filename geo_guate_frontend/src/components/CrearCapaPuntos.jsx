@@ -536,10 +536,27 @@ export function CrearCapaPuntos({ language = 'es' }) {
               type="button"
               onClick={exportLayer}
               disabled={!points.length || exporting}
-              className="mt-2 w-full rounded-lg bg-indigo-600 px-3 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              aria-busy={exporting}
+              className="mt-2 flex w-full items-center justify-center rounded-lg bg-indigo-600 px-3 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
-              {exporting ? (en ? 'Generating…' : 'Generando…') : `${en ? 'Download' : 'Descargar'} ${EXPORT_FORMATS.find(([value]) => value === format)?.[1]}`}
+              {exporting ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
+                  <span>{en ? 'Converting…' : 'Convirtiendo…'}</span>
+                </span>
+              ) : `${en ? 'Download' : 'Descargar'} ${EXPORT_FORMATS.find(([value]) => value === format)?.[1]}`}
             </button>
+            {exporting && (
+              <div className="mt-3" aria-live="polite">
+                <div className="mb-1 flex items-center justify-between gap-3 text-[11px] font-semibold text-indigo-700">
+                  <span>{en ? 'Converting layer…' : 'Convirtiendo capa…'}</span>
+                  <span>{EXPORT_FORMATS.find(([value]) => value === format)?.[1]}</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-indigo-100">
+                  <div className="processing-bar h-full rounded-full bg-indigo-600" />
+                </div>
+              </div>
+            )}
             <p className="mt-2 text-[11px] leading-4 text-slate-400">{en ? 'GeoJSON and CSV are generated in your browser. SHP, GPKG and KML are converted through the ConvertToMap API.' : 'GeoJSON y CSV se generan en tu navegador. SHP, GPKG y KML se convierten mediante la API de ConvertToMap.'}</p>
           </section>
         </aside>
