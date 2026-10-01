@@ -29,11 +29,11 @@ const FIELD_TYPES = [
 ];
 
 const EXPORT_FORMATS = [
-  ['geojson', 'GeoJSON'],
-  ['shp', 'Shapefile'],
-  ['gpkg', 'GeoPackage'],
-  ['kml', 'KML'],
-  ['csv', 'CSV'],
+  { id: 'geojson', label: 'GeoJSON', delivery: 'browser' },
+  { id: 'shp', label: 'Shapefile', delivery: 'api' },
+  { id: 'gpkg', label: 'GeoPackage', delivery: 'api' },
+  { id: 'kml', label: 'KML', delivery: 'api' },
+  { id: 'csv', label: 'CSV', delivery: 'browser' },
 ];
 
 const RESERVED_FIELDS = new Set([
@@ -233,6 +233,10 @@ export function CrearCapaPuntos({ language = 'es' }) {
   const [newFieldName, setNewFieldName] = useState('');
   const [newFieldType, setNewFieldType] = useState('text');
   const [format, setFormat] = useState('geojson');
+  const selectedExportFormat = useMemo(
+    () => EXPORT_FORMATS.find((item) => item.id === format) || EXPORT_FORMATS[0],
+    [format],
+  );
   const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -391,14 +395,21 @@ export function CrearCapaPuntos({ language = 'es' }) {
     URL.revokeObjectURL(url);
   };
 
+  const changeExportFormat = (nextFormat) => {
+    if (!EXPORT_FORMATS.some((item) => item.id === nextFormat)) return;
+    setFormat(nextFormat);
+    setMessage('');
+  };
+
   const exportLayer = async () => {
     if (!points.length || exporting) return;
+    const exportFormat = selectedExportFormat.id;
     setMessage('');
-    if (format === 'csv') {
+    if (exportFormat === 'csv') {
       exportCsv();
       return;
     }
-    if (format === 'geojson') {
+    if (exportFormat === 'geojson') {
       exportGeojsonDirect();
       return;
     }
@@ -409,7 +420,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
       const formData = new FormData();
       const geojson = new Blob([JSON.stringify(toFeatureCollection(points))], { type: 'application/geo+json' });
       formData.append('file', geojson, 'puntos.geojson');
-      formData.append('formatos', format);
+      formData.append('formatos', exportFormat);
       formData.append('pais', countryCode);
       formData.append('nivel', selectedLayer?.id || '');
       const response = await axios.post(`${apiUrl}/exportar_geojson/`, formData, { responseType: 'blob' });
@@ -529,14 +540,32 @@ export function CrearCapaPuntos({ language = 'es' }) {
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h3 className="font-bold">{en ? '4. Download layer' : '4. Descargar capa'}</h3>
-            <select value={format} onChange={(event) => setFormat(event.target.value)} className="field-control mt-3">
-              {EXPORT_FORMATS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <label htmlFor="create-layer-export-format" className="text-xs font-bold text-slate-600">
+                {en ? 'Format' : 'Formato'}
+              </label>
+              <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700" aria-live="polite">
+                {selectedExportFormat.label}
+              </span>
+            </div>
+            <select
+              id="create-layer-export-format"
+              name="create-layer-export-format"
+              value={selectedExportFormat.id}
+              onChange={(event) => changeExportFormat(event.currentTarget.value)}
+              onInput={(event) => changeExportFormat(event.currentTarget.value)}
+              autoComplete="off"
+              className="field-control mt-2"
+            >
+              {EXPORT_FORMATS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
             </select>
             <button
+              key={selectedExportFormat.id}
               type="button"
               onClick={exportLayer}
               disabled={!points.length || exporting}
               aria-busy={exporting}
+              data-export-format={selectedExportFormat.id}
               className="mt-2 flex w-full items-center justify-center rounded-lg bg-indigo-600 px-3 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
               {exporting ? (
@@ -544,13 +573,13 @@ export function CrearCapaPuntos({ language = 'es' }) {
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
                   <span>{en ? 'Converting…' : 'Convirtiendo…'}</span>
                 </span>
-              ) : `${en ? 'Download' : 'Descargar'} ${EXPORT_FORMATS.find(([value]) => value === format)?.[1]}`}
+              ) : `${en ? 'Download' : 'Descargar'} ${selectedExportFormat.label}`}
             </button>
             {exporting && (
               <div className="mt-3" aria-live="polite">
                 <div className="mb-1 flex items-center justify-between gap-3 text-[11px] font-semibold text-indigo-700">
                   <span>{en ? 'Converting layer…' : 'Convirtiendo capa…'}</span>
-                  <span>{EXPORT_FORMATS.find(([value]) => value === format)?.[1]}</span>
+                  <span>{selectedExportFormat.label}</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-indigo-100">
                   <div className="processing-bar h-full rounded-full bg-indigo-600" />
