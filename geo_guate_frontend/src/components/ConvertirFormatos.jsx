@@ -360,15 +360,31 @@ export function ConvertirFormatos({ language = 'es' }) {
             type="button"
             onClick={convert}
             disabled={!file || !outputFormat || converting || (inputFormat === outputFormat && !isTable) || inspecting || (inputFormat === 'xlsx' && !sheetName) || (isAdminPoints && !adminCountries.length)}
+            aria-busy={converting}
             className="mt-5 flex w-full items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {converting ? (
               <span className="inline-flex items-center gap-2">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
-                <span>{en ? 'Processing…' : 'Procesando…'}</span>
+                <span>{en ? 'Converting…' : 'Convirtiendo…'}</span>
               </span>
             ) : (en ? 'Convert' : 'Convertir')}
           </button>
+
+          {converting && (
+            <div className="mt-3" aria-live="polite">
+              <div className="mb-1 flex items-center justify-between gap-3 text-xs font-semibold text-indigo-700">
+                <span>{en ? 'Converting file…' : 'Convirtiendo archivo…'}</span>
+                <span>{outputInfo?.label || ''}</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-indigo-100">
+                <div className="processing-bar h-full rounded-full bg-indigo-600" />
+              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                {en ? 'The download will start automatically when the conversion finishes.' : 'La descarga comenzará automáticamente cuando termine la conversión.'}
+              </p>
+            </div>
+          )}
 
           <div className="mt-4 rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-500">
             <strong className="text-slate-700">{en ? 'Note:' : 'Nota:'}</strong> {en ? 'Shapefile is downloaded as ZIP because it requires several files. CSV exports include a geometry_wkt column; point layers also include latitude and longitude.' : <>Shapefile se descarga como ZIP porque necesita varios archivos. Al exportar a CSV se agrega una columna <code>geometry_wkt</code>; para puntos también se incluyen latitud y longitud.</>}
