@@ -28,8 +28,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          ARCHIVE_URL="https://download.geofabrik.de/central-america/panama-260916-free.shp.zip"
-          ARCHIVE="/tmp/panama-260916-free.shp.zip"
+          ARCHIVE_URL="https://download.geofabrik.de/central-america/panama-latest-free.shp.zip"
+          ARCHIVE="/tmp/panama-latest-free.shp.zip"
           EXTRACT="/tmp/panama-roads"
           FILTERED="/tmp/panama-primary-secondary-tertiary.geojson"
           TARGET="geo_guate_frontend/data/PAN/panama_roads_primary_secondary_tertiary.geojson.gz"
@@ -73,7 +73,7 @@ jobs:
             "source": "OpenStreetMap contributors · Geofabrik",
             "source_page": "https://download.geofabrik.de/central-america/panama.html",
             "source_archive": "$ARCHIVE_URL",
-            "snapshot_date": "2026-09-16",
+            "snapshot_date": "2026-10-01",
             "crs": "EPSG:4326",
             "included_fclass": ["primary", "secondary", "tertiary"],
             "feature_count": $TOTAL,
