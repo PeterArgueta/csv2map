@@ -5,6 +5,7 @@ import { CrearCapaPuntos } from './components/CrearCapaPuntos';
 import { ConvertirFormatos } from './components/ConvertirFormatos';
 import { Geoportal } from './components/Geoportal';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
+import { LegalNotice } from './components/LegalNotice';
 import './index.css';
 
 const DOWNLOAD_FORMATS = {
@@ -93,6 +94,7 @@ const pathToView = (pathname) => {
   if (pathname === '/capas' || pathname.startsWith('/capas/')) return 'capas';
   if (pathname === '/proyectos' || pathname.startsWith('/proyectos/')) return 'proyectos';
   if (pathname === '/privacidad' || pathname === '/privacidad/') return 'privacidad';
+  if (pathname === '/aviso-legal' || pathname === '/aviso-legal/') return 'legal';
   return 'geoportal';
 };
 
@@ -500,7 +502,9 @@ function App() {
   const currentNavItem = APP_NAV_ITEMS.find((item) => item.view === view)
     || (view === 'privacidad'
       ? { es: 'Privacidad', en: 'Privacy' }
-      : APP_NAV_ITEMS[0]);
+      : view === 'legal'
+        ? { es: 'Aviso legal', en: 'Legal notice' }
+        : APP_NAV_ITEMS[0]);
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
@@ -516,13 +520,22 @@ function App() {
         </a>
 
         <div className="flex items-center gap-2">
-          <a
-            href="/privacidad"
-            onClick={(event) => handleNav(event, '/privacidad')}
-            className="hidden text-xs font-semibold text-slate-500 transition hover:text-indigo-700 sm:block"
-          >
-            {language === 'en' ? 'Privacy' : 'Privacidad'}
-          </a>
+          <div className="hidden items-center gap-3 sm:flex">
+            <a
+              href="/privacidad"
+              onClick={(event) => handleNav(event, '/privacidad')}
+              className="text-xs font-semibold text-slate-500 transition hover:text-indigo-700"
+            >
+              {language === 'en' ? 'Privacy' : 'Privacidad'}
+            </a>
+            <a
+              href="/aviso-legal"
+              onClick={(event) => handleNav(event, '/aviso-legal')}
+              className="text-xs font-semibold text-slate-500 transition hover:text-indigo-700"
+            >
+              {language === 'en' ? 'Legal' : 'Legal'}
+            </a>
+          </div>
           <div className="hidden text-xs font-medium text-slate-500 lg:block">
             {language === 'en' ? 'GIS tools and geographic data' : 'Herramientas GIS y datos geográficos'}
           </div>
@@ -548,7 +561,7 @@ function App() {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        {view !== 'privacidad' && (
+        {!['privacidad', 'legal'].includes(view) && (
           <nav data-ctm-react-i18n="true" className="app-nav-mobile fixed inset-x-0 bottom-0 z-[1300] flex shrink-0 border-t border-slate-200 bg-white/95 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur lg:sticky lg:top-16 lg:w-[82px] lg:flex-col lg:border-r lg:border-t-0 lg:shadow-none">
           {APP_NAV_ITEMS.map((item) => {
             const activeItem = view === item.view;
@@ -568,7 +581,7 @@ function App() {
           </nav>
         )}
 
-        <div className={view === 'privacidad' ? 'min-w-0 flex-1 bg-slate-100' : 'app-content-mobile min-w-0 flex-1 bg-slate-100'}>
+        <div className={['privacidad', 'legal'].includes(view) ? 'min-w-0 flex-1 bg-slate-100' : 'app-content-mobile min-w-0 flex-1 bg-slate-100'}>
           {view === 'convertir' && renderConvert()}
           {view === 'crear-capa' && <CrearCapaPuntos language={language} />}
           {view === 'formatos' && <ConvertirFormatos language={language} />}
@@ -576,6 +589,7 @@ function App() {
           {view === 'geoportal' && <Geoportal language={language} onLanguageChange={setLanguage} embedded />}
           {view === 'proyectos' && renderProjects()}
           {view === 'privacidad' && <PrivacyPolicy language={language} />}
+          {view === 'legal' && <LegalNotice language={language} />}
 
           {view !== 'geoportal' && (
             <footer className="border-t border-slate-200 bg-white px-4 py-4 text-center text-xs text-slate-500">
@@ -584,6 +598,10 @@ function App() {
                 <span aria-hidden="true">·</span>
                 <a href="/privacidad" onClick={(event) => handleNav(event, '/privacidad')} className="font-semibold text-slate-600 hover:text-indigo-700">
                   {language === 'en' ? 'Privacy policy' : 'Política de privacidad'}
+                </a>
+                <span aria-hidden="true">·</span>
+                <a href="/aviso-legal" onClick={(event) => handleNav(event, '/aviso-legal')} className="font-semibold text-slate-600 hover:text-indigo-700">
+                  {language === 'en' ? 'Legal notice' : 'Aviso legal'}
                 </a>
               </div>
             </footer>
