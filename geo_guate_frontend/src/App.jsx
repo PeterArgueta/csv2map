@@ -6,7 +6,8 @@ import { ConvertirFormatos } from './components/ConvertirFormatos';
 import { Geoportal } from './components/Geoportal';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { LegalNotice } from './components/LegalNotice';
-import { SEO_BY_VIEW } from './siteMeta';
+import { SEO_BY_VIEW, NOT_FOUND_META } from './siteMeta';
+import { NotFoundPage } from './components/NotFoundPage';
 import './index.css';
 
 const DOWNLOAD_FORMATS = {
@@ -96,7 +97,7 @@ const pathToView = (pathname) => {
   if (pathname === '/proyectos' || pathname.startsWith('/proyectos/')) return 'proyectos';
   if (pathname === '/privacidad' || pathname === '/privacidad/') return 'privacidad';
   if (pathname === '/aviso-legal' || pathname === '/aviso-legal/') return 'legal';
-  return 'geoportal';
+  return 'not-found';
 };
 
 const APP_NAV_ITEMS = [
@@ -130,9 +131,11 @@ function App() {
   const ui = NAV_LABELS[language];
 
   useEffect(() => {
-    const page = SEO_BY_VIEW[view] || SEO_BY_VIEW.geoportal;
+    const page = view === 'not-found' ? NOT_FOUND_META : (SEO_BY_VIEW[view] || SEO_BY_VIEW.geoportal);
     const meta = page[language] || page.es;
-    const canonicalUrl = `https://converttomap.com${page.path}`;
+    const canonicalUrl = view === 'not-found'
+      ? `https://converttomap.com${window.location.pathname}`
+      : `https://converttomap.com${page.path}`;
 
     document.title = meta.title;
 
@@ -150,6 +153,14 @@ function App() {
 
     const canonical = document.head.querySelector('link[rel="canonical"]');
     if (canonical) canonical.setAttribute('href', canonicalUrl);
+
+    let robots = document.head.querySelector('meta[name="robots"]');
+    if (!robots) {
+      robots = document.createElement('meta');
+      robots.setAttribute('name', 'robots');
+      document.head.appendChild(robots);
+    }
+    robots.setAttribute('content', view === 'not-found' ? 'noindex,nofollow' : 'index,follow');
   }, [view, language]);
 
   useEffect(() => {
@@ -528,7 +539,9 @@ function App() {
       ? { es: 'Privacidad', en: 'Privacy' }
       : view === 'legal'
         ? { es: 'Aviso legal', en: 'Legal notice' }
-        : APP_NAV_ITEMS[0]);
+        : view === 'not-found'
+          ? { es: 'Página no encontrada', en: 'Page not found' }
+          : APP_NAV_ITEMS[0]);
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
@@ -585,7 +598,7 @@ function App() {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        {!['privacidad', 'legal'].includes(view) && (
+        {!['privacidad', 'legal', 'not-found'].includes(view) && (
           <nav data-ctm-react-i18n="true" className="app-nav-mobile fixed inset-x-0 bottom-0 z-[1300] flex shrink-0 border-t border-slate-200 bg-white/95 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur lg:sticky lg:top-16 lg:w-[82px] lg:flex-col lg:border-r lg:border-t-0 lg:shadow-none">
           {APP_NAV_ITEMS.map((item) => {
             const activeItem = view === item.view;
@@ -605,7 +618,7 @@ function App() {
           </nav>
         )}
 
-        <div className={['privacidad', 'legal'].includes(view) ? 'min-w-0 flex-1 bg-slate-100' : 'app-content-mobile min-w-0 flex-1 bg-slate-100'}>
+        <div className={['privacidad', 'legal', 'not-found'].includes(view) ? 'min-w-0 flex-1 bg-slate-100' : 'app-content-mobile min-w-0 flex-1 bg-slate-100'}>
           {view === 'convertir' && renderConvert()}
           {view === 'crear-capa' && <CrearCapaPuntos language={language} />}
           {view === 'formatos' && <ConvertirFormatos language={language} />}
@@ -614,6 +627,7 @@ function App() {
           {view === 'proyectos' && renderProjects()}
           {view === 'privacidad' && <PrivacyPolicy language={language} />}
           {view === 'legal' && <LegalNotice language={language} />}
+          {view === 'not-found' && <NotFoundPage language={language} />}
 
           {view !== 'geoportal' && (
             <footer className="border-t border-slate-200 bg-white px-4 py-4 text-center text-xs text-slate-500">

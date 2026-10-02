@@ -90,3 +90,16 @@ export const SEO_BY_VIEW = {
 };
 
 export const SEO_ROUTES = Object.values(SEO_BY_VIEW);
+
+
+export const NOT_FOUND_META = {
+  path: '/404',
+  es: {
+    title: 'Página no encontrada | ConvertToMap',
+    description: 'La página solicitada no existe o cambió de ubicación. Regresa al Geoportal de ConvertToMap.'
+  },
+  en: {
+    title: 'Page not found | ConvertToMap',
+    description: 'The requested page does not exist or has moved. Return to the ConvertToMap Geoportal.'
+  }
+};
