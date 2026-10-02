@@ -4,6 +4,7 @@ import { MapaDepartamentos } from './components/MapaDepartamentos';
 import { CrearCapaPuntos } from './components/CrearCapaPuntos';
 import { ConvertirFormatos } from './components/ConvertirFormatos';
 import { Geoportal } from './components/Geoportal';
+import { PrivacyPolicy } from './components/PrivacyPolicy';
 import './index.css';
 
 const DOWNLOAD_FORMATS = {
@@ -91,6 +92,7 @@ const pathToView = (pathname) => {
   if (pathname === '/convertir-formatos' || pathname.startsWith('/convertir-formatos/')) return 'formatos';
   if (pathname === '/capas' || pathname.startsWith('/capas/')) return 'capas';
   if (pathname === '/proyectos' || pathname.startsWith('/proyectos/')) return 'proyectos';
+  if (pathname === '/privacidad' || pathname === '/privacidad/') return 'privacidad';
   return 'geoportal';
 };
 
@@ -495,7 +497,10 @@ function App() {
     </main>
   );
 
-  const currentNavItem = APP_NAV_ITEMS.find((item) => item.view === view) || APP_NAV_ITEMS[0];
+  const currentNavItem = APP_NAV_ITEMS.find((item) => item.view === view)
+    || (view === 'privacidad'
+      ? { es: 'Privacidad', en: 'Privacy' }
+      : APP_NAV_ITEMS[0]);
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
@@ -511,7 +516,14 @@ function App() {
         </a>
 
         <div className="flex items-center gap-2">
-          <div className="hidden text-xs font-medium text-slate-400 md:block">
+          <a
+            href="/privacidad"
+            onClick={(event) => handleNav(event, '/privacidad')}
+            className="hidden text-xs font-semibold text-slate-500 transition hover:text-indigo-700 sm:block"
+          >
+            {language === 'en' ? 'Privacy' : 'Privacidad'}
+          </a>
+          <div className="hidden text-xs font-medium text-slate-500 lg:block">
             {language === 'en' ? 'GIS tools and geographic data' : 'Herramientas GIS y datos geográficos'}
           </div>
           <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-bold">
@@ -536,7 +548,8 @@ function App() {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <nav data-ctm-react-i18n="true" className="app-nav-mobile fixed inset-x-0 bottom-0 z-[1300] flex shrink-0 border-t border-slate-200 bg-white/95 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur lg:sticky lg:top-16 lg:w-[82px] lg:flex-col lg:border-r lg:border-t-0 lg:shadow-none">
+        {view !== 'privacidad' && (
+          <nav data-ctm-react-i18n="true" className="app-nav-mobile fixed inset-x-0 bottom-0 z-[1300] flex shrink-0 border-t border-slate-200 bg-white/95 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur lg:sticky lg:top-16 lg:w-[82px] lg:flex-col lg:border-r lg:border-t-0 lg:shadow-none">
           {APP_NAV_ITEMS.map((item) => {
             const activeItem = view === item.view;
             return (
@@ -552,19 +565,27 @@ function App() {
               </a>
             );
           })}
-        </nav>
+          </nav>
+        )}
 
-        <div className="app-content-mobile min-w-0 flex-1 bg-slate-100">
+        <div className={view === 'privacidad' ? 'min-w-0 flex-1 bg-slate-100' : 'app-content-mobile min-w-0 flex-1 bg-slate-100'}>
           {view === 'convertir' && renderConvert()}
           {view === 'crear-capa' && <CrearCapaPuntos language={language} />}
           {view === 'formatos' && <ConvertirFormatos language={language} />}
           {view === 'capas' && renderLayers()}
           {view === 'geoportal' && <Geoportal language={language} onLanguageChange={setLanguage} embedded />}
           {view === 'proyectos' && renderProjects()}
+          {view === 'privacidad' && <PrivacyPolicy language={language} />}
 
           {view !== 'geoportal' && (
-            <footer className="hidden border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-500 sm:block">
-              © {new Date().getFullYear()} ConvertToMap
+            <footer className="border-t border-slate-200 bg-white px-4 py-4 text-center text-xs text-slate-500">
+              <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+                <span>© {new Date().getFullYear()} ConvertToMap</span>
+                <span aria-hidden="true">·</span>
+                <a href="/privacidad" onClick={(event) => handleNav(event, '/privacidad')} className="font-semibold text-slate-600 hover:text-indigo-700">
+                  {language === 'en' ? 'Privacy policy' : 'Política de privacidad'}
+                </a>
+              </div>
             </footer>
           )}
         </div>
