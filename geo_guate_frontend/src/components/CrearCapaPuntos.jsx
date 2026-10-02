@@ -511,7 +511,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
                 <div key={field.name} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-slate-700">{field.label}</p>
-                    <p className="text-[11px] text-slate-400">{field.type}</p>
+                    <p className="text-[11px] text-slate-500">{field.type}</p>
                   </div>
                   <button type="button" onClick={() => removeField(field.name)} className="text-xs font-bold text-red-500 hover:text-red-700">{en ? 'Remove' : 'Quitar'}</button>
                 </div>
@@ -586,7 +586,7 @@ export function CrearCapaPuntos({ language = 'es' }) {
                 </div>
               </div>
             )}
-            <p className="mt-2 text-[11px] leading-4 text-slate-400">{en ? 'GeoJSON and CSV are generated in your browser. SHP, GPKG and KML are converted through the ConvertToMap API.' : 'GeoJSON y CSV se generan en tu navegador. SHP, GPKG y KML se convierten mediante la API de ConvertToMap.'}</p>
+            <p className="mt-2 text-[11px] leading-4 text-slate-500">{en ? 'GeoJSON and CSV are generated in your browser. SHP, GPKG and KML are converted through the ConvertToMap API.' : 'GeoJSON y CSV se generan en tu navegador. SHP, GPKG y KML se convierten mediante la API de ConvertToMap.'}</p>
           </section>
         </aside>
 

@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && node scripts/generate_route_pages.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:links": "node scripts/check_site_links.mjs"
   },
   "dependencies": {
     "axios": "^1.6.2",

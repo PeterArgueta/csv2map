@@ -420,7 +420,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
     if (!supported || !layer.categories?.length) return null;
     return (
       <div className="rounded-lg bg-slate-50 p-2.5">
-        <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-slate-400">
+        <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-slate-500">
           {en ? 'Road categories' : 'Categorías viales'}
         </p>
         <div className="space-y-1.5">
@@ -435,7 +435,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
                   style={{ backgroundColor: style.color, height: `${Math.max(2, style.weight || 2)}px` }}
                 />
                 <span className="min-w-0 flex-1 leading-4">{en ? style.labelEn : style.labelEs}</span>
-                {Number.isFinite(item.count) && <span className="font-semibold text-slate-400">{item.count}</span>}
+                {Number.isFinite(item.count) && <span className="font-semibold text-slate-500">{item.count}</span>}
               </div>
             );
           })}
@@ -494,10 +494,10 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
           {groupedRegions.map(({ region, countries, count: regionCount }) => (
             <section key={region}>
               <div className="mb-1.5 flex items-center gap-2 px-1">
-                <p className="min-w-0 flex-1 truncate text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
+                <p className="min-w-0 flex-1 truncate text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
                   {region}
                 </p>
-                <span className="text-[10px] font-bold text-slate-400">
+                <span className="text-[10px] font-bold text-slate-500">
                   {regionCount} {en ? (regionCount === 1 ? 'layer' : 'layers') : (regionCount === 1 ? 'capa' : 'capas')}
                 </span>
               </div>
@@ -511,7 +511,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
                         onClick={() => toggleCountry(country.code)}
                         className="flex min-h-[46px] w-full items-center gap-2.5 px-3 py-2 text-left transition hover:bg-slate-50"
                       >
-                        <span className={`text-[10px] text-slate-400 transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
+                        <span className={`text-[10px] text-slate-500 transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
                         <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-800">{country.name}</span>
                         <span className="grid h-6 min-w-6 place-items-center rounded-full bg-slate-100 px-1.5 text-[10px] font-bold text-slate-500">{count}</span>
                       </button>
@@ -541,14 +541,14 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
                                         <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: layer.color }} />
                                         <span className="truncate text-[13px] font-semibold text-slate-700">{layerLabel(layer)}</span>
                                       </span>
-                                      <span className="ml-[18px] block text-[9px] text-slate-400">
+                                      <span className="ml-[18px] block text-[9px] text-slate-500">
                                         {layer.count} {en ? 'features' : 'entidades'}
                                       </span>
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => setExpandedLayer(detailsOpen ? null : layer.key)}
-                                      className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-lg font-bold text-slate-400 hover:bg-white hover:text-indigo-600"
+                                      className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-lg font-bold text-slate-500 hover:bg-white hover:text-indigo-600"
                                       aria-label={en ? 'Layer options' : 'Opciones de capa'}
                                     >
                                       ⋮
@@ -580,7 +580,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
                                       {renderRoadLegend(layer)}
 
                                       <div>
-                                        <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-slate-400">{en ? 'Download' : 'Descargar'}</p>
+                                        <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-slate-500">{en ? 'Download' : 'Descargar'}</p>
                                         {renderDownload(layer, true)}
                                       </div>
 
@@ -658,12 +658,12 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
                     <span className="mt-1 h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: layer.color }} />
                     <div className="min-w-0 flex-1">
                       <h3 className="text-sm font-bold text-slate-800">{layerLabel(layer)}</h3>
-                      <p className="mt-0.5 text-[10px] text-slate-400">{layer.countryName} · {categoryLabel(layer)}</p>
+                      <p className="mt-0.5 text-[10px] text-slate-500">{layer.countryName} · {categoryLabel(layer)}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => toggleVisibility(layer)}
-                      className={`grid h-8 w-8 place-items-center rounded-lg border text-sm transition ${visible ? 'border-indigo-200 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-slate-50 text-slate-400'}`}
+                      className={`grid h-8 w-8 place-items-center rounded-lg border text-sm transition ${visible ? 'border-indigo-200 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}
                       title={visible ? (en ? 'Hide layer' : 'Ocultar capa') : (en ? 'Show layer' : 'Mostrar capa')}
                       aria-label={visible ? (en ? 'Hide layer' : 'Ocultar capa') : (en ? 'Show layer' : 'Mostrar capa')}
                     >
@@ -672,7 +672,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
                     <button
                       type="button"
                       onClick={() => toggleLayer(layer)}
-                      className="grid h-8 w-8 place-items-center rounded-lg text-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      className="grid h-8 w-8 place-items-center rounded-lg text-lg text-slate-500 hover:bg-red-50 hover:text-red-600"
                       aria-label={en ? 'Remove layer' : 'Quitar capa'}
                       title={en ? 'Remove layer' : 'Quitar capa'}
                     >
@@ -682,7 +682,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
 
                   <div className="mt-3 grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg bg-slate-50 px-3 py-2">
                     <div>
-                      <p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">{en ? 'Stacking order' : 'Orden de capas'}</p>
+                      <p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">{en ? 'Stacking order' : 'Orden de capas'}</p>
                       <p className="mt-0.5 text-[11px] font-semibold text-slate-600">
                         {en ? `Position ${visualIndex + 1} from top` : `Posición ${visualIndex + 1} desde arriba`}
                       </p>
@@ -710,7 +710,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
                   </div>
 
                   <label className="mt-3 block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-black uppercase tracking-wide text-slate-400">
+                    <span className="mb-1.5 flex justify-between text-[10px] font-black uppercase tracking-wide text-slate-500">
                       <span>{en ? 'Opacity' : 'Transparencia'}</span>
                       <span>{Math.round((opacity[layer.key] ?? 0.45) * 100)}%</span>
                     </span>
@@ -747,7 +747,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
                   )}
 
                   <div className="mt-3 border-t border-slate-100 pt-3">
-                    <p className="mb-2 text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">{en ? 'Download layer' : 'Descargar capa'}</p>
+                    <p className="mb-2 text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">{en ? 'Download layer' : 'Descargar capa'}</p>
                     {renderDownload(layer, true)}
                   </div>
                 </section>
@@ -825,7 +825,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-indigo-600 text-[10px] font-black text-white">GIS</div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-black text-slate-900">Geoportal</p>
-              <p className="truncate text-[10px] font-medium text-slate-400">
+              <p className="truncate text-[10px] font-medium text-slate-500">
                 {en ? 'Explore · combine · download' : 'Explora · combina · descarga'}
               </p>
             </div>
@@ -835,7 +835,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
                 setMobilePanelOpen(false);
                 setSidebarOpen(false);
               }}
-              className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-400 hover:text-indigo-700"
+              className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:text-indigo-700"
               title={en ? 'Close panel' : 'Cerrar panel'}
             >
               ×
@@ -996,7 +996,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
 
           {showBasemaps && (
             <div className="mt-2 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-              <p className="px-2 pb-1.5 pt-1 text-[9px] font-black uppercase tracking-[0.14em] text-slate-400">{en ? 'Map style' : 'Estilo del mapa'}</p>
+              <p className="px-2 pb-1.5 pt-1 text-[9px] font-black uppercase tracking-[0.14em] text-slate-500">{en ? 'Map style' : 'Estilo del mapa'}</p>
               {Object.entries(BASEMAPS).map(([id, item]) => (
                 <button
                   key={id}

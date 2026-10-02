@@ -57,6 +57,7 @@ jobs:
           npm ci
           npm run build
           cp dist/index.html dist/404.html
+          npm run check:links -- --assets
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

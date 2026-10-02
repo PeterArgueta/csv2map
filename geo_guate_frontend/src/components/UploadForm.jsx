@@ -471,9 +471,9 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
                           placeholder={`${en ? 'Column name' : 'Nombre de columna'} ${index + 1}`}
                           className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs outline-none focus:border-indigo-400"
                         />
-                        <p className="mt-1 truncate text-[10px] text-slate-400">CSV: {safeHeaders[index]?.header}</p>
+                        <p className="mt-1 truncate text-[10px] text-slate-500">CSV: {safeHeaders[index]?.header}</p>
                       </div>
-                      <button type="button" onClick={() => removeCustomColumn(column.id)} className="mt-1 rounded-md px-2 py-1 text-sm font-bold text-slate-400 hover:bg-red-50 hover:text-red-600" aria-label={`${en ? 'Remove' : 'Eliminar'} ${column.name || (en ? 'column' : 'columna')}`}>×</button>
+                      <button type="button" onClick={() => removeCustomColumn(column.id)} className="mt-1 rounded-md px-2 py-1 text-sm font-bold text-slate-500 hover:bg-red-50 hover:text-red-600" aria-label={`${en ? 'Remove' : 'Eliminar'} ${column.name || (en ? 'column' : 'columna')}`}>×</button>
                     </div>
                   ))}
                 </div>
@@ -487,7 +487,7 @@ export function UploadForm({ pais, countries, selectedCountry, nivel, layerConfi
                   <div key={code} className={`rounded-lg border p-2 ${checked ? 'border-indigo-300 bg-white' : 'border-slate-200 bg-white/70'}`}>
                     <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
                       <input type="checkbox" checked={checked} onChange={() => toggleDepartment(code)} className="h-4 w-4 accent-indigo-600" />
-                      <span className="w-6 text-xs text-slate-400">{code}</span>
+                      <span className="w-6 text-xs text-slate-500">{code}</span>
                       <span>{name}</span>
                     </label>
                     {checked && customColumns.length > 0 && (

@@ -394,7 +394,7 @@ function App() {
           <section key={country.code}>
             <div className="mb-3 flex flex-wrap items-end justify-between gap-2 border-b border-slate-200 pb-3">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
                   {language === 'en' ? country.region : country.region_es}
                 </p>
                 <h3 className="mt-1 text-2xl font-bold text-slate-900">{country.name}</h3>
@@ -420,7 +420,7 @@ function App() {
                         </span>
                         <h4 className="mt-4 text-xl font-bold">{layerName}</h4>
                         {Number.isInteger(layer.count) && layer.count > 0 && (
-                          <p className="mt-1 text-sm font-semibold text-slate-400">
+                          <p className="mt-1 text-sm font-semibold text-slate-500">
                             {layer.count} {language === 'en' ? 'features' : 'entidades'}
                           </p>
                         )}
@@ -526,7 +526,7 @@ function App() {
                 <h3 className="mt-4 text-xl font-bold text-slate-900">{project.name}</h3>
                 <p className="mt-2 leading-6 text-slate-600">{language === 'en' ? project.description_en : project.description}</p>
               </div>
-              <span className="text-xl text-slate-400 transition group-hover:translate-x-1 group-hover:text-indigo-600">→</span>
+              <span className="text-xl text-slate-500 transition group-hover:translate-x-1 group-hover:text-indigo-600">→</span>
             </div>
           </a>
         ))}
