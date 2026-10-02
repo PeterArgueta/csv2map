@@ -6,6 +6,7 @@ import { ConvertirFormatos } from './components/ConvertirFormatos';
 import { Geoportal } from './components/Geoportal';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { LegalNotice } from './components/LegalNotice';
+import { SEO_BY_VIEW } from './siteMeta';
 import './index.css';
 
 const DOWNLOAD_FORMATS = {
@@ -127,6 +128,29 @@ function App() {
   const [downloadFormats, setDownloadFormats] = useState({});
 
   const ui = NAV_LABELS[language];
+
+  useEffect(() => {
+    const page = SEO_BY_VIEW[view] || SEO_BY_VIEW.geoportal;
+    const meta = page[language] || page.es;
+    const canonicalUrl = `https://converttomap.com${page.path}`;
+
+    document.title = meta.title;
+
+    const setMeta = (selector, value) => {
+      const element = document.head.querySelector(selector);
+      if (element) element.setAttribute('content', value);
+    };
+
+    setMeta('meta[name="description"]', meta.description);
+    setMeta('meta[property="og:title"]', meta.title);
+    setMeta('meta[property="og:description"]', meta.description);
+    setMeta('meta[property="og:url"]', canonicalUrl);
+    setMeta('meta[name="twitter:title"]', meta.title);
+    setMeta('meta[name="twitter:description"]', meta.description);
+
+    const canonical = document.head.querySelector('link[rel="canonical"]');
+    if (canonical) canonical.setAttribute('href', canonicalUrl);
+  }, [view, language]);
 
   useEffect(() => {
     window.localStorage.setItem('ctm-language', language);
