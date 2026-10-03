@@ -67,6 +67,110 @@ def transmetro_line_number(properties: dict) -> int | None:
     return None
 
 
+def download_transmetro_from_overpass(target: Path) -> Path:
+    bbox = "14.50,-90.65,14.75,-90.40"
+    query = f"""
+[out:json][timeout:90];
+(
+  rel["route"="bus"]["network"~"Transmetro",i]({bbox});
+  rel["route"="bus"]["operator"~"Transmetro|Municipalidad de Guatemala",i]({bbox});
+  rel["route"="bus"]["name"~"Transmetro|Línea|Linea",i]({bbox});
+  rel["route_master"="bus"]["network"~"Transmetro",i]({bbox});
+);
+out tags geom;
+"""
+    endpoints = [
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter",
+    ]
+    payload = None
+    last_error = None
+    for endpoint in endpoints:
+        try:
+            request = urllib.request.Request(
+                endpoint,
+                data=urllib.parse.urlencode({"data": query}).encode("utf-8"),
+                headers={
+                    "User-Agent": "ConvertToMap/1.0 (https://converttomap.com)",
+                    "Accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(request, timeout=150) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+            break
+        except Exception as exc:
+            last_error = exc
+            print(f"Overpass endpoint failed {endpoint}: {exc}")
+
+    if payload is None:
+        raise RuntimeError(f"All Overpass endpoints failed: {last_error}")
+
+    features = []
+    detected = set()
+    relation_summaries = []
+    for element in payload.get("elements", []):
+        if element.get("type") != "relation":
+            continue
+        tags = element.get("tags") or {}
+        line_number = transmetro_line_number(tags)
+        relation_summaries.append({
+            "id": element.get("id"),
+            "ref": tags.get("ref"),
+            "name": tags.get("name"),
+            "network": tags.get("network"),
+            "operator": tags.get("operator"),
+            "line": line_number,
+        })
+        if line_number not in TRANSMETRO_OPERATIONAL_LINES:
+            continue
+        joined_tags = " ".join(str(v or "") for v in tags.values()).lower()
+        if not any(token in joined_tags for token in ("transmetro", "municipalidad de guatemala")):
+            continue
+
+        style = TRANSMETRO_OPERATIONAL_LINES[line_number]
+        for member_index, member in enumerate(element.get("members") or []):
+            if member.get("type") != "way" or not member.get("geometry"):
+                continue
+            coords = [
+                [point["lon"], point["lat"]]
+                for point in member["geometry"]
+                if "lon" in point and "lat" in point
+            ]
+            if len(coords) < 2:
+                continue
+            props = dict(tags)
+            props.update({
+                "linea_num": line_number,
+                "linea": style["label"],
+                "linea_color": style["color"],
+                "osm_relation": element.get("id"),
+                "osm_member": member_index,
+            })
+            features.append({
+                "type": "Feature",
+                "properties": props,
+                "geometry": {"type": "LineString", "coordinates": coords},
+            })
+        detected.add(line_number)
+
+    print("Overpass Transmetro candidates:", json.dumps(relation_summaries, ensure_ascii=False))
+    missing = sorted(set(TRANSMETRO_OPERATIONAL_LINES) - detected)
+    if missing:
+        raise RuntimeError(f"Missing Transmetro relations in OpenStreetMap: {missing}")
+    if not features:
+        raise RuntimeError("OpenStreetMap returned no Transmetro route geometry")
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        json.dumps({"type": "FeatureCollection", "features": features}, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8",
+    )
+    print(f"Prepared {len(features)} OSM route segments for Transmetro lines {sorted(detected)}")
+    return target
+
+
 def transform_transmetro_lines(source: Path, target: Path) -> Path:
     readable_source = source
     if source.suffix.lower() not in {".json", ".geojson"}:
@@ -319,25 +423,32 @@ def canonical_source(country: dict, layer: dict, code_maps: dict) -> Path:
                     "Referer": "https://gis.muniguate.com/",
                 },
             )
-            with urllib.request.urlopen(request, timeout=180) as response:
-                page = response.read().decode("utf-8", errors="replace")
-            hrefs = [
-                html.unescape(value)
-                for value in re.findall(r'href=["\\\']([^"\\\']+)["\\\']', page, flags=re.IGNORECASE)
-            ]
-            candidates = [
-                urllib.parse.urljoin(dataset_url, href)
-                for href in hrefs
-                if "/download/" in href.lower()
-                or href.lower().endswith((".zip", ".shp", ".geojson", ".gpkg"))
-            ]
-            if candidates:
-                resource_url = next(
-                    (url for url in candidates if url.lower().endswith(".zip")),
-                    candidates[0],
-                )
+            try:
+                with urllib.request.urlopen(request, timeout=180) as response:
+                    page = response.read().decode("utf-8", errors="replace")
+                hrefs = [
+                    html.unescape(value)
+                    for value in re.findall(r'href=["\\\']([^"\\\']+)["\\\']', page, flags=re.IGNORECASE)
+                ]
+                candidates = [
+                    urllib.parse.urljoin(dataset_url, href)
+                    for href in hrefs
+                    if "/download/" in href.lower()
+                    or href.lower().endswith((".zip", ".shp", ".geojson", ".gpkg"))
+                ]
+                if candidates:
+                    resource_url = next(
+                        (url for url in candidates if url.lower().endswith(".zip")),
+                        candidates[0],
+                    )
+            except Exception as exc:
+                print(f"CKAN public page unavailable ({exc})")
 
         if not resource_url:
+            if api.get("overpass_fallback") == "transmetro":
+                print(f"Could not resolve CKAN resource for {package_id}; using OpenStreetMap route relations")
+                target = TMP_DIR / f"{country['code']}_{layer['id']}_overpass.geojson"
+                return download_transmetro_from_overpass(target)
             raise RuntimeError(f"Could not resolve a downloadable CKAN resource for {package_id}")
 
         cache_path = api.get("archive_cache_path")
