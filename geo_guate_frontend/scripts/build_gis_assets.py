@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import gzip
+import html
 import json
 import re
 import shutil
@@ -288,23 +289,56 @@ def canonical_source(country: dict, layer: dict, code_maps: dict) -> Path:
     if api.get("ckan_package_url"):
         package_url = api["ckan_package_url"].rstrip("/")
         package_id = api["ckan_package_id"]
-        payload = fetch_json(package_url, {"id": package_id})
-        resources = (payload.get("result") or {}).get("resources") or []
-        if not resources:
-            raise RuntimeError(f"No CKAN resources found for {package_id}")
+        resource_url = None
 
-        def resource_score(resource: dict) -> tuple[int, int]:
-            fmt = str(resource.get("format") or "").lower()
-            url = str(resource.get("url") or "").lower()
-            name = str(resource.get("name") or "").lower()
-            is_shape = any(token in fmt for token in ("shp", "shape")) or "shape" in name
-            is_zip = url.endswith(".zip") or "zip" in fmt
-            return (2 if is_shape else 0, 1 if is_zip else 0)
+        try:
+            payload = fetch_json(package_url, {"id": package_id}, attempts=1)
+            resources = (payload.get("result") or {}).get("resources") or []
 
-        resource = max(resources, key=resource_score)
-        resource_url = resource.get("url")
+            def resource_score(resource: dict) -> tuple[int, int]:
+                fmt = str(resource.get("format") or "").lower()
+                url = str(resource.get("url") or "").lower()
+                name = str(resource.get("name") or "").lower()
+                is_shape = any(token in fmt for token in ("shp", "shape")) or "shape" in name
+                is_zip = url.endswith(".zip") or "zip" in fmt
+                return (2 if is_shape else 0, 1 if is_zip else 0)
+
+            if resources:
+                resource = max(resources, key=resource_score)
+                resource_url = resource.get("url")
+        except Exception as exc:
+            print(f"CKAN API unavailable ({exc}); trying public dataset page")
+
+        if not resource_url and api.get("ckan_dataset_url"):
+            dataset_url = api["ckan_dataset_url"]
+            request = urllib.request.Request(
+                dataset_url,
+                headers={
+                    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Referer": "https://gis.muniguate.com/",
+                },
+            )
+            with urllib.request.urlopen(request, timeout=180) as response:
+                page = response.read().decode("utf-8", errors="replace")
+            hrefs = [
+                html.unescape(value)
+                for value in re.findall(r'href=["\\\']([^"\\\']+)["\\\']', page, flags=re.IGNORECASE)
+            ]
+            candidates = [
+                urllib.parse.urljoin(dataset_url, href)
+                for href in hrefs
+                if "/download/" in href.lower()
+                or href.lower().endswith((".zip", ".shp", ".geojson", ".gpkg"))
+            ]
+            if candidates:
+                resource_url = next(
+                    (url for url in candidates if url.lower().endswith(".zip")),
+                    candidates[0],
+                )
+
         if not resource_url:
-            raise RuntimeError(f"CKAN resource has no URL for {package_id}: {resource}")
+            raise RuntimeError(f"Could not resolve a downloadable CKAN resource for {package_id}")
 
         cache_path = api.get("archive_cache_path")
         archive_path = REPO_DIR / cache_path if cache_path else TMP_DIR / f"{country['code']}_{layer['id']}_ckan.zip"
