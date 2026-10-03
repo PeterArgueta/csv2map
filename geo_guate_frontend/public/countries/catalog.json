@@ -153,6 +153,72 @@
               "count": 39
             }
           ]
+        },
+        {
+          "id": "transmetro_lineas",
+          "admin_level": "transport",
+          "geometry_type": "line",
+          "style_mode": "transmetro_line",
+          "style_property": "linea_num",
+          "name": "Líneas del Transmetro",
+          "name_en": "Transmetro lines",
+          "singular": "línea de Transmetro",
+          "singular_en": "Transmetro line",
+          "count": 7,
+          "name_property": "linea",
+          "map_url": "/countries/GTM/transmetro_lineas.optimized.geojson",
+          "source_label": "Dirección de Movilidad Urbana · Municipalidad de Guatemala",
+          "source_url": "https://www.geovisitguatemala.gt/arcgis/rest/services/Hosted/Ruta_Bicentenario_Ciudad_2/FeatureServer/5",
+          "description_es": "Trazado de las siete líneas operativas del Transmetro (1, 2, 6, 7, 12, 13 y 18). La geometría proviene de la capa oficial de la Dirección de Movilidad Urbana publicada en ArcGIS; su metadata indica actualización 2020. La selección de líneas operativas y la simbología por color se contrastaron con el mapa oficial de Transmetro de la Municipalidad de Guatemala actualizado en febrero de 2024.",
+          "description_en": "Routes of the seven operational Transmetro lines (1, 2, 6, 7, 12, 13 and 18). Geometry comes from the official Urban Mobility Directorate ArcGIS layer, whose metadata indicates a 2020 update. Operational lines and line colors were cross-checked against the Municipality of Guatemala official Transmetro map updated in February 2024.",
+          "api": {
+            "arcgis_layer_url": "https://www.geovisitguatemala.gt/arcgis/rest/services/Hosted/Ruta_Bicentenario_Ciudad_2/FeatureServer/5",
+            "cache_path": "geo_guate_frontend/data/remote_cache/GTM/transmetro_lineas_2020.geojson",
+            "transform": "transmetro_operational_lines",
+            "basename": "converttomap_gtm_transmetro_lineas"
+          },
+          "downloads": {
+            "geojson": "/downloads/lineas_transmetro_guatemala.geojson",
+            "shp": "/downloads/lineas_transmetro_guatemala_shapefile.zip",
+            "gpkg": "/downloads/lineas_transmetro_guatemala.gpkg",
+            "kml": "/downloads/lineas_transmetro_guatemala.kml"
+          },
+          "category": "transport",
+          "category_es": "Transporte público",
+          "category_en": "Public transport",
+          "simplify_tolerance": 0.00003,
+          "map_fields": [
+            "linea_num",
+            "linea",
+            "nombre",
+            "no_actual",
+            "descripcio",
+            "km_ruta",
+            "tiempo_rut"
+          ],
+          "categories": [
+            {
+              "value": 1
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": 12
+            },
+            {
+              "value": 13
+            },
+            {
+              "value": 18
+            }
+          ]
         }
       ],
       "region": "Central America",
