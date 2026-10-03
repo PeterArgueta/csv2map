@@ -167,17 +167,18 @@
           "count": 7,
           "name_property": "linea",
           "map_url": "/countries/GTM/transmetro_lineas.optimized.geojson",
-          "source_label": "Dirección de Movilidad Urbana (DMU) · Dirección de Información Geográfica Municipal (DIGM) · Municipalidad de Guatemala",
+          "source_label": "Municipalidad de Guatemala (DMU/DIGM, inventario 2025) · OpenStreetMap contributors",
           "source_url": "https://gis2.muniguate.com/datos/dataset/rutas-sistema-transmetro-2025",
-          "description_es": "Rutas del sistema Transmetro publicadas por la Municipalidad de Guatemala en su inventario de datos 2025. La fuente identifica las rutas mediante nombre y código; ConvertToMap conserva únicamente las siete líneas operativas (1, 2, 6, 7, 12, 13 y 18) y aplica la simbología cromática contrastada con el mapa oficial de Transmetro.",
-          "description_en": "Transmetro system routes published by the Municipality of Guatemala in its 2025 data inventory. The source identifies routes by name and route code; ConvertToMap keeps the seven operational lines (1, 2, 6, 7, 12, 13 and 18) and applies line colors cross-checked against the official Transmetro map.",
+          "description_es": "Líneas operativas del sistema Transmetro. La Municipalidad de Guatemala publica el dataset «Rutas Sistema Transmetro 2025» (DMU/DIGM), utilizado como referencia institucional; debido a que su servidor de descargas bloquea el proceso automatizado de compilación, la geometría del visor y de las descargas se obtiene de relaciones de transporte de OpenStreetMap y se almacena al compilar ConvertToMap. Se muestran las líneas 1, 2, 6, 7, 12, 13 y 18 con la simbología cromática del mapa oficial.",
+          "description_en": "Operational Transmetro lines. The Municipality of Guatemala publishes the 2025 Transmetro Routes dataset (DMU/DIGM), used as the institutional reference; because its download server blocks the automated build process, viewer/download geometry is obtained from OpenStreetMap public-transport relations and stored when ConvertToMap is built. Lines 1, 2, 6, 7, 12, 13 and 18 are shown using the official map color scheme.",
           "api": {
             "ckan_package_url": "https://gis2.muniguate.com/datos/api/3/action/package_show",
             "ckan_package_id": "rutas-sistema-transmetro-2025",
             "archive_cache_path": "geo_guate_frontend/data/remote_cache/GTM/rutas_sistema_transmetro_2025.zip",
             "transform": "transmetro_operational_lines",
             "basename": "converttomap_gtm_transmetro_lineas",
-            "ckan_dataset_url": "https://gis2.muniguate.com/datos/dataset/rutas-sistema-transmetro-2025"
+            "ckan_dataset_url": "https://gis2.muniguate.com/datos/dataset/rutas-sistema-transmetro-2025",
+            "overpass_fallback": "transmetro"
           },
           "downloads": {
             "geojson": "/downloads/lineas_transmetro_guatemala.geojson",
