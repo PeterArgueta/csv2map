@@ -34,12 +34,12 @@ TRANSMETRO_OPERATIONAL_LINES = {
 
 
 def transmetro_line_number(properties: dict) -> int | None:
-    preferred = [
-        properties.get("no_actual"),
-        properties.get("nombre"),
-        properties.get("descripcio"),
-        properties.get("layer"),
+    preferred_keys = [
+        "linea_num", "linea", "no_actual", "nombre", "descripcio", "layer",
+        "ruta", "Ruta", "RUTA", "codigo", "Codigo", "CODIGO", "cod_ruta",
+        "codigo_ruta", "id_ruta", "ID_RUTA", "route", "route_id",
     ]
+    preferred = [properties.get(key) for key in preferred_keys]
     allowed = set(TRANSMETRO_OPERATIONAL_LINES)
 
     for value in preferred:
@@ -67,7 +67,12 @@ def transmetro_line_number(properties: dict) -> int | None:
 
 
 def transform_transmetro_lines(source: Path, target: Path) -> Path:
-    with source.open(encoding="utf-8") as handle:
+    readable_source = source
+    if source.suffix.lower() not in {".json", ".geojson"}:
+        readable_source = TMP_DIR / "transmetro_source.geojson"
+        run("ogr2ogr", "-f", "GeoJSON", str(readable_source), str(source), "-t_srs", "EPSG:4326")
+
+    with readable_source.open(encoding="utf-8") as handle:
         data = json.load(handle)
 
     features = []
@@ -279,6 +284,54 @@ def canonical_source(country: dict, layer: dict, code_maps: dict) -> Path:
                 errors.append(f"{layer_url}: {exc}")
                 print(f"ArcGIS source failed: {exc}")
         raise RuntimeError("All ArcGIS sources failed:\n" + "\n".join(errors))
+
+    if api.get("ckan_package_url"):
+        package_url = api["ckan_package_url"].rstrip("/")
+        package_id = api["ckan_package_id"]
+        payload = fetch_json(package_url, {"id": package_id})
+        resources = (payload.get("result") or {}).get("resources") or []
+        if not resources:
+            raise RuntimeError(f"No CKAN resources found for {package_id}")
+
+        def resource_score(resource: dict) -> tuple[int, int]:
+            fmt = str(resource.get("format") or "").lower()
+            url = str(resource.get("url") or "").lower()
+            name = str(resource.get("name") or "").lower()
+            is_shape = any(token in fmt for token in ("shp", "shape")) or "shape" in name
+            is_zip = url.endswith(".zip") or "zip" in fmt
+            return (2 if is_shape else 0, 1 if is_zip else 0)
+
+        resource = max(resources, key=resource_score)
+        resource_url = resource.get("url")
+        if not resource_url:
+            raise RuntimeError(f"CKAN resource has no URL for {package_id}: {resource}")
+
+        cache_path = api.get("archive_cache_path")
+        archive_path = REPO_DIR / cache_path if cache_path else TMP_DIR / f"{country['code']}_{layer['id']}_ckan.zip"
+        if not archive_path.exists() or archive_path.stat().st_size < 100:
+            download(str(resource_url), archive_path)
+        else:
+            print(f"Using cached CKAN archive {archive_path}")
+
+        extract_dir = TMP_DIR / f"ckan_{country['code']}_{layer['id']}"
+        if extract_dir.exists():
+            shutil.rmtree(extract_dir)
+        extract_dir.mkdir(parents=True)
+
+        if zipfile.is_zipfile(archive_path):
+            with zipfile.ZipFile(archive_path) as archive:
+                archive.extractall(extract_dir)
+            candidates = list(extract_dir.rglob("*.shp"))
+            if not candidates:
+                raise RuntimeError(f"No shapefile found in CKAN resource: {resource_url}")
+            source_path = candidates[0]
+        else:
+            source_path = archive_path
+
+        if api.get("transform") == "transmetro_operational_lines":
+            target = TMP_DIR / f"{country['code']}_{layer['id']}_normalized.geojson"
+            return transform_transmetro_lines(source_path, target)
+        return source_path
 
     if api.get("archive_url"):
         cache_path = api.get("archive_cache_path")
