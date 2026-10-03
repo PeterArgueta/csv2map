@@ -32,7 +32,8 @@
           "metadata_url": "/countries/GTM/metadata.json",
           "category": "administrative",
           "category_es": "Límites administrativos",
-          "category_en": "Administrative boundaries"
+          "category_en": "Administrative boundaries",
+          "simplify_tolerance": 0
         },
         {
           "id": "municipios",
