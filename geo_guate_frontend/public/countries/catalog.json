@@ -193,11 +193,13 @@
           "map_fields": [
             "linea_num",
             "linea",
-            "nombre",
-            "ruta",
-            "codigo",
-            "cod_ruta",
-            "codigo_ruta"
+            "linea_color",
+            "ref",
+            "name",
+            "network",
+            "operator",
+            "osm_relation",
+            "osm_member"
           ],
           "categories": [
             {
