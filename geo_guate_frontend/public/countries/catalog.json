@@ -176,7 +176,8 @@
             "ckan_package_id": "rutas-sistema-transmetro-2025",
             "archive_cache_path": "geo_guate_frontend/data/remote_cache/GTM/rutas_sistema_transmetro_2025.zip",
             "transform": "transmetro_operational_lines",
-            "basename": "converttomap_gtm_transmetro_lineas"
+            "basename": "converttomap_gtm_transmetro_lineas",
+            "ckan_dataset_url": "https://gis2.muniguate.com/datos/dataset/rutas-sistema-transmetro-2025"
           },
           "downloads": {
             "geojson": "/downloads/lineas_transmetro_guatemala.geojson",
