@@ -167,13 +167,14 @@
           "count": 7,
           "name_property": "linea",
           "map_url": "/countries/GTM/transmetro_lineas.optimized.geojson",
-          "source_label": "Dirección de Movilidad Urbana · Municipalidad de Guatemala",
-          "source_url": "https://www.geovisitguatemala.gt/arcgis/rest/services/Hosted/Ruta_Bicentenario_Ciudad_2/FeatureServer/5",
-          "description_es": "Trazado de las siete líneas operativas del Transmetro (1, 2, 6, 7, 12, 13 y 18). La geometría proviene de la capa oficial de la Dirección de Movilidad Urbana publicada en ArcGIS; su metadata indica actualización 2020. La selección de líneas operativas y la simbología por color se contrastaron con el mapa oficial de Transmetro de la Municipalidad de Guatemala actualizado en febrero de 2024.",
-          "description_en": "Routes of the seven operational Transmetro lines (1, 2, 6, 7, 12, 13 and 18). Geometry comes from the official Urban Mobility Directorate ArcGIS layer, whose metadata indicates a 2020 update. Operational lines and line colors were cross-checked against the Municipality of Guatemala official Transmetro map updated in February 2024.",
+          "source_label": "Dirección de Movilidad Urbana (DMU) · Dirección de Información Geográfica Municipal (DIGM) · Municipalidad de Guatemala",
+          "source_url": "https://gis2.muniguate.com/datos/dataset/rutas-sistema-transmetro-2025",
+          "description_es": "Rutas del sistema Transmetro publicadas por la Municipalidad de Guatemala en su inventario de datos 2025. La fuente identifica las rutas mediante nombre y código; ConvertToMap conserva únicamente las siete líneas operativas (1, 2, 6, 7, 12, 13 y 18) y aplica la simbología cromática contrastada con el mapa oficial de Transmetro.",
+          "description_en": "Transmetro system routes published by the Municipality of Guatemala in its 2025 data inventory. The source identifies routes by name and route code; ConvertToMap keeps the seven operational lines (1, 2, 6, 7, 12, 13 and 18) and applies line colors cross-checked against the official Transmetro map.",
           "api": {
-            "arcgis_layer_url": "https://www.geovisitguatemala.gt/arcgis/rest/services/Hosted/Ruta_Bicentenario_Ciudad_2/FeatureServer/5",
-            "cache_path": "geo_guate_frontend/data/remote_cache/GTM/transmetro_lineas_2020.geojson",
+            "ckan_package_url": "https://gis2.muniguate.com/datos/api/3/action/package_show",
+            "ckan_package_id": "rutas-sistema-transmetro-2025",
+            "archive_cache_path": "geo_guate_frontend/data/remote_cache/GTM/rutas_sistema_transmetro_2025.zip",
             "transform": "transmetro_operational_lines",
             "basename": "converttomap_gtm_transmetro_lineas"
           },
@@ -191,10 +192,10 @@
             "linea_num",
             "linea",
             "nombre",
-            "no_actual",
-            "descripcio",
-            "km_ruta",
-            "tiempo_rut"
+            "ruta",
+            "codigo",
+            "cod_ruta",
+            "codigo_ruta"
           ],
           "categories": [
             {
@@ -218,7 +219,8 @@
             {
               "value": 18
             }
-          ]
+          ],
+          "snapshot_date": "2025-11-13"
         }
       ],
       "region": "Central America",
