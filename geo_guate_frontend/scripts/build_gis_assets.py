@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import re
 import shutil
 import subprocess
 import unicodedata
@@ -19,6 +20,89 @@ CATALOG_PATH = PUBLIC_DIR / "countries" / "catalog.json"
 CODE_MAPS_PATH = PUBLIC_DIR / "countries" / "admin1_codes.json"
 DOWNLOAD_DIR = PUBLIC_DIR / "downloads"
 TMP_DIR = Path("/tmp/converttomap-build")
+
+
+TRANSMETRO_OPERATIONAL_LINES = {
+    1: {"label": "Línea 1", "color": "#5B2C83"},
+    2: {"label": "Línea 2", "color": "#A68BC0"},
+    6: {"label": "Línea 6", "color": "#FFD500"},
+    7: {"label": "Línea 7", "color": "#A7A9AC"},
+    12: {"label": "Línea 12", "color": "#F15A24"},
+    13: {"label": "Línea 13", "color": "#78BE20"},
+    18: {"label": "Línea 18", "color": "#00A3E0"},
+}
+
+
+def transmetro_line_number(properties: dict) -> int | None:
+    preferred = [
+        properties.get("no_actual"),
+        properties.get("nombre"),
+        properties.get("descripcio"),
+        properties.get("layer"),
+    ]
+    allowed = set(TRANSMETRO_OPERATIONAL_LINES)
+
+    for value in preferred:
+        if value is None:
+            continue
+        text = str(value).strip()
+        if not text:
+            continue
+
+        compact = re.sub(r"[^0-9]", "", text)
+        if compact.isdigit():
+            number = int(compact)
+            if number in allowed:
+                return number
+
+        match = re.search(r"(?:línea|linea|line|l)\s*[-_:]?\s*0?(1|2|6|7|12|13|18)(?!\d)", text, flags=re.IGNORECASE)
+        if match:
+            return int(match.group(1))
+
+    joined = " ".join(str(value or "") for value in preferred)
+    for number in (18, 13, 12, 7, 6, 2, 1):
+        if re.search(rf"(?<!\d){number}(?!\d)", joined):
+            return number
+    return None
+
+
+def transform_transmetro_lines(source: Path, target: Path) -> Path:
+    with source.open(encoding="utf-8") as handle:
+        data = json.load(handle)
+
+    features = []
+    detected = set()
+    for feature in data.get("features", []):
+        props = dict(feature.get("properties") or {})
+        line_number = transmetro_line_number(props)
+        if line_number not in TRANSMETRO_OPERATIONAL_LINES:
+            continue
+
+        style = TRANSMETRO_OPERATIONAL_LINES[line_number]
+        props["linea_num"] = line_number
+        props["linea"] = style["label"]
+        props["linea_color"] = style["color"]
+        feature = {
+            "type": "Feature",
+            "properties": props,
+            "geometry": feature.get("geometry"),
+        }
+        features.append(feature)
+        detected.add(line_number)
+
+    missing = sorted(set(TRANSMETRO_OPERATIONAL_LINES) - detected)
+    if missing:
+        raise RuntimeError(f"Missing operational Transmetro lines in source: {missing}")
+    if not features:
+        raise RuntimeError("No operational Transmetro features generated")
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        json.dumps({"type": "FeatureCollection", "features": features}, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8",
+    )
+    print(f"Prepared {len(features)} Transmetro features for lines {sorted(detected)}")
+    return target
 
 
 def run(*args: str) -> None:
@@ -187,7 +271,10 @@ def canonical_source(country: dict, layer: dict, code_maps: dict) -> Path:
         for layer_url in arcgis_urls:
             try:
                 print(f"Trying ArcGIS source {layer_url}")
-                return download_arcgis_layer(layer_url, target)
+                downloaded = download_arcgis_layer(layer_url, target)
+                if api.get("transform") == "transmetro_operational_lines":
+                    return transform_transmetro_lines(downloaded, target)
+                return downloaded
             except Exception as exc:
                 errors.append(f"{layer_url}: {exc}")
                 print(f"ArcGIS source failed: {exc}")
