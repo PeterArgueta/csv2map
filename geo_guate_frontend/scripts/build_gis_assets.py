@@ -39,6 +39,7 @@ def transmetro_line_number(properties: dict) -> int | None:
         "linea_num", "linea", "no_actual", "nombre", "descripcio", "layer",
         "ruta", "Ruta", "RUTA", "codigo", "Codigo", "CODIGO", "cod_ruta",
         "codigo_ruta", "id_ruta", "ID_RUTA", "route", "route_id",
+        "ref", "name", "network", "operator",
     ]
     preferred = [properties.get(key) for key in preferred_keys]
     allowed = set(TRANSMETRO_OPERATIONAL_LINES)
