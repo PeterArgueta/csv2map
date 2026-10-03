@@ -78,7 +78,7 @@ def download_transmetro_from_overpass(target: Path) -> Path:
   rel["route"="bus"]["name"~"Transmetro|Línea|Linea",i]({bbox});
   rel["route_master"="bus"]["network"~"Transmetro",i]({bbox});
 );
-out tags geom;
+out body geom;
 """
     endpoints = [
         "https://overpass-api.de/api/interpreter",
