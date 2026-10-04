@@ -30,7 +30,8 @@ MAX_COORDINATES = 1000000
 WORKER = Path(__file__).with_name('conversion_worker.py')
 SLOTS = threading.BoundedSemaphore(1)
 WORKER_ENV = {'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8', 'OPENBLAS_NUM_THREADS': '1',
-              'OMP_NUM_THREADS': '1', 'GDAL_HTTP_TIMEOUT': '15', 'GDAL_HTTP_MAX_RETRY': '0'}
+              'OMP_NUM_THREADS': '1', 'MALLOC_ARENA_MAX': '1',
+              'GDAL_HTTP_TIMEOUT': '15', 'GDAL_HTTP_MAX_RETRY': '0'}
 
 
 class JobFileResponse(FileResponse):

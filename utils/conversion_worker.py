@@ -1,13 +1,12 @@
 """Trusted job dispatcher. No shell, inherited secrets, pickle or user imports."""
 import asyncio
-import io
 import json
 from pathlib import Path
 import sys
 import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from utils.conversion_jobs import apply_resource_limits
+from utils.conversion_jobs import apply_resource_limits, MAX_INPUT_BYTES
 
 # Limits apply before pandas/GDAL imports and are inherited by child processes.
 apply_resource_limits()
@@ -23,7 +22,13 @@ JOBS = {name: getattr(main, name).__wrapped__ for name in
 async def run(workspace, job_name):
     tempfile.tempdir = str(workspace)
     request = json.loads((workspace / 'job.json').read_text(encoding='utf-8'))
-    upload = UploadFile(io.BytesIO((workspace / 'input.bin').read_bytes()), filename=request['filename'])
+    # Use the real spool type so UploadFile recognizes in-memory reads. A bare
+    # BytesIO is treated as a disk upload and starts an unnecessary thread pool
+    # (including glibc arena/stack reservations) under the virtual-memory quota.
+    source = tempfile.SpooledTemporaryFile(max_size=MAX_INPUT_BYTES + 1)
+    source.write((workspace / 'input.bin').read_bytes())
+    source.seek(0)
+    upload = UploadFile(source, filename=request['filename'])
     parameters = request['parameters']
     parameters['file'] = upload
     if job_name != 'inspeccionar_tabla':
