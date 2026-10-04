@@ -24,6 +24,7 @@ from fastapi.responses import FileResponse
 from utils.normalizar_csv import normalizar_codigo, normalizar_csv
 from utils.safe_gis import GISIsolationUnavailable, isolation_available, read_uploaded_layer
 from utils.safe_zip import extract_shapefile
+from utils.conversion_jobs import isolated_conversion, validate_table_budget, validate_layer_budget, MAX_ROWS
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -166,9 +167,11 @@ def parse_csv(content: bytes) -> tuple[pd.DataFrame, str]:
                 sep=delimiter,
                 dtype=str,
                 keep_default_na=False,
+                nrows=MAX_ROWS + 1,
             )
             if frame.empty:
                 raise ValueError("El archivo no contiene filas de datos.")
+            validate_table_budget(frame)
             return frame, encoding
         except (UnicodeDecodeError, pd.errors.ParserError, ValueError) as exc:
             last_error = exc
@@ -207,11 +210,13 @@ def parse_table(
                 dtype=str,
                 keep_default_na=False,
                 engine="openpyxl",
+                nrows=MAX_ROWS + 1,
             )
         except Exception as exc:
             raise ValueError(f"No fue posible leer la hoja '{selected_sheet}'.") from exc
 
         frame.columns = [str(column).strip() for column in frame.columns]
+        validate_table_budget(frame)
         frame = frame.loc[
             ~frame.apply(lambda row: all(str(value).strip() == "" for value in row), axis=1)
         ].copy()
@@ -258,6 +263,7 @@ def export_formats(
     basename: str,
     formats: set[str],
 ) -> None:
+    validate_layer_budget(gdf)
     if "shp" in formats:
         gdf.to_file(output_dir / f"{basename}.shp", encoding="utf-8")
     if "geojson" in formats:
@@ -308,10 +314,11 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status": "healthy", "gis_security": "ctm-01", "gis_isolation": isolation_available(), "zip_security": "ctm-02"}
+    return {"status": "healthy", "gis_security": "ctm-01", "gis_isolation": isolation_available(), "zip_security": "ctm-02", "conversion_security": "ctm-03"}
 
 
 @app.post("/exportar_geojson/")
+@isolated_conversion('exportar_geojson')
 async def exportar_geojson(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -634,7 +641,7 @@ def export_single_format(
     formato: str,
     basename: str = "converttomap_conversion",
 ) -> tuple[Path, str]:
-
+    validate_layer_budget(gdf)
     if formato == "geojson":
         output = workspace / f"{basename}.geojson"
         gdf.to_crs("EPSG:4326").to_file(output, driver="GeoJSON")
@@ -717,6 +724,7 @@ def suggest_table_geometry(frame: pd.DataFrame, filename: str) -> str:
 
 
 @app.post("/convertir_formato/")
+@isolated_conversion('convertir_formato')
 async def convertir_formato(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -808,6 +816,7 @@ async def convertir_formato(
 
 
 @app.post("/inspeccionar_tabla/")
+@isolated_conversion('inspeccionar_tabla')
 async def inspeccionar_tabla(
     file: UploadFile = File(...),
     hoja: str | None = Form(None),
@@ -835,6 +844,7 @@ async def inspeccionar_tabla(
 
 
 @app.post("/procesar_csv/")
+@isolated_conversion('procesar_csv')
 async def procesar_csv(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
