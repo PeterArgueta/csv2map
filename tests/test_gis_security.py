@@ -1,5 +1,6 @@
 """Security regressions use synthetic data, never private/network targets."""
 import io
+import asyncio
 import json
 import subprocess
 import sys
@@ -7,6 +8,7 @@ import zipfile
 import fiona
 import pytest
 from fastapi.testclient import TestClient
+from fastapi import BackgroundTasks, HTTPException, UploadFile
 from shapely.geometry import Point, mapping
 import main
 from utils import safe_gis
@@ -54,8 +56,12 @@ def test_unavailable_sandbox_fails_closed(tmp_path, monkeypatch):
     monkeypatch.setattr(safe_gis, '_run', lambda *args: pytest.fail('No unsafe fallback'))
     with pytest.raises(safe_gis.GISIsolationUnavailable):
         safe_gis.read_uploaded_layer(p, 'geojson')
-    response = TestClient(main.app).post('/convertir_formato/', files={'file': ('p.geojson', p.read_bytes())}, data={'formato_salida': 'gpkg'})
-    assert response.status_code == 503
+    # Worker-body unit test: parent monkeypatches cannot cross process boundaries.
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(main.convertir_formato.__wrapped__(BackgroundTasks(),
+            UploadFile(io.BytesIO(p.read_bytes()), filename='p.geojson'), 'gpkg',
+            '', '', None, 'puntos', '', 'GTM'))
+    assert error.value.status_code == 503
 
 def test_worker_environment_and_timeout(tmp_path, monkeypatch):
     output = tmp_path / 'result.json'

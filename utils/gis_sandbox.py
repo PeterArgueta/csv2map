@@ -83,5 +83,8 @@ def restrict_reader(input_directory, runtime_directories):
         raise RuntimeError('Cannot enforce seccomp')
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     resource.setrlimit(resource.RLIMIT_CPU, (30, 30))
-    resource.setrlimit(resource.RLIMIT_AS, (1024**3, 1024**3))
+    # The enclosing conversion worker may already have a stricter hard limit.
+    inherited = resource.getrlimit(resource.RLIMIT_AS)[1]
+    memory = min(1024**3, inherited) if inherited != resource.RLIM_INFINITY else 1024**3
+    resource.setrlimit(resource.RLIMIT_AS, (memory, memory))
     resource.setrlimit(resource.RLIMIT_FSIZE, (64 * 1024**2, 64 * 1024**2))
