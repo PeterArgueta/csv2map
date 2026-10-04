@@ -15,6 +15,7 @@ def test_health():
     assert response.status_code == 200
     assert response.json()["status"] == "healthy"
     assert response.json()["gis_security"] == "ctm-01"
+    assert response.json()["zip_security"] == "ctm-02"
     assert isinstance(response.json()["gis_isolation"], bool)
 
 
@@ -392,4 +393,3 @@ def test_excel_municipality_ids_are_georeferenced():
     assert response.status_code == 200, response.text
     assert response.headers["x-matched-count"] == "2"
     assert response.headers["x-match-mode"] == "codigo"
-

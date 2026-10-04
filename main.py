@@ -23,6 +23,7 @@ from fastapi.responses import FileResponse
 
 from utils.normalizar_csv import normalizar_codigo, normalizar_csv
 from utils.safe_gis import GISIsolationUnavailable, isolation_available, read_uploaded_layer
+from utils.safe_zip import extract_shapefile
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -307,7 +308,7 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status": "healthy", "gis_security": "ctm-01", "gis_isolation": isolation_available()}
+    return {"status": "healthy", "gis_security": "ctm-01", "gis_isolation": isolation_available(), "zip_security": "ctm-02"}
 
 
 @app.post("/exportar_geojson/")
@@ -605,20 +606,8 @@ def read_convertible_layer(
         return output, "xlsx" if lower_name.endswith(".xlsx") else "csv"
 
     if lower_name.endswith(".zip"):
-        zip_path = workspace / "entrada.zip"
-        zip_path.write_bytes(content)
-        extract_dir = workspace / "shapefile"
-        extract_dir.mkdir()
-        with zipfile.ZipFile(zip_path) as archive:
-            for member in archive.infolist():
-                member_path = (extract_dir / member.filename).resolve()
-                if extract_dir.resolve() not in member_path.parents and member_path != extract_dir.resolve():
-                    raise ValueError("El ZIP contiene rutas no válidas.")
-                archive.extract(member, extract_dir)
-        shapefiles = list(extract_dir.rglob("*.shp"))
-        if not shapefiles:
-            raise ValueError("El ZIP no contiene un archivo .shp.")
-        return read_uploaded_layer(shapefiles[0], "shp"), "shp"
+        shapefile = extract_shapefile(content, workspace / "shapefile")
+        return read_uploaded_layer(shapefile, "shp"), "shp"
 
     suffix_map = {
         ".geojson": "geojson",
