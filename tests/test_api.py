@@ -13,7 +13,9 @@ client = TestClient(app)
 def test_health():
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "healthy"}
+    assert response.json()["status"] == "healthy"
+    assert response.json()["gis_security"] == "ctm-01"
+    assert isinstance(response.json()["gis_isolation"], bool)
 
 
 def test_base_layers_are_complete():

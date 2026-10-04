@@ -19,6 +19,9 @@ jobs:
       - name: Instalar backend
         run: pip install -r requirements-dev.txt
 
+      - name: Verificar aislamiento GIS del kernel
+        run: python -c "from utils.safe_gis import isolation_available; assert isolation_available(), 'GIS sandbox unavailable on runner'"
+
       - name: Probar backend
         run: pytest -q
 
