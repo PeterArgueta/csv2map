@@ -25,6 +25,7 @@ from utils.normalizar_csv import normalizar_codigo, normalizar_csv
 from utils.safe_gis import GISIsolationUnavailable, isolation_available, read_uploaded_layer
 from utils.safe_zip import extract_shapefile
 from utils.conversion_jobs import isolated_conversion, validate_table_budget, validate_layer_budget, MAX_ROWS
+from utils.intake_security import IntakeLimiter, IntakeMiddleware, IntakeRoute
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -131,13 +132,17 @@ app = FastAPI(
     description="Convierte tablas CSV y capas GeoJSON en formatos GIS.",
 )
 
+app.router.route_class = IntakeRoute
+app.state.intake_limiter = IntakeLimiter()
+app.add_middleware(IntakeMiddleware, limiter=app.state.intake_limiter)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=configured_origins(),
     allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
-    expose_headers=["X-Matched-Count", "X-Unmatched-Count"],
+    expose_headers=["X-Matched-Count", "X-Unmatched-Count", "Retry-After"],
 )
 
 
@@ -314,7 +319,7 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status": "healthy", "gis_security": "ctm-01", "gis_isolation": isolation_available(), "zip_security": "ctm-02", "conversion_security": "ctm-03"}
+    return {"status": "healthy", "gis_security": "ctm-01", "gis_isolation": isolation_available(), "zip_security": "ctm-02", "conversion_security": "ctm-03", "intake_security": "ctm-04"}
 
 
 @app.post("/exportar_geojson/")

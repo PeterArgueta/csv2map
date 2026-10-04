@@ -17,6 +17,7 @@ def test_health():
     assert response.json()["gis_security"] == "ctm-01"
     assert response.json()["zip_security"] == "ctm-02"
     assert response.json()["conversion_security"] == "ctm-03"
+    assert response.json()["intake_security"] == "ctm-04"
     assert isinstance(response.json()["gis_isolation"], bool)
 
 
