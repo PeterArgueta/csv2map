@@ -108,6 +108,7 @@ class IntakeMiddleware:
         body_finished = False
         response_started = False
         response_time = None
+        response_event = asyncio.Event()
 
         async def limited_receive():
             nonlocal received, body_finished
@@ -134,6 +135,7 @@ class IntakeMiddleware:
             nonlocal response_started, response_time
             if message['type'] == 'http.response.start':
                 response_started, response_time = True, time.monotonic()
+                response_event.set()
             if response_time is None:
                 return await send(message)
             remaining = DOWNLOAD_SECONDS - (time.monotonic() - response_time)
@@ -141,8 +143,19 @@ class IntakeMiddleware:
                 raise asyncio.TimeoutError()
             await asyncio.wait_for(send(message), timeout=remaining)
 
+        app_task = asyncio.create_task(self.app(scope, limited_receive, limited_send))
+        response_wait = asyncio.create_task(response_event.wait())
         try:
-            await asyncio.wait_for(self.app(scope, limited_receive, limited_send), timeout=REQUEST_SECONDS)
+            done, _ = await asyncio.wait({app_task, response_wait}, timeout=REQUEST_SECONDS,
+                                         return_when=asyncio.FIRST_COMPLETED)
+            if not done:
+                raise asyncio.TimeoutError()
+            if app_task in done:
+                await app_task
+            else:
+                remaining = min(DOWNLOAD_SECONDS - (time.monotonic() - response_time),
+                                REQUEST_SECONDS - (time.monotonic() - started))
+                await asyncio.wait_for(app_task, timeout=max(0, remaining))
         except IntakeViolation as exc:
             if not response_started:
                 await self.reject(scope, receive, send, exc.status, exc.message)
@@ -150,7 +163,13 @@ class IntakeMiddleware:
             if not response_started:
                 await self.reject(scope, receive, send, 408, 'La solicitud excedió el tiempo permitido.')
         finally:
-            self.slot.release()
+            response_wait.cancel()
+            if not app_task.done():
+                app_task.cancel()
+            try:
+                await asyncio.gather(app_task, response_wait, return_exceptions=True)
+            finally:
+                self.slot.release()
 
 
 class LimitedMultiPartParser(MultiPartParser):

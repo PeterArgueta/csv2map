@@ -316,3 +316,20 @@ def test_finished_upload_does_not_apply_idle_timer_to_disconnect_wait(monkeypatc
         await JSONResponse({'ok':True})(s,receive,send)
     asyncio.run(middleware(downstream)(scope(),receive,send))
     assert messages[0]['status']==200
+
+
+def test_download_deadline_covers_delay_between_sends(monkeypatch):
+    monkeypatch.setattr(security,'DOWNLOAD_SECONDS',0.02)
+    cleaned=[];messages=[]
+    async def downstream(s,receive,send):
+        try:
+            await send({'type':'http.response.start','status':200,'headers':[]})
+            await asyncio.sleep(1)
+            pytest.fail('Download must be cancelled even without another send')
+        finally:cleaned.append(True)
+    async def receive():pytest.fail('Body is not needed')
+    async def send(message):messages.append(message)
+    start=time.monotonic()
+    asyncio.run(middleware(downstream)(scope(),receive,send))
+    assert time.monotonic()-start<0.2
+    assert cleaned and messages[0]['status']==200
