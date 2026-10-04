@@ -6,3 +6,4 @@ shapely
 fiona
 python-multipart
 openpyxl
+defusedxml>=0.7.1

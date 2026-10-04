@@ -22,6 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 from utils.normalizar_csv import normalizar_codigo, normalizar_csv
+from utils.safe_gis import GISIsolationUnavailable, isolation_available, read_uploaded_layer
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -306,7 +307,7 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status": "healthy"}
+    return {"status": "healthy", "gis_security": "ctm-01", "gis_isolation": isolation_available()}
 
 
 @app.post("/exportar_geojson/")
@@ -336,7 +337,7 @@ async def exportar_geojson(
     try:
         input_path = workspace / "entrada.geojson"
         input_path.write_bytes(content)
-        gdf = gpd.read_file(input_path)
+        gdf = read_uploaded_layer(input_path, "geojson")
         if gdf.empty:
             raise ValueError("La capa no contiene entidades geográficas.")
         if gdf.crs is None:
@@ -371,6 +372,9 @@ async def exportar_geojson(
             json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
         )
         return build_zip_response(background_tasks, workspace, output_dir, basename)
+    except GISIsolationUnavailable as exc:
+        remove_workspace(str(workspace))
+        raise HTTPException(status_code=503, detail="La lectura GIS segura no está disponible temporalmente.") from exc
     except ValueError as exc:
         remove_workspace(str(workspace))
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -614,7 +618,7 @@ def read_convertible_layer(
         shapefiles = list(extract_dir.rglob("*.shp"))
         if not shapefiles:
             raise ValueError("El ZIP no contiene un archivo .shp.")
-        return gpd.read_file(shapefiles[0]), "shp"
+        return read_uploaded_layer(shapefiles[0], "shp"), "shp"
 
     suffix_map = {
         ".geojson": "geojson",
@@ -632,7 +636,7 @@ def read_convertible_layer(
     suffix = Path(filename).suffix.lower()
     input_path = workspace / f"entrada{suffix}"
     input_path.write_bytes(content)
-    return gpd.read_file(input_path), source_format
+    return read_uploaded_layer(input_path, source_format), source_format
 
 
 def export_single_format(
@@ -797,6 +801,9 @@ async def convertir_formato(
                 "X-Feature-Count": str(len(gdf)),
             },
         )
+    except GISIsolationUnavailable as exc:
+        remove_workspace(str(workspace))
+        raise HTTPException(status_code=503, detail="La lectura GIS segura no está disponible temporalmente.") from exc
     except ValueError as exc:
         remove_workspace(str(workspace))
         raise HTTPException(status_code=422, detail=str(exc)) from exc
