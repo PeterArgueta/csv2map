@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Juego de la vida · Conway</title>
+<style>
+:root{--paper:#f7f7f4;--surface:#fff;--ink:#1b2426;--muted:#566063;--line:#c9cfcc;--grid:#e8ece9;--accent:#285d54}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 Arial,Helvetica,sans-serif}
+main{max-width:1060px;margin:0 auto;padding:38px 24px 70px}
+header{border-bottom:1px solid var(--ink);padding-bottom:21px;margin-bottom:22px}
+.eyebrow{margin:0 0 12px;color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+h1{font:normal clamp(2.5rem,6vw,4.2rem)/1.05 Georgia,'Times New Roman',serif;letter-spacing:-.035em;margin:0 0 12px}
+.lead{margin:0;color:var(--muted);max-width:720px}
+.card{background:var(--surface);border:1px solid var(--line);padding:19px}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:18px}
+button{background:var(--surface);border:1px solid #aab4af;border-radius:3px;color:var(--ink);font:inherit;font-size:14px;padding:8px 13px;cursor:pointer}
+button:hover{background:#eef2ef}button.primary{background:var(--accent);border-color:var(--accent);color:#fff}button.primary:hover{background:#19473f}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stage{border:1px solid var(--line);background:#fff;overflow:hidden}canvas{display:block;width:100%;height:auto;aspect-ratio:60/36;touch-action:none;cursor:crosshair}
+.bottom{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;margin-top:16px}
+.stats{display:flex;flex-wrap:wrap;gap:20px;font-size:14px;color:var(--muted)}.stats strong{color:var(--ink);font-variant-numeric:tabular-nums}
+.extras{display:flex;flex-wrap:wrap;align-items:center;gap:10px}label{font-size:14px;color:var(--muted)}
+select{background:#fff;color:var(--ink);border:1px solid #aab4af;border-radius:3px;font:inherit;font-size:14px;padding:7px 9px}
+.speed{display:flex;align-items:center;gap:8px}.speed span{font-size:14px;min-width:32px;font-variant-numeric:tabular-nums}input[type=range]{accent-color:var(--accent);width:100px}
+.hint{font-size:13px;color:var(--muted);margin:15px 0 0}.rules{margin:22px 0 0;padding-left:15px;border-left:2px solid var(--accent);color:var(--muted);font-size:14px}.rules strong{color:var(--ink)}
+.about{max-width:760px;margin-top:42px;padding-top:22px;border-top:1px solid var(--line)}.about h2{font:normal 1.55rem/1.2 Georgia,'Times New Roman',serif;margin:0 0 12px}.about p{margin:0;color:#343d3f}.about a{color:#245d76;text-decoration-color:#8daeb8;text-underline-offset:3px}.about a:hover{color:#123c51}
+@media(max-width:600px){main{padding:24px 14px 48px}.card{padding:10px}.toolbar{gap:6px}button{padding:7px 10px}.stats{gap:12px}.about{margin-top:32px}}
+</style>
+</head>
+<body>
+<main>
+<header><p class="eyebrow">Autómata celular · 1970</p><h1>Juego de la vida</h1><p class="lead">Dibuja células en el tablero y observa cómo evoluciona cada generación.</p></header>
+<section class="card" aria-label="Simulación del juego de la vida">
+<div class="toolbar"><button id="toggle" class="primary" type="button">▶ Iniciar</button><button id="step" type="button">Un paso</button><button id="random" type="button">Aleatorio</button><button id="clear" type="button">Limpiar</button></div>
+<div class="stage"><canvas id="board" width="1200" height="720" aria-label="Tablero de 60 columnas y 36 filas. Haz clic o arrastra para dibujar células."></canvas></div>
+<div class="bottom"><div class="stats"><span>Generación: <strong id="generation">0</strong></span><span>Vivas: <strong id="population">0</strong></span></div><div class="extras"><label for="pattern">Patrón:</label><select id="pattern"><option value="none">Seleccionar</option><option value="glider">Planeador</option><option value="pulsar">Púlsar</option><option value="rpentomino">R-pentominó</option></select><div class="speed"><label for="speed">Velocidad</label><input id="speed" type="range" min="1" max="20" value="7"><span id="speedValue">7/s</span></div></div></div>
+<p class="hint">Haz clic o arrastra para dibujar o borrar. Al elegir un patrón, pulsa una casilla para colocarlo. Atajo: barra espaciadora para iniciar o pausar.</p>
+</section>
+<p class="rules"><strong>Reglas:</strong> una célula viva sobrevive con 2 o 3 vecinas; una vacía nace con exactamente 3. Las demás mueren o permanecen vacías. Los bordes no se conectan entre sí.</p>
+<section class="about" aria-labelledby="about-title">
+<h2 id="about-title">Acerca del Juego de la vida</h2>
+<p>El <strong>Juego de la vida</strong> es un <a href="https://es.wikipedia.org/wiki/Autómata_celular" title="Autómata celular">autómata celular</a> diseñado por el <a href="https://es.wikipedia.org/wiki/Matemático" title="Matemático">matemático</a> <a href="https://es.wikipedia.org/wiki/Reino_Unido" title="Reino Unido">británico</a> <a href="https://es.wikipedia.org/wiki/John_Horton_Conway" title="John Horton Conway">John Horton Conway</a> en 1970. Es un <a href="https://es.wikipedia.org/wiki/Juego_de_cero_jugadores" title="Juego de cero jugadores">juego de cero jugadores</a>, en el que su evolución es determinada por un estado inicial, sin requerir intervención adicional. Se considera un sistema <a href="https://es.wikipedia.org/wiki/Turing_completo" title="Turing completo">Turing completo</a> que puede simular cualquier otra <a href="https://es.wikipedia.org/wiki/Máquina_de_Turing" title="Máquina de Turing">Máquina de Turing</a>.</p>
+</section>
+</main>
+<script>
+(()=>{
+'use strict';
+const COLS=60, ROWS=36, W=20, H=20;
+const canvas=document.getElementById('board'), ctx=canvas.getContext('2d');
+const toggle=document.getElementById('toggle'), stepButton=document.getElementById('step');
+const generationEl=document.getElementById('generation'), populationEl=document.getElementById('population');
+const speed=document.getElementById('speed'), speedValue=document.getElementById('speedValue'), patternSelect=document.getElementById('pattern');
+const patterns={
+ glider:[[1,0],[2,1],[0,2],[1,2],[2,2]],
+ rpentomino:[[1,0],[2,0],[0,1],[1,1],[1,2]],
+ pulsar:(()=>{const cells=[];for(const n of [-4,-3,-2,2,3,4])for(const d of [-6,-1,1,6]){cells.push([n+6,d+6],[d+6,n+6]);}return cells;})()
+};
+let grid=new Uint8Array(COLS*ROWS), generation=0, timer=null, pointerDown=false, paintValue=1, lastIndex=-1;
+const idx=(x,y)=>y*COLS+x;
+function stats(){generationEl.textContent=generation;let total=0;for(const v of grid)total+=v;populationEl.textContent=total;}
+function draw(){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#285d54';for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)if(grid[idx(x,y)])ctx.fillRect(x*W+2,y*H+2,W-3,H-3);ctx.beginPath();ctx.strokeStyle='#e8ece9';ctx.lineWidth=1;for(let x=1;x<COLS;x++){ctx.moveTo(x*W+.5,0);ctx.lineTo(x*W+.5,canvas.height);}for(let y=1;y<ROWS;y++){ctx.moveTo(0,y*H+.5);ctx.lineTo(canvas.width,y*H+.5);}ctx.stroke();stats();}
+function advance(){const next=new Uint8Array(grid.length);for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){let n=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const xx=x+dx,yy=y+dy;if(xx>=0&&xx<COLS&&yy>=0&&yy<ROWS)n+=grid[idx(xx,yy)];}const i=idx(x,y);next[i]=n===3||(grid[i]&&n===2)?1:0;}grid=next;generation++;draw();}
+function pause(){if(timer!==null){clearInterval(timer);timer=null;}toggle.textContent='▶ Iniciar';toggle.setAttribute('aria-label','Iniciar simulación');}
+function play(){if(timer!==null)return;timer=setInterval(advance,1000/Number(speed.value));toggle.textContent='⏸ Pausar';toggle.setAttribute('aria-label','Pausar simulación');}
+function cellAt(e){const r=canvas.getBoundingClientRect();const x=Math.floor((e.clientX-r.left)*COLS/r.width),y=Math.floor((e.clientY-r.top)*ROWS/r.height);return x>=0&&x<COLS&&y>=0&&y<ROWS?{x,y}:null;}
+function putPattern(x,y){const points=patterns[patternSelect.value];if(!points)return;for(const [dx,dy] of points){const xx=x+dx,yy=y+dy;if(xx>=0&&xx<COLS&&yy>=0&&yy<ROWS)grid[idx(xx,yy)]=1;}patternSelect.value='none';draw();}
+function paint(e){const cell=cellAt(e);if(!cell)return;const i=idx(cell.x,cell.y);if(i===lastIndex)return;grid[i]=paintValue;lastIndex=i;draw();}
+canvas.addEventListener('pointerdown',e=>{const cell=cellAt(e);if(!cell)return;e.preventDefault();pause();if(patternSelect.value!=='none'){putPattern(cell.x,cell.y);return;}pointerDown=true;lastIndex=-1;paintValue=grid[idx(cell.x,cell.y)]?0:1;canvas.setPointerCapture(e.pointerId);paint(e);});
+canvas.addEventListener('pointermove',e=>{if(pointerDown)paint(e);});
+canvas.addEventListener('pointerup',()=>{pointerDown=false;lastIndex=-1;});
+canvas.addEventListener('pointercancel',()=>{pointerDown=false;lastIndex=-1;});
+toggle.addEventListener('click',()=>timer===null?play():pause());
+stepButton.addEventListener('click',()=>{pause();advance();});
+document.getElementById('clear').addEventListener('click',()=>{pause();grid.fill(0);generation=0;draw();});
+document.getElementById('random').addEventListener('click',()=>{pause();for(let i=0;i<grid.length;i++)grid[i]=Math.random()<.23?1:0;generation=0;draw();});
+speed.addEventListener('input',()=>{speedValue.textContent=speed.value+'/s';if(timer!==null){pause();play();}});
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&e.target===document.body){e.preventDefault();timer===null?play():pause();}});
+// Un planeador inicial permite probar la simulación de inmediato.
+for(const [x,y] of patterns.glider)grid[idx(x+27,y+15)]=1;
+draw();
+})();
+</script>
+</body>
+</html>
