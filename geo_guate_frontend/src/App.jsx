@@ -58,14 +58,6 @@ const getInitialLanguage = () => {
 
 const PROJECTS = [
   {
-    name: 'ConvertToMap',
-    description: 'Convierte archivos CSV en capas GIS listas para usar.',
-    description_en: 'Convert CSV files into ready-to-use GIS layers.',
-    href: '/geoportal',
-    tag: 'GIS',
-    internal: true,
-  },
-  {
     name: 'Generador QR',
     description: 'Crea códigos QR personalizados con colores, logo, tamaño y descarga en PNG.',
     description_en: 'Create custom QR codes with colors, logo, size controls and PNG download.',
