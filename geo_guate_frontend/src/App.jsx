@@ -74,6 +74,14 @@ const PROJECTS = [
     external: true,
   },
   {
+    name: 'Precios de combustibles',
+    description: 'Consulta la evolución de los precios de los combustibles en Guatemala.',
+    description_en: 'Explore fuel price trends in Guatemala.',
+    href: 'https://peterargueta.github.io/Precios_combustibles_GT/',
+    tag: 'Datos',
+    external: true,
+  },
+  {
     name: 'Juego de la vida',
     description: 'Explora el autómata celular de Conway: dibuja células, elige patrones y observa su evolución.',
     description_en: 'Explore Conway’s cellular automaton: draw cells, choose patterns and watch them evolve.',
