@@ -449,7 +449,21 @@ def canonical_source(country: dict, layer: dict, code_maps: dict) -> Path:
             if api.get("overpass_fallback") == "transmetro":
                 print(f"Could not resolve CKAN resource for {package_id}; using OpenStreetMap route relations")
                 target = TMP_DIR / f"{country['code']}_{layer['id']}_overpass.geojson"
-                return download_transmetro_from_overpass(target)
+                try:
+                    return download_transmetro_from_overpass(target)
+                except RuntimeError as overpass_error:
+                    # Reuse the last published OSM snapshot when the live APIs are unavailable.
+                    snapshot_url = "https://converttomap.com" + layer["downloads"]["geojson"]
+                    try:
+                        download(snapshot_url, target)
+                        snapshot = json.loads(target.read_text(encoding="utf-8"))
+                        if snapshot.get("type") != "FeatureCollection":
+                            raise ValueError("Published Transmetro snapshot is not GeoJSON")
+                        return transform_transmetro_lines(target, TMP_DIR / f"{country['code']}_{layer['id']}_snapshot.geojson")
+                    except Exception as snapshot_error:
+                        raise RuntimeError(
+                            f"Overpass failed ({overpass_error}) and published snapshot failed ({snapshot_error})"
+                        ) from snapshot_error
             raise RuntimeError(f"Could not resolve a downloadable CKAN resource for {package_id}")
 
         cache_path = api.get("archive_cache_path")
