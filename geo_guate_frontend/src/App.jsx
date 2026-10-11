@@ -77,8 +77,9 @@ const PROJECTS = [
     name: 'Juego de la vida',
     description: 'Explora el autómata celular de Conway: dibuja células, elige patrones y observa su evolución.',
     description_en: 'Explore Conway’s cellular automaton: draw cells, choose patterns and watch them evolve.',
-    href: '/juego-de-la-vida/',
+    href: 'https://peterargueta.github.io/juego-de-la-vida/',
     tag: 'Simulación',
+    external: true,
   },
 ];
 
