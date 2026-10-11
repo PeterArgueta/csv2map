@@ -73,6 +73,13 @@ const PROJECTS = [
     tag: 'QR',
     external: true,
   },
+  {
+    name: 'Juego de la vida',
+    description: 'Explora el autómata celular de Conway: dibuja células, elige patrones y observa su evolución.',
+    description_en: 'Explore Conway’s cellular automaton: draw cells, choose patterns and watch them evolve.',
+    href: '/juego-de-la-vida/',
+    tag: 'Simulación',
+  },
 ];
 
 const exampleFor = (pais, nivel) => {
