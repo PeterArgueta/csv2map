@@ -58,6 +58,14 @@ const getInitialLanguage = () => {
 
 const PROJECTS = [
   {
+    name: 'ConvertToPDF',
+    description: 'Une, divide y organiza tus PDF: cambia el orden, gira o elimina páginas sin subir tus documentos.',
+    description_en: 'Merge, split and organize PDFs: reorder, rotate or remove pages without uploading your documents.',
+    href: 'https://peterargueta.github.io/ConvertToPDF/',
+    tag: 'PDF',
+    external: true,
+  },
+  {
     name: 'Generador QR',
     description: 'Crea códigos QR personalizados con colores, logo, tamaño y descarga en PNG.',
     description_en: 'Create custom QR codes with colors, logo, size controls and PNG download.',
