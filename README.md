@@ -1,42 +1,43 @@
 # ConvertToMap 2.0
 
-**ConvertToMap** convierte archivos CSV con códigos administrativos de distintos países en capas geográficas listas para QGIS, ArcGIS, Google Earth o aplicaciones web.
+**ConvertToMap** transforma archivos tabulares con identificadores administrativos en capas geográficas utilizables en SIG y aplicaciones web.
 
-- **Sitio:** <https://converttomap.com>
-- **API:** <https://api.converttomap.com>
+**Aplicación:** https://converttomap.com · **API:** https://api.converttomap.com
 
-## Funciones de la versión 2
+## Problema y enfoque
 
-- Permite seleccionar el país y el nivel territorial desde un catálogo común.
-- Procesa los 22 departamentos y 340 municipios de Guatemala, y los 14 departamentos de El Salvador.
-- Detecta CSV separados por coma, punto y coma o tabulación.
-- Permite seleccionar manualmente la columna territorial.
-- Conserva las demás columnas del archivo como atributos de la capa.
-- Exporta Shapefile, KML, GeoJSON y GeoPackage.
-- Genera un reporte JSON con códigos encontrados, no encontrados, vacíos y duplicados.
-- Incluye vista previa de la tabla y selección resaltada en el mapa.
-- Ofrece mapas base claro, vial y topográfico.
-- Valida tipo y tamaño del archivo (máximo 10 MB).
-- Elimina automáticamente los archivos temporales del servidor.
+Los datos estadísticos suelen distribuirse en tablas sin geometría. ConvertToMap permite asociar códigos territoriales con capas de referencia y exportar resultados geográficos sin construir manualmente la unión en un programa SIG.
 
-## Estructura
+El flujo separa una interfaz de revisión de datos (React, Vite y Leaflet) de una API de procesamiento (FastAPI, pandas y bibliotecas geoespaciales). El catálogo de países define capas y campos de unión compartidos.
+
+## Funcionalidades
+
+- Selección de país, nivel territorial y columna de códigos.
+- Soporte para Guatemala (departamentos y municipios) y El Salvador (departamentos).
+- Detección de separadores CSV comunes y previsualización tabular/cartográfica.
+- Conservación de atributos adicionales y exportación a Shapefile, KML, GeoJSON y GeoPackage.
+- Reporte JSON de coincidencias, códigos faltantes, vacíos y duplicados.
+- Límite de archivos de 10 MB, validaciones de entrada y limpieza de archivos temporales.
+
+## Arquitectura
 
 ```text
-csv2map/
-├── geo_guate_frontend/       React, Vite, Tailwind y Leaflet
-│   ├── public/               Límites GeoJSON para la vista previa
-│   │   └── countries/        Catálogo y capas optimizadas por país
-│   └── src/
-├── Departamentos/            Capa base departamental
-├── utils/                    Normalización y validación
-├── main.py                   API FastAPI y exportación GIS
-└── requirements.txt
+geo_guate_frontend/    Interfaz React, Vite y Leaflet
+  public/countries/   Catálogos y límites territoriales
+main.py               API FastAPI y procesamiento de exportaciones
+utils/                Normalización y validación
+Departamentos/        Datos cartográficos de referencia
+tests/                Pruebas del proyecto
+docs/                 Documentación complementaria
 ```
+
+**Flujo de datos:** CSV → validación y normalización → unión con geometrías territoriales → vista previa / exportación → archivo ZIP y reporte de procesamiento.
 
 ## Desarrollo local
 
-### Backend
+Se requiere Python y Node.js compatibles con las dependencias del repositorio. Para las operaciones SIG pueden ser necesarias bibliotecas nativas de GDAL y sus dependencias.
 
+**Backend**
 ```bash
 python -m venv .venv
 source .venv/bin/activate
@@ -44,62 +45,61 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-La API queda disponible en `http://localhost:8000`. Para limitar CORS, define los orígenes separados por comas:
+La API local estará en `http://localhost:8000`. Los orígenes permitidos se configuran con `ALLOWED_ORIGINS`.
 
 ```env
 ALLOWED_ORIGINS=http://localhost:5173,https://converttomap.com,https://www.converttomap.com
 ```
 
-### Frontend
-
+**Frontend**
 ```bash
 cd geo_guate_frontend
 npm install
 npm run dev
 ```
 
-Para producción, configura la dirección de la API:
+Para despliegues independientes del frontend, configura `VITE_API_URL` con la URL de la API correspondiente.
 
-```env
-VITE_API_URL=https://api.converttomap.com
-```
+## API de conversión
 
-## API
+`POST /procesar_csv/` acepta `multipart/form-data`:
 
-`POST /procesar_csv/` recibe `multipart/form-data` con:
-
-| Campo | Descripción |
-|---|---|
-| `file` | Archivo CSV de hasta 10 MB |
-| `pais` | Código ISO alfa-3: actualmente `GTM` o `SLV` |
-| `nivel` | Nivel disponible para el país: `departamentos` o `municipios` |
-| `columna_codigo` | Encabezado que contiene el código administrativo |
+| Campo | Uso |
+| --- | --- |
+| `file` | CSV, máximo 10 MB |
+| `pais` | `GTM` o `SLV` |
+| `nivel` | `departamentos` o `municipios`, según catálogo |
+| `columna_codigo` | Encabezado con identificador territorial |
 | `formatos` | Lista separada por comas: `shp,kml,geojson,gpkg` |
 
-La descarga ZIP incluye los formatos seleccionados y `reporte_procesamiento.json`.
+La descarga contiene los formatos seleccionados y `reporte_procesamiento.json`.
 
-El catálogo `geo_guate_frontend/public/countries/catalog.json` es consumido por el frontend y el backend. Para agregar un país se registra allí su capa, campos de unión, nivel administrativo, rutas y fuente.
+El archivo `geo_guate_frontend/public/countries/catalog.json` mantiene la configuración territorial utilizada por ambos componentes.
 
-## Fuentes cartográficas
+## Calidad y validaciones
 
-- Departamentos: **IDEG – SEGEPLAN**, Geoportal de la Infraestructura de Datos Espaciales de Guatemala: <https://ideg.segeplan.gob.gt/geoportal/>. La copia utilizada por ConvertToMap contiene 22 departamentos y se trabaja a partir de GeoJSON.
-- Municipios: **IDEG – SEGEPLAN**, Geoportal de la Infraestructura de Datos Espaciales de Guatemala: <https://ideg.segeplan.gob.gt/geoportal/>. La copia utilizada por ConvertToMap contiene 340 municipios y se trabaja a partir de GeoJSON.
-- Departamentos de El Salvador: **geoBoundaries gbOpen**, William & Mary geoLab: <https://www.geoboundaries.org/>. Fuente subyacente: OpenStreetMap; licencia CC BY-SA 2.0. La copia fuente, la versión normalizada y la versión optimizada para web se encuentran en `geo_guate_frontend/public/countries/SLV/`.
-- Mapas base: OpenStreetMap y OpenTopoMap, con sus atribuciones visibles en la aplicación.
+- Las pruebas se encuentran en `tests/`; consulta `pytest.ini` y `requirements-dev.txt` para el entorno de pruebas.
+- El frontend incluye `npm run build` y `npm run check:links`.
+- Las uniones territoriales dependen de la calidad de los códigos originales. El reporte de procesamiento permite revisar códigos no reconocidos y duplicados antes de utilizar el resultado.
 
-Antes de utilizar los datos en un producto comercial u oficial, verifica las condiciones, metadata y atribuciones vigentes de cada fuente.
+No se presenta aquí una cobertura de pruebas ni un estado de CI no verificado.
 
-## Despliegue
+## Fuentes y licencias de datos
 
-- Frontend: GitHub Pages.
-- Backend: servicio FastAPI en Render.
-- Sitio: `converttomap.com` y redirección desde `www.converttomap.com`.
-- API: `api.converttomap.com`.
+- Guatemala, departamentos y municipios: [IDEG–SEGEPLAN](https://ideg.segeplan.gob.gt/geoportal/).
+- El Salvador, departamentos: [geoBoundaries](https://www.geoboundaries.org/) (gbOpen; fuente subyacente OpenStreetMap, atribución y condiciones según el conjunto utilizado).
+- Mapas base: OpenStreetMap y OpenTopoMap, con atribuciones en la aplicación.
 
-El sitio y la API utilizan servicios separados para que el frontend pueda seguir disponible durante tareas de mantenimiento del conversor.
+Verifica la vigencia, metadatos y condiciones de redistribución de cada conjunto antes de su uso comercial u oficial.
 
-## Derechos y licencias
+## Infraestructura y despliegue
 
-ConvertToMap 2.0 es software propietario. Consulta `LICENSE` para las condiciones del código. Las versiones publicadas anteriormente bajo licencia MIT conservan los permisos que ya hubieran sido concedidos sobre esas versiones.
+El frontend se publica mediante GitHub Pages y el backend FastAPI se aloja en Render. Se utilizan los dominios `converttomap.com` y `api.converttomap.com`. Las dos partes pueden desplegarse por separado.
 
-Las dependencias, capas y mapas base conservan las licencias y condiciones de sus respectivas fuentes.
+## Alcance y limitaciones
+
+Los identificadores administrativos deben ser compatibles con el catálogo disponible. Las conversiones no sustituyen una validación cartográfica ni garantizan equivalencia semántica entre fuentes que utilicen códigos diferentes.
+
+## Licencias
+
+El código actual se distribuye bajo las condiciones del archivo [LICENSE](LICENSE). Las versiones anteriores publicadas con licencia MIT mantienen los permisos concedidos para dichas versiones. Las dependencias y los datos geográficos conservan sus licencias independientes.
