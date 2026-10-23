@@ -388,7 +388,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
     const roadPreferred = isRoadLayer
       ? ['RUTA', 'DESCRIPCION', 'categoria', 'fclass', 'name', 'ref', 'maxspeed', 'oneway', 'LONGITUD', 'Longiutd', 'PROYECTO', 'REGIONAL']
       : [];
-    const preferred = [...roadPreferred, layer.name_property, layer.code_property, layer.parent_name_property, 'note', 'area_km2']
+    const preferred = [...(layer.popup_fields || []), ...roadPreferred, layer.name_property, layer.code_property, layer.parent_name_property, 'note', 'area_km2']
       .filter(Boolean)
       .filter((key, index, array) => array.indexOf(key) === index && Object.prototype.hasOwnProperty.call(props, key));
     const popupLimit = isRoadLayer ? 10 : 7;
@@ -895,6 +895,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
           minZoom={3}
           maxZoom={18}
           zoomControl={false}
+          preferCanvas={true}
           className="h-full w-full"
           style={{ background: '#f8fafc' }}
         >
@@ -919,6 +920,15 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
               <GeoJSON
                 key={`${layer.key}-${alpha}`}
                 data={datasets[layer.key]}
+                pointToLayer={layer.geometry_type === 'point'
+                  ? (_feature, latlng) => L.circleMarker(latlng, {
+                    radius: 3,
+                    color: layer.color,
+                    weight: 1,
+                    fillColor: layer.color,
+                    fillOpacity: alpha,
+                  })
+                  : undefined}
                 style={(feature) => {
                   if (layer.style_mode === 'road_category') {
                     const road = roadCategoryStyle(feature?.properties?.categoria);

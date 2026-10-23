@@ -190,7 +190,7 @@
           "category": "transport",
           "category_es": "Transporte público",
           "category_en": "Public transport",
-          "simplify_tolerance": 0.00003,
+          "simplify_tolerance": 3e-05,
           "map_fields": [
             "linea_num",
             "linea",
@@ -226,6 +226,49 @@
             }
           ],
           "snapshot_date": "2025-11-13"
+        },
+        {
+          "id": "lugares_poblados_ine_2018",
+          "admin_level": "settlement",
+          "geometry_type": "point",
+          "name": "Lugares poblados · Censo 2018",
+          "name_en": "Populated places · 2018 Census",
+          "singular": "lugar poblado",
+          "singular_en": "populated place",
+          "count": 19723,
+          "code_property": "codigo",
+          "name_property": "nombre",
+          "code_width": 7,
+          "map_url": "/countries/GTM/lugares_poblados_ine_2018.geojson",
+          "source_label": "INE · Censo 2018 · transcripción JSON de dervinluna",
+          "source_url": "https://datos.ine.gob.gt/dataset/censo-2018-lugares-poblados",
+          "description_es": "19,723 centroides de lugares poblados con nombre, código, municipio y departamento. Fuente: INE, Censo 2018, mediante una copia pública transcrita a JSON por dervinluna. Se excluyen 313 registros sin coordenadas. Son puntos de referencia, no límites territoriales; no incluye cifras de población.",
+          "description_en": "19,723 populated-place centroids with names, codes, municipalities and departments. Source: INE, 2018 Census, via a public JSON transcription by dervinluna. Excludes 313 records without coordinates. Reference points, not territorial boundaries; population figures are not included.",
+          "api": {
+            "gzip_path": "geo_guate_frontend/data/GTM/lugares_poblados_ine_2018.geojson.gz",
+            "basename": "converttomap_gtm_lugares_poblados_2018"
+          },
+          "downloads": {
+            "geojson": "/countries/GTM/lugares_poblados_ine_2018.geojson",
+            "shp": "/downloads/lugares_poblados_guatemala_2018_shapefile.zip",
+            "gpkg": "/downloads/lugares_poblados_guatemala_2018.gpkg",
+            "kml": "/downloads/lugares_poblados_guatemala_2018.kml"
+          },
+          "metadata_url": "/countries/GTM/lugares_poblados_ine_2018.metadata.json",
+          "category": "settlements",
+          "category_es": "Lugares poblados",
+          "category_en": "Populated places",
+          "simplify_tolerance": 0,
+          "reference_year": 2018,
+          "popup_fields": [
+            "nombre",
+            "codigo",
+            "depto",
+            "municipio",
+            "censo",
+            "longitud",
+            "latitud"
+          ]
         }
       ],
       "region": "Central America",
