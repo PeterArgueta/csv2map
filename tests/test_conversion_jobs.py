@@ -132,14 +132,21 @@ def test_wrapper_cancellation_cleans_workspace_and_releases_slot(tmp_path, monke
     jobs.SLOTS.release()
 
 
-def test_failed_download_still_cleans_workspace(tmp_path):
+@pytest.mark.parametrize('asgi_spec_version', ['2.0', '2.4'])
+def test_failed_download_still_cleans_workspace(tmp_path, asgi_spec_version):
     path = tmp_path / 'download.txt'
     path.write_text('synthetic')
     response = jobs.JobFileResponse(path, workspace=tmp_path)
+    async def receive():
+        # Keep the connection open until send() fails. ASGI requires a callable
+        # receiver even when the response only needs it to watch for disconnects.
+        await asyncio.Event().wait()
     async def send(message):
         raise RuntimeError('Synthetic disconnected client')
-    with pytest.raises(RuntimeError):
-        asyncio.run(response({'type':'http','method':'GET','headers':[]}, None, send))
+    scope = {'type': 'http', 'method': 'GET', 'headers': [],
+             'asgi': {'version': '3.0', 'spec_version': asgi_spec_version}}
+    with pytest.raises(RuntimeError, match='Synthetic disconnected client'):
+        asyncio.run(response(scope, receive, send))
     assert not tmp_path.exists()
 
 
