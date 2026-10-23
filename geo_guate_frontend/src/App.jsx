@@ -199,7 +199,7 @@ function App() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(CATALOG_URL, { signal: controller.signal })
+    fetch(CATALOG_URL, { signal: controller.signal, cache: 'no-cache' })
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();

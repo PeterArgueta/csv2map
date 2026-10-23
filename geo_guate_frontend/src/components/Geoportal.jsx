@@ -155,7 +155,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
 
   useEffect(() => {
-    fetch('/countries/catalog.json')
+    fetch('/countries/catalog.json', { cache: 'no-cache' })
       .then((response) => {
         if (!response.ok) throw new Error('catalog');
         return response.json();
