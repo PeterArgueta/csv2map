@@ -1,0 +1,44 @@
+{
+  "country": "Guatemala",
+  "country_code": "GTM",
+  "dataset": "Ríos de Guatemala",
+  "publisher": "World Bank Group · ENERGYDATA.INFO",
+  "source_page": "https://energydata.info/dataset/rivers-guatemala",
+  "source_resource": "https://energydata.info/dataset/rivers-guatemala/resource/02bffb45-1ba1-4c86-b538-f1a063f91749",
+  "source_archive": "https://datacatalogfiles.worldbank.org/ddh-published/0039365/1/DR0048896/rios_gtm.zip",
+  "source_archive_sha256_at_import": "fc2a14b8a4440c5e09bcd449ef17d8ed73827ec77ac46a8516555727bae82abd",
+  "retrieved_date": "2026-10-23",
+  "source_catalog_last_updated": "2025-10-16",
+  "source_resource_last_updated": "2017-07-21",
+  "cartography_observation_date": null,
+  "license": "Creative Commons Attribution 4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "attribution": "World Bank Group. Rivers in Guatemala. ENERGYDATA.INFO. CC BY 4.0.",
+  "feature_count": 5649,
+  "count_unit": "Tramos de cauce, no ríos distintos",
+  "source_layer": "rios_gtm",
+  "geometry_type": "LineString / MultiLineString",
+  "source_crs": "+proj=tmerc +lat_0=0 +lon_0=-90.5 +k=0.9998 +x_0=500000 +y_0=0 +ellps=WGS84 +units=m",
+  "map_crs": "EPSG:4326",
+  "map_simplification_degrees": 0.0001,
+  "download_crs": {
+    "geojson": "EPSG:4326",
+    "kml": "EPSG:4326",
+    "shp": "Proyección GTM original, en metros",
+    "gpkg": "Proyección GTM original, en metros"
+  },
+  "fields": {
+    "gid": "Identificador original del tramo",
+    "codigo": "Código original de la fuente; no se interpreta como código administrativo",
+    "nombre": "Nombre original del cauce",
+    "largo": "Longitud original del tramo, en metros",
+    "naturaleza": "Código original; el archivo no proporciona diccionario",
+    "tipo": "Código original; el archivo no proporciona diccionario"
+  },
+  "notes": [
+    "Se conserva la red completa publicada en el recurso de origen, incluidos canales, acequias y tramos sin nombre. No se deducen nombres ni clasificaciones.",
+    "La fecha de actualización del catálogo no equivale a la fecha de levantamiento de los ríos; la fuente no especifica esta última.",
+    "El visor simplifica la geometría para facilitar la navegación. Las cuatro descargas conservan la geometría completa de los 5,649 tramos.",
+    "Los nombres y atributos originales se conservan. El código gid identifica tramos; un mismo río puede tener varios tramos."
+  ]
+}

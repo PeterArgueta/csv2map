@@ -256,7 +256,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
         countrySourceLabel: country.source_label,
         countrySourceUrl: country.source_url,
         key: `${country.code}-${layer.id}`,
-        color: COLORS[(colorIndex++) % COLORS.length],
+        color: layer.color || COLORS[(colorIndex++) % COLORS.length],
       })),
     );
   }, [catalog, en]);

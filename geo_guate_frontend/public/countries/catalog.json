@@ -269,6 +269,49 @@
             "longitud",
             "latitud"
           ]
+        },
+        {
+          "id": "rios_guatemala",
+          "admin_level": "hydrography",
+          "geometry_type": "line",
+          "name": "Ríos de Guatemala",
+          "name_en": "Rivers of Guatemala",
+          "singular": "tramo de cauce",
+          "singular_en": "watercourse segment",
+          "count": 5649,
+          "code_property": "gid",
+          "name_property": "nombre",
+          "color": "#0284c7",
+          "map_url": "/countries/GTM/rios_guatemala.optimized.geojson",
+          "source_label": "Banco Mundial · ENERGYDATA.INFO",
+          "source_url": "https://energydata.info/dataset/rivers-guatemala",
+          "description_es": "Red hidrográfica de Guatemala publicada por el Banco Mundial. Incluye 5,649 tramos de ríos y otros cauces, con nombres y atributos originales; algunos corresponden a canales, acequias o cauces sin nombre. El visor utiliza una geometría simplificada; las descargas conservan el detalle completo. El conteo corresponde a tramos, no a ríos distintos.",
+          "description_en": "Guatemala hydrographic network published by the World Bank. Includes 5,649 river and other watercourse segments with original names and attributes; some are canals, irrigation channels or unnamed watercourses. The viewer uses simplified geometry; downloads retain full detail. The count refers to segments, not distinct rivers.",
+          "api": {
+            "archive_url": "https://datacatalogfiles.worldbank.org/ddh-published/0039365/1/DR0048896/rios_gtm.zip",
+            "archive_cache_path": "geo_guate_frontend/data/remote_cache/GTM/rios_worldbank.zip",
+            "archive_member": "rios_gtm.shp",
+            "basename": "converttomap_gtm_rios"
+          },
+          "downloads": {
+            "geojson": "/downloads/rios_guatemala.geojson",
+            "shp": "/downloads/rios_guatemala_shapefile.zip",
+            "gpkg": "/downloads/rios_guatemala.gpkg",
+            "kml": "/downloads/rios_guatemala.kml"
+          },
+          "metadata_url": "/countries/GTM/rios_guatemala.metadata.json",
+          "category": "hydrography",
+          "category_es": "Hidrografía",
+          "category_en": "Hydrography",
+          "simplify_tolerance": 0.0001,
+          "popup_fields": [
+            "nombre",
+            "gid",
+            "codigo",
+            "largo",
+            "naturaleza",
+            "tipo"
+          ]
         }
       ],
       "region": "Central America",
