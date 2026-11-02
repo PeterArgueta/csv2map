@@ -740,7 +740,10 @@
             "arcgis_layer_url": "https://mapas2.igac.gov.co/server/rest/services/limites/limites/FeatureServer/2",
             "cache_path": "geo_guate_frontend/data/remote_cache/COL/departamentos_igac.geojson",
             "code_field": "DeCodigo",
-            "basename": "converttomap_col_departamentos"
+            "basename": "converttomap_col_departamentos",
+            "fallback_url": "https://converttomap.com/downloads/departamentos_colombia.geojson",
+            "fallback_sha256": "27615e164bfe02a1f5ff5654f7c2f6de3fc9c29020ec0624be6edb10bcfbcb36",
+            "fallback_snapshot_date": "2026-11-02"
           },
           "downloads": {
             "geojson": "/downloads/departamentos_colombia.geojson",

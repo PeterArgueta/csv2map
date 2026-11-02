@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import gzip
+import hashlib
 import html
 import json
 import re
@@ -389,6 +390,17 @@ def canonical_source(country: dict, layer: dict, code_maps: dict) -> Path:
             except Exception as exc:
                 errors.append(f"{layer_url}: {exc}")
                 print(f"ArcGIS source failed: {exc}")
+        if api.get("fallback_url") and api.get("fallback_sha256"):
+            # Reuse the verified published snapshot if its official service is down.
+            fallback = TMP_DIR / f"{country['code']}_{layer['id']}_fallback.geojson"
+            download(api["fallback_url"], fallback)
+            digest = hashlib.sha256(fallback.read_bytes()).hexdigest()
+            if digest != api["fallback_sha256"]:
+                raise RuntimeError("Published GIS fallback checksum mismatch")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(fallback, target)
+            print(f"Using verified published snapshot from {api.get('fallback_snapshot_date', 'unknown date')}")
+            return target
         raise RuntimeError("All ArcGIS sources failed:\n" + "\n".join(errors))
 
     if api.get("ckan_package_url"):
