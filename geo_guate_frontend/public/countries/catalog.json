@@ -854,6 +854,16 @@
           ],
           "parent_name_property": "STATE_NAME"
         }
+      ],
+      "view_bounds": [
+        [
+          24,
+          -125
+        ],
+        [
+          50,
+          -66
+        ]
       ]
     }
   ]

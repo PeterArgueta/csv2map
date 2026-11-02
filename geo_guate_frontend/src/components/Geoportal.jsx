@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import { GeoJSON, MapContainer, TileLayer, ZoomControl, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -68,22 +68,24 @@ const TOOL_LINKS = [
   { href: '/proyectos', es: 'Proyectos', en: 'Projects', descriptionEs: 'Otras herramientas', descriptionEn: 'Other tools', icon: '◫' },
 ];
 
-function MapController({ activeDatasets, fitToken, focusedData, focusToken }) {
+function MapController({ activeDatasets, layerViewBounds, fitToken, focusedData, focusedBounds, focusToken }) {
   const map = useMap();
 
   useEffect(() => {
     const datasets = Object.values(activeDatasets).filter(Boolean);
     if (!datasets.length) return;
-    const group = L.featureGroup(datasets.map((data) => L.geoJSON(data)));
-    const bounds = group.getBounds();
+    const bounds = L.latLngBounds([]);
+    Object.entries(activeDatasets).forEach(([key, data]) => {
+      if (data) bounds.extend(layerViewBounds[key] || L.geoJSON(data).getBounds());
+    });
     if (bounds.isValid()) map.fitBounds(bounds, { padding: [28, 28], maxZoom: 11 });
-  }, [activeDatasets, fitToken, map]);
+  }, [activeDatasets, layerViewBounds, fitToken, map]);
 
   useEffect(() => {
     if (!focusedData) return;
-    const bounds = L.geoJSON(focusedData).getBounds();
+    const bounds = focusedBounds ? L.latLngBounds(focusedBounds) : L.geoJSON(focusedData).getBounds();
     if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
-  }, [focusedData, focusToken, map]);
+  }, [focusedData, focusedBounds, focusToken, map]);
 
   return null;
 }
@@ -133,6 +135,7 @@ const geojsonContainsPoint = (data, point) =>
 
 export function Geoportal({ language = 'es', onLanguageChange, embedded = false }) {
   const en = language === 'en';
+  const manualSelection = useRef(false);
   const [panel, setPanel] = useState('layers');
   const [catalog, setCatalog] = useState(null);
   const [active, setActive] = useState({});
@@ -150,6 +153,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
   const [query, setQuery] = useState('');
   const [fitToken, setFitToken] = useState(0);
   const [focusedData, setFocusedData] = useState(null);
+  const [focusedBounds, setFocusedBounds] = useState(null);
   const [focusToken, setFocusToken] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
@@ -182,6 +186,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
         setFormat(initialFormat);
 
         const applyCountryDefault = async (countryCode, cachedData = null) => {
+          if (manualSelection.current) return;
           const country = data.countries.find((item) => item.code === countryCode)
             || data.countries.find((item) => item.code === 'GTM');
           const layer = country?.levels?.[0];
@@ -198,6 +203,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
           if (cachedData) {
             setDatasets((current) => ({ ...current, [key]: cachedData }));
             setFocusedData(cachedData);
+            setFocusedBounds(layer.view_bounds || country.view_bounds || null);
             setFocusToken((value) => value + 1);
           }
         };
@@ -251,6 +257,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
       country.levels.map((layer) => ({
         ...layer,
         countryCode: country.code,
+        view_bounds: layer.view_bounds || country.view_bounds,
         countryName: country.name,
         countryRegion: en ? country.region : country.region_es,
         countrySourceLabel: country.source_label,
@@ -341,6 +348,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
   }, [layers, active]);
 
   const toggleLayer = async (layer) => {
+    manualSelection.current = true;
     const next = !active[layer.key];
     setActive((current) => ({ ...current, [layer.key]: next }));
     if (next) {
@@ -349,6 +357,7 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
       const data = await ensureLayer(layer);
       if (data) {
         setFocusedData(data);
+        setFocusedBounds(layer.view_bounds || null);
         setFocusToken((value) => value + 1);
       }
     } else {
@@ -374,9 +383,11 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
   };
 
   const zoomLayer = async (layer) => {
+    manualSelection.current = true;
     const data = await ensureLayer(layer);
     if (!data) return;
     setFocusedData(data);
+    setFocusedBounds(layer.view_bounds || null);
     setFocusToken((value) => value + 1);
   };
 
@@ -417,6 +428,10 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
     });
     return result;
   }, [layers, active, visibility, datasets]);
+
+  const layerViewBounds = useMemo(() => Object.fromEntries(
+    layers.filter((layer) => layer.view_bounds).map((layer) => [layer.key, layer.view_bounds]),
+  ), [layers]);
 
   const showAdjacencyReference = useMemo(
     () => layers.some((layer) =>
@@ -908,8 +923,10 @@ export function Geoportal({ language = 'es', onLanguageChange, embedded = false 
           />
           <MapController
             activeDatasets={activeDatasets}
+            layerViewBounds={layerViewBounds}
             fitToken={fitToken}
             focusedData={focusedData}
+            focusedBounds={focusedBounds}
             focusToken={focusToken}
           />
 
