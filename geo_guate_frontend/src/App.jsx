@@ -330,7 +330,7 @@ function App() {
           {catalog && selectedCountry && layerConfig ? (
             <UploadForm
               pais={pais}
-              countries={catalog.countries}
+              countries={catalog.countries.filter((country) => country.levels.some(isGeoreferenceLayer))}
               selectedCountry={selectedCountry}
               nivel={nivel}
               layerConfig={layerConfig}

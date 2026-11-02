@@ -1,0 +1,47 @@
+{
+  "country": "Estados Unidos",
+  "country_code": "USA",
+  "layer": "Condados y equivalentes",
+  "layer_en": "Counties and equivalents",
+  "count": 3235,
+  "source_label": "U.S. Census Bureau · Cartographic Boundary Files 2025",
+  "source_url": "https://www.census.gov/geographies/mapping-files/time-series/geo/cartographic-boundary.html",
+  "source_download_url": "https://www2.census.gov/geo/tiger/GENZ2025/shp/cb_2025_us_county_500k.zip",
+  "reference_year": 2025,
+  "boundary_reference_date": "2025-01-01",
+  "scale": "1:500,000",
+  "source_crs": "EPSG:4269 (NAD83)",
+  "geojson_kml_crs": "EPSG:4326 (WGS84)",
+  "license": "CC0-1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "metadata_catalog_url": "https://catalog.data.gov/dataset/2025-cartographic-boundary-file-shp-county-and-equivalent-for-united-states-1-500000",
+  "description_es": "3,235 condados y entidades equivalentes, incluidos los de Puerto Rico y áreas insulares; comprende parroquias, boroughs, áreas censales y otras equivalencias de Census. Límites cartográficos oficiales generalizados, edición 2025, escala 1:500,000. El visor simplifica adicionalmente la geometría; las descargas conservan el detalle del producto fuente generalizado. Incluye códigos GEOID/FIPS y nombres; no incluye datos de población ni representa límites catastrales.",
+  "description_en": "3,235 counties and equivalents, including Puerto Rico and Island Areas; includes parishes, boroughs, census areas and other Census equivalents. Official generalized cartographic boundaries, 2025 edition, 1:500,000 scale. Viewer geometry is further simplified; downloads retain the detail of the generalized source product. Includes GEOID/FIPS codes and names; no population data or cadastral boundaries.",
+  "public_fields": [
+    "NAMELSAD",
+    "GEOID",
+    "STATE_NAME",
+    "STATEFP",
+    "COUNTYFP",
+    "STUSPS",
+    "ALAND",
+    "AWATER"
+  ],
+  "field_notes": {
+    "GEOID": "Código geográfico como texto; conserva ceros iniciales.",
+    "ALAND": "Superficie terrestre en metros cuadrados, según Census.",
+    "AWATER": "Superficie de agua en metros cuadrados, según Census."
+  },
+  "formats": [
+    "GeoJSON",
+    "Shapefile ZIP",
+    "GeoPackage",
+    "KML"
+  ],
+  "notes": [
+    "La cobertura incluye estados y entidades equivalentes; no debe interpretarse el total como número de estados.",
+    "Las descargas son conversiones del producto cartográfico generalizado de Census, no de TIGER/Line de detalle completo.",
+    "Visor y descargas se sirven desde ConvertToMap; la fuente oficial se consulta durante la compilación."
+  ],
+  "source_sha256": "aa976c00b181939755d0da757f4c7c2dc0103c3b3b4530fb2a91c2bb62fc777c"
+}

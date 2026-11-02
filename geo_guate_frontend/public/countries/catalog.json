@@ -750,6 +750,108 @@
           }
         }
       ]
+    },
+    {
+      "code": "USA",
+      "name": "Estados Unidos",
+      "name_en": "United States",
+      "region": "North America",
+      "region_es": "Norteamérica",
+      "source_label": "U.S. Census Bureau · Cartographic Boundary Files 2025",
+      "source_url": "https://www.census.gov/geographies/mapping-files/time-series/geo/cartographic-boundary.html",
+      "levels": [
+        {
+          "id": "estados",
+          "admin_level": "admin1",
+          "geometry_type": "polygon",
+          "name": "Estados y territorios",
+          "name_en": "States and territories",
+          "singular": "estado o entidad equivalente",
+          "singular_en": "state or equivalent",
+          "count": 56,
+          "code_property": "GEOID",
+          "name_property": "NAME",
+          "download_only": true,
+          "map_url": "/countries/USA/estados.optimized.geojson",
+          "source_label": "U.S. Census Bureau · Cartographic Boundary Files 2025",
+          "source_url": "https://www.census.gov/geographies/mapping-files/time-series/geo/cartographic-boundary.html",
+          "description_es": "56 entidades: los 50 estados, el Distrito de Columbia, Puerto Rico y cuatro áreas insulares. Límites cartográficos oficiales generalizados, edición 2025, escala 1:500,000. El visor simplifica adicionalmente la geometría; las descargas conservan el detalle del producto fuente generalizado. Incluye códigos GEOID/FIPS y nombres; no incluye datos de población ni representa límites catastrales.",
+          "description_en": "56 entities: the 50 states, the District of Columbia, Puerto Rico and four Island Areas. Official generalized cartographic boundaries, 2025 edition, 1:500,000 scale. Viewer geometry is further simplified; downloads retain the detail of the generalized source product. Includes GEOID/FIPS codes and names; no population data or cadastral boundaries.",
+          "api": {
+            "archive_url": "https://www2.census.gov/geo/tiger/GENZ2025/shp/cb_2025_us_state_500k.zip",
+            "archive_cache_path": "geo_guate_frontend/data/remote_cache/USA/cb_2025_us_state_500k.zip",
+            "archive_member": "cb_2025_us_state_500k.shp",
+            "basename": "converttomap_usa_estados_2025"
+          },
+          "downloads": {
+            "geojson": "/downloads/estados_estados_unidos_2025.geojson",
+            "shp": "/downloads/estados_estados_unidos_2025_shapefile.zip",
+            "gpkg": "/downloads/estados_estados_unidos_2025.gpkg",
+            "kml": "/downloads/estados_estados_unidos_2025.kml"
+          },
+          "metadata_url": "/countries/USA/estados.metadata.json",
+          "category": "administrative",
+          "category_es": "Límites administrativos",
+          "category_en": "Administrative boundaries",
+          "reference_year": 2025,
+          "simplify_tolerance": 0.005,
+          "popup_fields": [
+            "NAME",
+            "GEOID",
+            "STATEFP",
+            "STUSPS",
+            "ALAND",
+            "AWATER"
+          ]
+        },
+        {
+          "id": "condados",
+          "admin_level": "admin2",
+          "geometry_type": "polygon",
+          "name": "Condados y equivalentes",
+          "name_en": "Counties and equivalents",
+          "singular": "condado o entidad equivalente",
+          "singular_en": "county or equivalent",
+          "count": 3235,
+          "code_property": "GEOID",
+          "name_property": "NAMELSAD",
+          "download_only": true,
+          "map_url": "/countries/USA/condados.optimized.geojson",
+          "source_label": "U.S. Census Bureau · Cartographic Boundary Files 2025",
+          "source_url": "https://www.census.gov/geographies/mapping-files/time-series/geo/cartographic-boundary.html",
+          "description_es": "3,235 condados y entidades equivalentes, incluidos los de Puerto Rico y áreas insulares; comprende parroquias, boroughs, áreas censales y otras equivalencias de Census. Límites cartográficos oficiales generalizados, edición 2025, escala 1:500,000. El visor simplifica adicionalmente la geometría; las descargas conservan el detalle del producto fuente generalizado. Incluye códigos GEOID/FIPS y nombres; no incluye datos de población ni representa límites catastrales.",
+          "description_en": "3,235 counties and equivalents, including Puerto Rico and Island Areas; includes parishes, boroughs, census areas and other Census equivalents. Official generalized cartographic boundaries, 2025 edition, 1:500,000 scale. Viewer geometry is further simplified; downloads retain the detail of the generalized source product. Includes GEOID/FIPS codes and names; no population data or cadastral boundaries.",
+          "api": {
+            "archive_url": "https://www2.census.gov/geo/tiger/GENZ2025/shp/cb_2025_us_county_500k.zip",
+            "archive_cache_path": "geo_guate_frontend/data/remote_cache/USA/cb_2025_us_county_500k.zip",
+            "archive_member": "cb_2025_us_county_500k.shp",
+            "basename": "converttomap_usa_condados_2025"
+          },
+          "downloads": {
+            "geojson": "/downloads/condados_estados_unidos_2025.geojson",
+            "shp": "/downloads/condados_estados_unidos_2025_shapefile.zip",
+            "gpkg": "/downloads/condados_estados_unidos_2025.gpkg",
+            "kml": "/downloads/condados_estados_unidos_2025.kml"
+          },
+          "metadata_url": "/countries/USA/condados.metadata.json",
+          "category": "administrative",
+          "category_es": "Límites administrativos",
+          "category_en": "Administrative boundaries",
+          "reference_year": 2025,
+          "simplify_tolerance": 0.001,
+          "popup_fields": [
+            "NAMELSAD",
+            "GEOID",
+            "STATE_NAME",
+            "STATEFP",
+            "COUNTYFP",
+            "STUSPS",
+            "ALAND",
+            "AWATER"
+          ],
+          "parent_name_property": "STATE_NAME"
+        }
+      ]
     }
   ]
 }
